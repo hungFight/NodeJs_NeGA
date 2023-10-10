@@ -1,0 +1,115 @@
+generator client {
+    provider = "prisma-client-js"
+}
+
+datasource db {
+    provider = "mysql"
+    url      = env("DATABASE_URL")
+}
+
+model User {
+    id               String         @id
+    fullName         String         @db.VarChar(30)
+    phoneNumberEmail String         @db.VarChar(50)
+    password         String         @db.VarChar(100)
+    avatar           Bytes?         @db.LongBlob
+    active           Boolean        @default(true)
+    biography        String?        @db.VarChar(50)
+    gender           Int
+    birthday         String         @db.VarChar(13)
+    address          String?        @db.VarChar(250)
+    background       Bytes?         @db.LongBlob
+    hobby            Json?          @db.Json
+    schoolName       String?        @db.VarChar(100)
+    occupation       String?        @db.VarChar(100)
+    skill            Json?          @db.Json
+    firstPage        String         @default("vi") @db.VarChar(3)
+    secondPage       String         @default("vi") @db.VarChar(3)
+    thirdPage        String         @default("vi") @db.VarChar(3)
+    createdAt        DateTime       @default(now())
+    updatedAt        DateTime       @updatedAt
+    mores            Mores[]        @relation("UserInfo")
+    userRequest      Friends[]      @relation("UserRequest")
+    userIsRequested  Friends[]      @relation("UserIsRequested")
+    followings       Followers[]    @relation("UserFollowing")
+    followed         Followers[]    @relation("UserFollowed")
+    myself           Relationship[] @relation("Myself")
+    userRel          Relationship[] @relation("UserRel")
+    loved            Lovers[]       @relation("UserLoved")
+    isLoved          Lovers[]       @relation("UserIsLoved")
+    account          SubAccounts[]  @relation("MoreAccounts")
+    accountUser      SubAccounts[]  @relation("MoreAccountsUser")
+}
+
+model Mores {
+    id              String   @id @db.VarChar(50)
+    user            User     @relation("UserInfo", fields: id, references: id)
+    position        String   @default("User") @db.VarChar(20)
+    star            Int      @default(0)
+    relationship    String   @default("Single") @db.VarChar(20)
+    language        Json?    @db.Json()
+    loverAmount     Int      @default(0) //Amount don't insert into database
+    friendAmount    Int      @default(0)
+    followingAmount Int      @default(0)
+    followedAmount  Int      @default(0)
+    visitorAmount   Int      @default(0)
+    privacy         Json     @db.Json
+    createdAt       DateTime @default(now())
+    updatedAt       DateTime @default(now())
+}
+
+model SubAccounts {
+    id               Int      @id @default(autoincrement())
+    userId           String   @db.VarChar(50)
+    user             User     @relation("MoreAccountsUser", fields: [userId], references: [id])
+    phoneNumberEmail String   @db.VarChar(50)
+    accountId        String   @db.VarChar(50)
+    account          User     @relation("MoreAccounts", fields: [accountId], references: [id])
+    createdAt        DateTime @default(now())
+    updatedAt        DateTime @default(now())
+}
+
+model Friends {
+    id              Int      @id @default(autoincrement())
+    idRequest       String   @db.VarChar(50)
+    idIsRequested   String   @db.VarChar(50)
+    userRequest     User     @relation("UserRequest", fields: [idRequest], references: [id])
+    userIsRequested User     @relation("UserIsRequested", fields: [idIsRequested], references: [id])
+    level           Int      @default(1)
+    createdAt       DateTime @default(now())
+    updatedAt       DateTime @default(now())
+}
+
+model Followers {
+    id            Int      @id @default(autoincrement())
+    idFollowing   String   @db.VarChar(50)
+    idIsFollowed  String   @db.VarChar(50)
+    userFollowing User     @relation("UserFollowing", fields: [idFollowing], references: [id])
+    userFollowed  User     @relation("UserFollowed", fields: [idIsFollowed], references: [id])
+    following     Int      @default(1)
+    followed      Int      @default(1)
+    createdAt     DateTime @default(now())
+    updatedAt     DateTime @default(now())
+}
+
+model Relationship {
+    id        Int      @id @default(autoincrement())
+    userId    String   @db.VarChar(50)
+    idRel     String   @db.VarChar(50)
+    myself    User     @relation("Myself", fields: [userId], references: [id])
+    userRel   User     @relation("UserRel", fields: [idRel], references: [id])
+    title     String   @db.VarChar(20)
+    really    Int      @default(0)
+    createdAt DateTime @default(now())
+    updatedAt DateTime @default(now())
+}
+
+model Lovers {
+    id          Int      @id @default(autoincrement())
+    userId      String   @db.VarChar(50)
+    idIsLoved   String   @db.VarChar(50)
+    userLoved   User     @relation("UserLoved", fields: [userId], references: [id])
+    userIsLoved User     @relation("UserIsLoved", fields: [idIsLoved], references: [id])
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @default(now())
+}

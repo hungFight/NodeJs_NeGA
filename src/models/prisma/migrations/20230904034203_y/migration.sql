@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE `followers` ADD COLUMN `level` INTEGER NOT NULL DEFAULT 1;

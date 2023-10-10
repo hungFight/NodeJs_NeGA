@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE `friends` MODIFY `level` INTEGER NOT NULL DEFAULT 1;
