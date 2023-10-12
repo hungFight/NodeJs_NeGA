@@ -9,6 +9,7 @@ router.post('/sendChat', upload.array('files'), sendChatController.sendChat);
 router.get('/getRoom', sendChatController.getRoom);
 router.get('/getChat', sendChatController.getChat);
 router.delete('/delete', sendChatController.delete);
+router.post('/delChatAll', sendChatController.delChatAll);
 router.post('/undo', sendChatController.undo);
 
 export default router;

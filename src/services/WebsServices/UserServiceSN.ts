@@ -410,8 +410,16 @@ class UserService {
     setLg(id: string, lg: string) {
         return new Promise(async (resolve: (arg0: any) => void, reject: (arg0: unknown) => void) => {
             try {
-                // const data = await db.users.update({ sn: lg }, { where: { id: id } });
-                // resolve(data[0]);
+                const data = await prisma.user.update({
+                    where: { id: id },
+                    data: {
+                        firstPage: lg,
+                    },
+                    select: {
+                        firstPage: true,
+                    },
+                });
+                resolve(data.firstPage);
             } catch (error) {
                 reject(error);
             }

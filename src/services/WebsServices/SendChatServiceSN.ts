@@ -242,6 +242,8 @@ class SendChatService {
                         gender: true,
                     },
                 });
+                console.log(user, 'user chats', id_other);
+
                 const Group = moreChat
                     ? {
                           _id: '$_id',
@@ -372,8 +374,10 @@ class SendChatService {
                             ]);
                             if (roomChat.length) {
                                 roomChat[0].user = user;
+                                resolve(roomChat[0]);
+                            } else {
+                                resolve({ ...data, user });
                             }
-                            resolve(roomChat[0]);
                         } else {
                             resolve({ ...data, user });
                         }
@@ -450,6 +454,16 @@ class SendChatService {
                     resolve(res);
                 }
                 resolve(false);
+            } catch (error) {
+                reject(error);
+            }
+        });
+    }
+    delChatAll(roomId: string, chatId: string) {
+        return new Promise(async (resolve, reject) => {
+            try {
+                const res = await RoomChats.updateOne({ _id: roomId }, { $pull: { room: { _id: chatId } } });
+                console.log(res, 'update Chat');
             } catch (error) {
                 reject(error);
             }

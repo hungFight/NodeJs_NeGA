@@ -3,6 +3,7 @@ import SendChatServiceSN, { PropsRoomChat } from '../../services/WebsServices/Se
 import { redisClient } from '../..';
 import ServerError from '../../utils/errors/ServerError';
 import NotFound from '../../utils/errors/NotFound';
+import Forbidden from '../../utils/errors/Forbidden';
 
 class SendChat {
     sendChat = async (req: any, res: any, next: express.NextFunction) => {
@@ -124,6 +125,20 @@ class SendChat {
             const data = await SendChatServiceSN.undo(id_room, id);
             if (!data) throw new NotFound('Undo Room', 'Undo failed');
             return res.status(200).json(data);
+        } catch (error) {
+            next(error);
+        }
+    };
+    delChatAll = async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+        try {
+            const roomId = req.body.roomId;
+            const chatId = req.body.chatId;
+            const userIdCur = req.cookies.k_user;
+            if (!roomId || !chatId) throw new NotFound('delChatAll', 'roomId or chatId or userId not provided');
+            if (chatId === userIdCur) {
+                const data = await SendChatServiceSN.delChatAll(roomId, chatId);
+            }
+            throw new Forbidden('DelChatALL', 'You are no allowed!');
         } catch (error) {
             next(error);
         }
