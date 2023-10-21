@@ -17,6 +17,7 @@ router.patch('/Unfollow', userController.Unfollow);
 router.get('/getMore', userController.getMore);
 router.post('/setHistory', userController.setHistory);
 router.get('/getHistory', userController.getHistorySearch);
+router.get('/getActiveStatus', userController.getActiveStatus);
 // error collection
 router.use(errorHandler);
 

@@ -223,5 +223,17 @@ class userController {
             next(error);
         }
     };
+    getActiveStatus = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+        try {
+            const id_other = req.query.id_other;
+            if (!id_other) throw new NotFound('getActiveStatus', 'Id_other is empty');
+            redisClient.get(`online_duration: ${id_other}`, (err, results) => {
+                if (err) throw new ServerError('getActiveStatus at Redis in CTL user', err);
+                return res.status(200).json(results);
+            });
+        } catch (error) {
+            next(error);
+        }
+    };
 }
 export default new userController();

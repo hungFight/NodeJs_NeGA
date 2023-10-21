@@ -18,6 +18,9 @@ import ExcessiveRequests from './middleware/ExcessiveRequests';
 import jwtAuth from './middleware/jwtAuth';
 import errorHandler from './middleware/errorHandles';
 import routeSN from './routes/websRoutes';
+import moment from 'moment';
+
+import { Server } from 'socket.io';
 const connection = new Set();
 
 export const prisma = new PrismaClient();
@@ -25,7 +28,10 @@ export const prisma = new PrismaClient();
 const app = express();
 const port = 3001;
 const httpServer = require('http').createServer(app);
-const io = require('socket.io')(httpServer);
+export const io = new Server(httpServer, {
+    pingTimeout: 60000, // Set a longer ping timeout in milliseconds
+    pingInterval: 25000, // Adjust the ping interval if needed
+});
 const server = new ApolloServer({
     typeDefs,
     resolvers,
@@ -39,18 +45,41 @@ export const redisClient = new Redis({
 });
 io.on('connection', (client: any) => {
     console.log('conn');
+    Array.from(connection).map((id) => {
+        client.on(
+            `user_${id}_in_roomChat_personal_writing`,
+            (res: { roomId: string; id_other: string; value: number }) => {
+                console.log(
+                    'in_roomChat_personal',
+                    res,
+                    `user_${res.id_other}_in_roomChat_${res.roomId}_personal_receive`,
+                );
+                client.broadcast.emit(`user_${res.id_other}_in_roomChat_${res.roomId}_personal_receive`, {
+                    length: res.value,
+                    id: res.id_other,
+                });
+            },
+        );
+    });
     client.on('sendId', (res: string) => {
+        // sent to client
         connection.add(res);
         client.userId = res;
+        if (client.userId) redisClient.del(`online_duration: ${client.userId}`);
         console.log('user connected', res);
         client.emit('user connectedd', JSON.stringify(Array.from(connection)));
         client.broadcast.emit('user connectedd', JSON.stringify(Array.from(connection)));
     });
     client.on('disconnect', () => {
+        const currentDate = moment(new Date()).format('YYYY-MM-DD HH:mm:ss');
         // calculator users online
         connection.delete(client.userId);
-        console.log('clien disconnect', client.userId);
+        console.log('client disconnect', client.userId);
         const key_Reload = client.userId + 'Reload';
+        if (client.userId)
+            redisClient.set(`online_duration: ${client.userId}`, currentDate, () => {
+                redisClient.expire(`online_duration: ${client.userId}`, 24 * 60 * 60);
+            });
         redisClient.lrange(key_Reload, 0, -1, (err, items) => {
             // used to when you out of this web it's deleted what unnecessary in redis
             if (err) console.log(err);

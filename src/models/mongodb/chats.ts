@@ -14,7 +14,8 @@ const chats = new Schema(
         deleted: [
             {
                 id: { type: String, maxLength: 50 },
-                createdAt: { // user's deleting time
+                createdAt: {
+                    // user's deleting time
                     type: Date,
                     default: Date.now(),
                 },
@@ -26,6 +27,7 @@ const chats = new Schema(
         background: { type: String, maxLength: 50 },
         room: [
             {
+                id: { type: String, required: true, maxLength: 50 },
                 _id: { type: String, required: true, maxLength: 50 },
                 text: {
                     t: { type: String, text: String },

@@ -32,12 +32,11 @@ export interface PropsRoomChat {
 }
 
 class SendChatService {
-    send(id_room: string, id: string, id_other: string, value: string, files: any) {
+    send(id_room: string, id: string, id_other: string, value: string, files: any, _id: string) {
         return new Promise<PropsRoomChat>(async (resolve, reject) => {
             try {
                 const ids_file: any = files.map((f: any) => f.metadata.id_file.toString());
                 const imagesOrVideos: { v: any; icon: string }[] = [];
-                console.log('zooo');
 
                 const res = id_room
                     ? await RoomChats.findOne({
@@ -48,8 +47,6 @@ class SendChatService {
                           // set any to set createdAt below
                           $and: [{ id_us: { $all: [id, id_other] } }, { id_us: { $size: 2 } }],
                       }).select('-room');
-                console.log(res, 'send res', id_room, id, id_other);
-
                 if (ids_file) {
                     for (let id of ids_file) {
                         console.log(id);
@@ -74,7 +71,8 @@ class SendChatService {
                         users: [],
                         room: [
                             {
-                                _id: id,
+                                id: id,
+                                _id,
                                 text: {
                                     t: value,
                                 },
@@ -96,7 +94,8 @@ class SendChatService {
                             t: value,
                             icon: '',
                         },
-                        _id: id,
+                        id: id,
+                        _id,
                         seenBy: [],
                         imageOrVideos: imagesOrVideos,
                         createdAt: DateTime(),
@@ -104,7 +103,7 @@ class SendChatService {
 
                     const roomUpdate: any = await RoomChats.findOneAndUpdate(
                         {
-                            _id: id_room,
+                            _id: res._id,
                             id_us: { $all: [id, id_other] }, // only id and id_other
                         },
                         { $push: { room: chat }, $set: { 'deleted.$[elm].show': false } }, // set show to false
@@ -206,6 +205,7 @@ class SendChatService {
                     room: [
                         {
                             _id: '',
+                            id: '',
                             text: {
                                 t: '',
                                 icon: '',
@@ -221,10 +221,23 @@ class SendChatService {
                 };
                 if (id_room && id_other) {
                     const seenBy = await RoomChats.findByIdAndUpdate(
-                        { _id: id_room, room: { _id: id_other } },
+                        { _id: id_room, room: { id: id_other } },
                         {
                             $addToSet: {
-                                'room.$[].seenBy': id, //push all elements in the seenBy document
+                                'room.$[].seenBy': id, //push all elements in the seenBy document and unique
+                            },
+                        },
+                    );
+                    console.log(seenBy, 'seenBy');
+                } else {
+                    const seenBy = await RoomChats.findOneAndUpdate(
+                        {
+                            id_us: { $all: [id, id_other] },
+                            'room.id': id_other,
+                        },
+                        {
+                            $addToSet: {
+                                'room.$[].seenBy': id, //push all elements in the seenBy document and unique
                             },
                         },
                     );
@@ -242,22 +255,26 @@ class SendChatService {
                         gender: true,
                     },
                 });
-                console.log(user, 'user chats', id_other);
 
-                const Group = moreChat
-                    ? {
-                          _id: '$_id',
-                          room: { $push: '$room' },
-                      }
-                    : {
-                          _id: '$_id',
-                          id_us: { $first: '$id_us' },
-                          background: { $first: '$background' },
-                          status: { $first: '$status' },
-                          room: { $push: '$room' },
-                          deleted: { $first: '$deleted' },
-                          createdAt: { $first: '$createdAt' },
-                      };
+                let Group;
+                if (moreChat === true) {
+                    Group = {
+                        _id: '$_id',
+                        room: { $push: '$room' },
+                    };
+                } else {
+                    Group = {
+                        _id: '$_id',
+                        id_us: { $first: '$id_us' },
+                        background: { $first: '$background' },
+                        status: { $first: '$status' },
+                        room: { $push: '$room' },
+                        deleted: { $first: '$deleted' },
+                        createdAt: { $first: '$createdAt' },
+                    };
+                }
+                console.log(Group, 'user chats', id_other, moreChat);
+
                 if (id_room) {
                     const roomCh: any = await RoomChats.findOne({ _id: id_room }).select('-room');
                     let check = false;
@@ -289,7 +306,7 @@ class SendChatService {
                             resolve(roomChat[0]);
                         }
                         roomCh.user = user;
-                        roomCh.room = data.room;
+                        roomCh.room = [];
                         resolve(roomCh);
                     } else {
                         const roomChat = await RoomChats.aggregate([
@@ -309,7 +326,8 @@ class SendChatService {
                             resolve(roomChat[0]);
                         }
                         roomCh.user = user;
-                        roomCh.room = data.room;
+                        console.log(roomCh, 'roomCh');
+                        roomCh.room = [];
                         resolve(roomCh);
                     }
                 } else {
@@ -344,14 +362,11 @@ class SendChatService {
                             ]);
                             if (roomChat.length) {
                                 roomChat[0].user = user;
-                                console.log(roomChat[0], 'roomChat[0]');
-
                                 resolve(roomChat[0]);
                             }
                             if (!moreChat) {
                                 id_roomChat.user = user;
-                                id_roomChat.room = data.room;
-                                console.log(roomChat, 'id_roomChat', createdAt);
+                                id_roomChat.room = [];
                                 resolve(id_roomChat);
                             } else {
                                 resolve(null);
@@ -372,13 +387,18 @@ class SendChatService {
                                     $group: Group,
                                 }, // Group the documents and reconstruct the room array
                             ]);
+                            console.log(roomChat, 'roomChat 11');
+
                             if (roomChat.length) {
                                 roomChat[0].user = user;
                                 resolve(roomChat[0]);
                             } else {
+                                data.room = [];
                                 resolve({ ...data, user });
                             }
                         } else {
+                            console.log('id_roomChat no');
+                            data.room = [];
                             resolve({ ...data, user });
                         }
                     }

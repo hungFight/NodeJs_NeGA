@@ -1,17 +1,18 @@
 import express from 'express';
 import SendChatServiceSN, { PropsRoomChat } from '../../services/WebsServices/SendChatServiceSN';
-import { redisClient } from '../..';
+import { io, redisClient } from '../..';
 import ServerError from '../../utils/errors/ServerError';
 import NotFound from '../../utils/errors/NotFound';
 import Forbidden from '../../utils/errors/Forbidden';
+import { RoomChats } from '../../models/mongodb/chats';
 
 class SendChat {
     sendChat = async (req: any, res: any, next: express.NextFunction) => {
         try {
             const id = req.cookies.k_user;
-            const io = res.io;
             const value = req.body.value;
             const id_other = req.body.id_others;
+            const id_ = req.body.id_;
             const id_room = req.body.id_room;
             console.log(id_room, 'id_room');
             const files = req.files;
@@ -20,10 +21,10 @@ class SendChat {
                 // Gán _id vào metadata của fileInfo
                 file.metadata.fileId = fileId;
             });
-            if (id_other) {
+            if (id_other && id_) {
                 console.log(id_other, 'id_others');
 
-                const data = await SendChatServiceSN.send(id_room, id, id_other, value, files);
+                const data = await SendChatServiceSN.send(id_room, id, id_other, value, files, id_);
                 const key_redis = id_other + '-' + 'AmountMessageIsNotSeen' + '-' + data._id;
 
                 if (data) {
@@ -39,13 +40,16 @@ class SendChat {
                             reject(error);
                         }
                     });
+                    newD._id = newD._id.toString();
+                    console.log(newD, 'newD');
                     io.emit(`${id_other}roomChat`, JSON.stringify(newD)); // It's in App.tsx
-                    io.emit(`${newD._id + '-' + id}phrase`, JSON.stringify(newD)); // It's in Messenger
+                    io.emit(`${newD._id + '-' + id}phrase_chatRoom`, JSON.stringify(newD)); // It's in Messenger
+
                     return res.status(200).json({ ...data, miss: 0 });
                 }
                 return res.status(404).json('Send message failed!');
             }
-            throw new NotFound('Send', 'id_other not found');
+            throw new NotFound('Send', 'id_other or id_ not found');
         } catch (error) {
             next(error);
         }
@@ -88,7 +92,7 @@ class SendChat {
             const moreChat = req.query.moreChat;
 
             if (id_other) {
-                const data = await SendChatServiceSN.getChat(
+                const data: any = await SendChatServiceSN.getChat(
                     id_room,
                     id,
                     id_other,
@@ -96,6 +100,16 @@ class SendChat {
                     Number(offset),
                     moreChat,
                 );
+                if (data?._id && offset === 0) {
+                    // get and send seenBy to other
+                    for (let i = 0; i < data.room.length; i++) {
+                        if (data.room[i].id === id_other) {
+                            io.emit(`phrase_chatRoom_response_${data?._id}_${data?.user?.id}`, data?.room[i]?._id);
+                            return;
+                        }
+                    }
+                }
+
                 return res.status(200).json(data);
             }
             throw new NotFound('GetChat', 'Not Found id_room or id_other');
