@@ -325,8 +325,8 @@ class SendChatService {
                             }
                             resolve(roomChat[0]);
                         }
+                        console.log(roomCh, 'roomCh', roomChat);
                         roomCh.user = user;
-                        console.log(roomCh, 'roomCh');
                         roomCh.room = [];
                         resolve(roomCh);
                     }
