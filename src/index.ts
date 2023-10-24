@@ -21,6 +21,7 @@ import routeSN from './routes/websRoutes';
 import moment from 'moment';
 
 import { Server } from 'socket.io';
+import { RoomChats } from './models/mongodb/chats';
 const connection = new Set();
 
 export const prisma = new PrismaClient();
@@ -49,15 +50,27 @@ io.on('connection', (client: any) => {
         client.on(
             `user_${id}_in_roomChat_personal_writing`,
             (res: { roomId: string; id_other: string; value: number }) => {
-                console.log(
-                    'in_roomChat_personal',
-                    res,
-                    `user_${res.id_other}_in_roomChat_${res.roomId}_personal_receive`,
-                );
                 client.broadcast.emit(`user_${res.id_other}_in_roomChat_${res.roomId}_personal_receive`, {
                     length: res.value,
                     id: res.id_other,
                 });
+            },
+        );
+        client.on(
+            `user_${id}_in_roomChat_personal_receive_and_saw`,
+            async (data: { userIdReceived: string; idSent: string; idChat: string }) => {
+                await RoomChats.findOneAndUpdate(
+                    {
+                        id_us: { $all: [data.idSent, data.userIdReceived] },
+                        'room.id': data.userIdReceived,
+                    },
+                    {
+                        $addToSet: {
+                            'room.$[].seenBy': data.userIdReceived, //push all elements in the seenBy document and unique
+                        },
+                    },
+                );
+                client.broadcast.emit(`user_${data.idSent}_in_roomChat_personal_receive_and_saw_other`, data);
             },
         );
     });

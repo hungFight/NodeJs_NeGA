@@ -43,7 +43,7 @@ class SendChat {
                     newD._id = newD._id.toString();
                     console.log(newD, 'newD');
                     io.emit(`${id_other}roomChat`, JSON.stringify(newD)); // It's in App.tsx
-                    io.emit(`${newD._id + '-' + id}phrase_chatRoom`, JSON.stringify(newD)); // It's in Messenger
+                    io.emit(`${newD._id + '-' + id}phrase_chatRoom`, JSON.stringify({ id, data: newD })); // It's in Messenger
 
                     return res.status(200).json({ ...data, miss: 0 });
                 }
@@ -88,7 +88,7 @@ class SendChat {
             const id_room = req.query.id_room;
             const id_other = req.query.id_other;
             const limit = req.query.limit;
-            const offset = req.query.offset;
+            const offset: number = req.query.offset;
             const moreChat = req.query.moreChat;
 
             if (id_other) {
@@ -100,15 +100,16 @@ class SendChat {
                     Number(offset),
                     moreChat,
                 );
-                if (data?._id && offset === 0) {
+                if (Number(offset) === 0 && data._id) {
                     // get and send seenBy to other
                     for (let i = 0; i < data.room.length; i++) {
                         if (data.room[i].id === id_other) {
                             io.emit(`phrase_chatRoom_response_${data?._id}_${data?.user?.id}`, data?.room[i]?._id);
-                            return;
+                            break;
                         }
                     }
                 }
+                console.log('come phrase_chatRoom_response', data._id, offset);
 
                 return res.status(200).json(data);
             }
