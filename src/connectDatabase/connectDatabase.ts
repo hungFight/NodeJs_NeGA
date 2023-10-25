@@ -12,7 +12,7 @@ class Database {
             await mongoose.connect(URL, { serverSelectionTimeoutMS: 15000 });
             console.log('Connected to MongoDB Successful!');
         } catch (error) {
-            console.log('Connected to MongoDB Faild!');
+            return error;
         }
     };
     connect = () => {

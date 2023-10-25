@@ -479,11 +479,35 @@ class SendChatService {
             }
         });
     }
-    delChatAll(roomId: string, chatId: string) {
+    delChatAll(roomId: string, chatId: string, userId: string) {
+        // delete both side
         return new Promise(async (resolve, reject) => {
             try {
-                const res = await RoomChats.updateOne({ _id: roomId }, { $pull: { room: { _id: chatId } } });
-                console.log(res, 'update Chat');
+                const res = await RoomChats.updateOne(
+                    { _id: roomId, 'room._id': chatId, 'room.id': userId },
+                    {
+                        $set: {
+                            'room.$[delete].text': { t: '', icon: '' },
+                            'room.$[delete].imageOrVideos': [],
+                            'room.$[delete].delete': 'all',
+                            'room.$[delete].updatedAt': new Date(),
+                        },
+                    },
+                    {
+                        new: true,
+                        arrayFilters: [
+                            {
+                                'delete._id': chatId,
+                                'delete.id': userId, // Replace with the specific element ID you want to update
+                            },
+                        ],
+                    },
+                );
+                resolve(res.acknowledged);
+                // const res = await RoomChats.updateOne(
+                //     { _id: roomId },
+                //     { $pull: { room: { _id: chatId, id: userId } } },
+                // );
             } catch (error) {
                 reject(error);
             }

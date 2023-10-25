@@ -62,7 +62,7 @@ io.on('connection', (client: any) => {
                 await RoomChats.findOneAndUpdate(
                     {
                         id_us: { $all: [data.idSent, data.userIdReceived] },
-                        'room.id': data.userIdReceived,
+                        'room._id': data.idChat,
                     },
                     {
                         $addToSet: {

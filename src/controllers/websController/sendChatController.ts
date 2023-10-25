@@ -148,10 +148,15 @@ class SendChat {
         try {
             const roomId = req.body.roomId;
             const chatId = req.body.chatId;
+            const userId = req.body.userId;
             const userIdCur = req.cookies.k_user;
-            if (!roomId || !chatId) throw new NotFound('delChatAll', 'roomId or chatId or userId not provided');
-            if (chatId === userIdCur) {
-                const data = await SendChatServiceSN.delChatAll(roomId, chatId);
+            console.log(roomId, chatId, userId);
+
+            if (!roomId || !chatId || !userId)
+                throw new NotFound('delChatAll', 'roomId, userId or chatId or userId not provided');
+            if (userId === userIdCur) {
+                const data = await SendChatServiceSN.delChatAll(roomId, chatId, userId);
+                return res.status(200).json(data);
             }
             throw new Forbidden('DelChatALL', 'You are no allowed!');
         } catch (error) {
