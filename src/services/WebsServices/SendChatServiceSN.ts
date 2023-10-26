@@ -35,8 +35,11 @@ class SendChatService {
     send(id_room: string, id: string, id_other: string, value: string, files: any, _id: string) {
         return new Promise<PropsRoomChat>(async (resolve, reject) => {
             try {
-                const ids_file: any = files.map((f: any) => f.metadata.id_file.toString());
-                const imagesOrVideos: { v: any; icon: string }[] = [];
+                const ids_file: any = files.map((f: any) => {
+                    return { id: f.metadata.id_file.toString(), type: f.mimetype };
+                });
+                const imagesOrVideos: { _id: string; v: any; icon: string; type: string }[] = [];
+                console.log(files);
 
                 const res = id_room
                     ? await RoomChats.findOne({
@@ -50,7 +53,7 @@ class SendChatService {
                 if (ids_file) {
                     for (let id of ids_file) {
                         console.log(id);
-                        imagesOrVideos.push({ v: id, icon: '' });
+                        imagesOrVideos.push({ _id: id.id, v: id.id, icon: '', type: id.type });
                     }
                 }
                 if (!res) {
@@ -490,6 +493,34 @@ class SendChatService {
                             'room.$[delete].text': { t: '', icon: '' },
                             'room.$[delete].imageOrVideos': [],
                             'room.$[delete].delete': 'all',
+                            'room.$[delete].updatedAt': new Date(),
+                        },
+                    },
+                    {
+                        new: true,
+                        arrayFilters: [
+                            {
+                                'delete._id': chatId,
+                                'delete.id': userId, // Replace with the specific element ID you want to update
+                            },
+                        ],
+                    },
+                );
+                resolve(res.acknowledged);
+            } catch (error) {
+                reject(error);
+            }
+        });
+    }
+    delChatSelf(roomId: string, chatId: string, userId: string) {
+        // delete both side
+        return new Promise(async (resolve, reject) => {
+            try {
+                const res = await RoomChats.updateOne(
+                    { _id: roomId, 'room._id': chatId, 'room.id': userId },
+                    {
+                        $set: {
+                            'room.$[delete].delete': userId,
                             'room.$[delete].updatedAt': new Date(),
                         },
                     },

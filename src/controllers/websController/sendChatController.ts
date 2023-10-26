@@ -163,5 +163,24 @@ class SendChat {
             next(error);
         }
     };
+    delChatSelf = async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+        try {
+            const roomId = req.body.roomId;
+            const chatId = req.body.chatId;
+            const userId = req.body.userId;
+            const userIdCur = req.cookies.k_user;
+            console.log(roomId, chatId, userId);
+
+            if (!roomId || !chatId || !userId)
+                throw new NotFound('delChatAll', 'roomId, userId or chatId or userId not provided');
+            if (userId === userIdCur) {
+                const data = await SendChatServiceSN.delChatSelf(roomId, chatId, userId);
+                return res.status(200).json(data);
+            }
+            throw new Forbidden('DelChatALL', 'You are no allowed!');
+        } catch (error) {
+            next(error);
+        }
+    };
 }
 export default new SendChat();
