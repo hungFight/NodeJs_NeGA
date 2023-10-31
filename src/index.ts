@@ -46,6 +46,11 @@ export const redisClient = new Redis({
 });
 io.on('connection', (client: any) => {
     console.log('conn');
+    client.on('joinRoom', (roomName: string) => {
+        console.log(roomName, 'roomName');
+
+        client.join(roomName); // The client joins the specified room
+    });
     Array.from(connection).map((id) => {
         client.on(
             `user_${id}_in_roomChat_personal_writing`,

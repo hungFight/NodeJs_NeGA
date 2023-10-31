@@ -19,11 +19,38 @@ export const upload = multer({
     storage: new GridFsStorage({
         url: URL,
         cache: true,
-        file: (req, files) => {
+
+        file: async (req, files) => {
+            console.log(req.body, files);
+            const update: boolean = req.body.update;
+            const id_files: string[] = req.body.id_filesDel ? JSON.parse(req.body.id_filesDel) : [];
+            if (update && id_files?.length) {
+                try {
+                    console.log(id_files, 'id_file delete');
+                    // Find the file in GridFS using the id
+                    const bucket = new mongoose.mongo.GridFSBucket(conn.db, { bucketName: 'uploads' });
+
+                    id_files.forEach(async (f) => {
+                        await gfs.files.findOne({ metadata: { id_file: f } }, (err: any, file: { _id: any }) => {
+                            // // Delete the file
+                            if (file) {
+                                bucket
+                                    .delete(file._id)
+                                    .then(() => {
+                                        console.log('File deleted successfully');
+                                    })
+                                    .catch((error) => {
+                                        console.error('Error deleting file:', error);
+                                    });
+                            }
+                        });
+                    });
+                } catch (error) {
+                    console.log(error, 'update file');
+                }
+            }
             return new Promise((resolve, reject) => {
                 try {
-                    console.log(files, 'files');
-
                     crypto.randomBytes(16, (err: any, buf: { toString: (arg0: string) => any }) => {
                         if (err) {
                             return reject(err);

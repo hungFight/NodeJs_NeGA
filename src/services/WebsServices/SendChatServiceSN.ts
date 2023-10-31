@@ -26,13 +26,14 @@ export interface PropsRoomChat {
         imageOrVideos: { v: string; icon: string; _id: string }[];
         seenBy: string[];
         createdAt: string;
+        secondary?: string;
         // user: { avatar: any; fullName: string; gender: number; id: string };
     };
     createdAt: string;
 }
 
 class SendChatService {
-    send(id_room: string, id: string, id_other: string, value: string, files: any, _id: string) {
+    send(id_room: string, id: string, id_other: string, value: string, files: any, _id: string, id_s?: string) {
         return new Promise<PropsRoomChat>(async (resolve, reject) => {
             try {
                 const ids_file: any = files.map((f: any) => {
@@ -81,6 +82,7 @@ class SendChatService {
                                 },
                                 imageOrVideos: imagesOrVideos,
                                 createdAt: DateTime(),
+                                secondary: id_s,
                             },
                         ],
                         createdAt: DateTime(),
@@ -539,6 +541,17 @@ class SendChatService {
                 //     { _id: roomId },
                 //     { $pull: { room: { _id: chatId, id: userId } } },
                 // );
+            } catch (error) {
+                reject(error);
+            }
+        });
+    }
+    updateChat(roomId: string, chatId: string, userId: string, value: string) {
+        // delete both side
+        return new Promise(async (resolve, reject) => {
+            try {
+                const res = await RoomChats.findOne({ _id: roomId, 'room._id': chatId }, { 'room.$': 1 });
+                if (res?.room.length) console.log(res, 'result');
             } catch (error) {
                 reject(error);
             }

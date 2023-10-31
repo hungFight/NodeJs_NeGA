@@ -13,37 +13,38 @@ class SendChat {
             const value = req.body.value;
             const id_other = req.body.id_others;
             const id_ = req.body.id_;
+            const id_s = req.body.id_s;
             const id_room = req.body.id_room;
             console.log(id_room, 'id_room');
             const files = req.files;
-            files.forEach((file: { id: any; metadata: { fileId: any } }) => {
-                const fileId = file.id; // Lấy _id của tệp tin
-                // Gán _id vào metadata của fileInfo
-                file.metadata.fileId = fileId;
-            });
+
             if (id_other && id_) {
                 console.log(id_other, 'id_others');
 
-                const data = await SendChatServiceSN.send(id_room, id, id_other, value, files, id_);
+                const data = await SendChatServiceSN.send(id_room, id, id_other, value, files, id_, id_s);
                 const key_redis = id_other + '-' + 'AmountMessageIsNotSeen' + '-' + data._id;
 
                 if (data) {
-                    const newD = await new Promise<PropsRoomChat>((resolve, reject) => {
-                        try {
-                            redisClient.get(key_redis, (err, result) => {
-                                if (err) throw new ServerError('Error getting data from redis at CTL SendChat', err);
-                                redisClient.set(key_redis, result ? JSON.parse(result) + 1 : 1);
-                                data.miss = result ? JSON.parse(result) + 1 : 0;
-                                resolve(data);
-                            });
-                        } catch (error) {
-                            reject(error);
-                        }
-                    });
-                    newD._id = newD._id.toString();
-                    console.log(newD, 'newD');
-                    io.emit(`${id_other}roomChat`, JSON.stringify(newD)); // It's in App.tsx
-                    io.emit(`${newD._id + '-' + id}phrase_chatRoom`, JSON.stringify({ id, data: newD })); // It's in Messenger
+                    // const newD = await new Promise<PropsRoomChat>((resolve, reject) => {
+                    //     try {
+                    //         redisClient.get(key_redis, (err, result) => {
+                    //             if (err) throw new ServerError('Error getting data from redis at CTL SendChat', err);
+                    //             redisClient.set(key_redis, result ? JSON.parse(result) + 1 : 1);
+                    //             data.miss = result ? JSON.parse(result) + 1 : 0;
+                    //             resolve(data);
+                    //         });
+                    //     } catch (error) {
+                    //         reject(error);
+                    //     }
+                    // });
+                    data._id = data._id.toString();
+                    console.log(data.room, 'data');
+                    io.emit(`${id_other}roomChat`, JSON.stringify(data)); // It's in App.tsx
+                    if (data.room?.secondary) {
+                        io.emit(`${id + '-' + id_other}phrase_chatRoom`, JSON.stringify({ id, data: data })); // It's in Messenger
+                    } else {
+                        io.emit(`${data._id + '-' + id}phrase_chatRoom`, JSON.stringify({ id, data: data })); // It's in Messenger
+                    }
 
                     return res.status(200).json({ ...data, miss: 0 });
                 }
@@ -178,6 +179,26 @@ class SendChat {
                 return res.status(200).json(data);
             }
             throw new Forbidden('DelChatALL', 'You are no allowed!');
+        } catch (error) {
+            next(error);
+        }
+    };
+    updateChat = async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+        try {
+            const roomId: string = req.body.roomId;
+            const chatId: string = req.body.id_chat;
+            const value: string = req.body.value;
+            const userIdCur = req.cookies.k_user;
+            const userId: string = req.body.userId;
+            console.log(roomId, chatId);
+
+            if (!roomId || !chatId)
+                throw new NotFound('updateChat UP', 'roomId, userId or chatId or userId not provided');
+            if (userId === userIdCur) {
+                const data = await SendChatServiceSN.updateChat(roomId, chatId, userId, value);
+                return res.status(200).json(data);
+            }
+            throw new Forbidden('updateChat Down', 'You are no allowed!');
         } catch (error) {
             next(error);
         }

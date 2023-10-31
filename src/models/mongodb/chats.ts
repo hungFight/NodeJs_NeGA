@@ -46,6 +46,7 @@ const chats = new Schema(
                 seenBy: { type: [String], maxLength: 50 },
                 createdAt: { type: Date, default: Date.now() },
                 updatedAt: { type: Date, default: '' },
+                secondary: { type: String, required: true, maxLength: 50 },
             },
             { _id: false },
         ],
