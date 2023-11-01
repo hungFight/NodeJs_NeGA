@@ -40,8 +40,13 @@ class SendChatService {
                     return { id: f.metadata.id_file.toString(), type: f.mimetype };
                 });
                 const imagesOrVideos: { _id: string; v: any; icon: string; type: string }[] = [];
-                console.log(files);
-
+                if (ids_file) {
+                    for (let id of ids_file) {
+                        console.log(id);
+                        imagesOrVideos.push({ _id: id.id, v: id.id, icon: '', type: id.type });
+                    }
+                }
+                console.log(imagesOrVideos, 'imagesOrVideos');
                 const res = id_room
                     ? await RoomChats.findOne({
                           _id: id_room,
@@ -51,12 +56,7 @@ class SendChatService {
                           // set any to set createdAt below
                           $and: [{ id_us: { $all: [id, id_other] } }, { id_us: { $size: 2 } }],
                       }).select('-room');
-                if (ids_file) {
-                    for (let id of ids_file) {
-                        console.log(id);
-                        imagesOrVideos.push({ _id: id.id, v: id.id, icon: '', type: id.type });
-                    }
-                }
+
                 if (!res) {
                     // create if it doesn't exist
                     const friend = await prisma.friends.findFirst({
@@ -80,7 +80,7 @@ class SendChatService {
                                 text: {
                                     t: value,
                                 },
-                                imageOrVideos: imagesOrVideos,
+                                imagesOrVideos,
                                 createdAt: DateTime(),
                                 secondary: id_s,
                             },
@@ -546,12 +546,51 @@ class SendChatService {
             }
         });
     }
-    updateChat(roomId: string, chatId: string, userId: string, value: string) {
+    updateChat(roomId: string, chatId: string, userId: string, id_other: string, value: string, files: any) {
         // delete both side
         return new Promise(async (resolve, reject) => {
             try {
-                const res = await RoomChats.findOne({ _id: roomId, 'room._id': chatId }, { 'room.$': 1 });
-                if (res?.room.length) console.log(res, 'result');
+                const ids_file: any = files.map((f: any) => {
+                    return { id: f.metadata.id_file.toString(), type: f.mimetype };
+                });
+                const imagesOrVideos: { readonly _id: string; readonly v: any; icon: string; type: string }[] = [];
+                if (ids_file) {
+                    for (let id of ids_file) {
+                        console.log(id);
+                        imagesOrVideos.push({ _id: id.id, v: id.id, icon: '', type: id.type });
+                    }
+                }
+                console.log(files, imagesOrVideos, 'imagesOrVideos');
+                const res: any = await RoomChats.findOne({ _id: roomId, 'room._id': chatId }, { 'room.$': 1 });
+                if (res?.room.length) {
+                    if (imagesOrVideos.length || value) {
+                        const seenBy: string[] = res.room[0].seenBy ?? [];
+                        console.log(seenBy, 'seenBy');
+
+                        const re = await RoomChats.updateOne(
+                            { _id: roomId, 'room._id': chatId, 'room.id': userId },
+                            {
+                                $set: {
+                                    'room.$[delete].text.t': value,
+                                    'room.$[delete].imageOrVideos': imagesOrVideos,
+                                    'room.$[delete].update': seenBy.includes(id_other) ? userId : 'changed',
+                                    'room.$[delete].updatedAt': new Date(),
+                                },
+                            },
+                            {
+                                new: true,
+                                arrayFilters: [
+                                    {
+                                        'delete._id': chatId,
+                                        'delete.id': userId, // Replace with the specific element ID you want to update
+                                    },
+                                ],
+                            },
+                        );
+                        console.log(re, 'result,re');
+                    }
+                }
+                console.log(res, 'result');
             } catch (error) {
                 reject(error);
             }

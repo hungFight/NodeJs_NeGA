@@ -46,47 +46,43 @@ export const redisClient = new Redis({
 });
 io.on('connection', (client: any) => {
     console.log('conn');
-    client.on('joinRoom', (roomName: string) => {
-        console.log(roomName, 'roomName');
 
-        client.join(roomName); // The client joins the specified room
-    });
-    Array.from(connection).map((id) => {
-        client.on(
-            `user_${id}_in_roomChat_personal_writing`,
-            (res: { roomId: string; id_other: string; value: number }) => {
-                client.broadcast.emit(`user_${res.id_other}_in_roomChat_${res.roomId}_personal_receive`, {
-                    length: res.value,
-                    id: res.id_other,
-                });
-            },
-        );
-        client.on(
-            `user_${id}_in_roomChat_personal_receive_and_saw`,
-            async (data: { userIdReceived: string; idSent: string; idChat: string }) => {
-                await RoomChats.findOneAndUpdate(
-                    {
-                        id_us: { $all: [data.idSent, data.userIdReceived] },
-                        'room._id': data.idChat,
-                    },
-                    {
-                        $addToSet: {
-                            'room.$[].seenBy': data.userIdReceived, //push all elements in the seenBy document and unique
-                        },
-                    },
-                );
-                client.broadcast.emit(`user_${data.idSent}_in_roomChat_personal_receive_and_saw_other`, data);
-            },
-        );
-    });
     client.on('sendId', (res: string) => {
         // sent to client
         connection.add(res);
         client.userId = res;
         if (client.userId) redisClient.del(`online_duration: ${client.userId}`);
-        console.log('user connected', res);
+        console.log('user connected', res, Array.from(connection));
         client.emit('user connectedd', JSON.stringify(Array.from(connection)));
         client.broadcast.emit('user connectedd', JSON.stringify(Array.from(connection)));
+        Array.from(connection).map((id) => {
+            client.on(
+                `user_${id}_in_roomChat_personal_writing`,
+                (res: { roomId: string; id_other: string; value: number }) => {
+                    client.broadcast.emit(`user_${res.id_other}_in_roomChat_${res.roomId}_personal_receive`, {
+                        length: res.value,
+                        id: res.id_other,
+                    });
+                },
+            );
+            client.on(
+                `user_${id}_in_roomChat_personal_receive_and_saw`,
+                async (data: { userIdReceived: string; idSent: string; idChat: string }) => {
+                    await RoomChats.findOneAndUpdate(
+                        {
+                            id_us: { $all: [data.idSent, data.userIdReceived] },
+                            'room._id': data.idChat,
+                        },
+                        {
+                            $addToSet: {
+                                'room.$[].seenBy': data.userIdReceived, //push all elements in the seenBy document and unique
+                            },
+                        },
+                    );
+                    client.broadcast.emit(`user_${data.idSent}_in_roomChat_personal_receive_and_saw_other`, data);
+                },
+            );
+        });
     });
     client.on('disconnect', () => {
         const currentDate = moment(new Date()).format('YYYY-MM-DD HH:mm:ss');

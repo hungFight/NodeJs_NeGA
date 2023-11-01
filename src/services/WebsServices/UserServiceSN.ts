@@ -35,18 +35,13 @@ class UserService {
     getById(id: string, id_reqs: string[], params: PropsParams, mores: PropsParamsMores, first?: string) {
         return new Promise(async (resolve: any, reject: (arg0: unknown) => void) => {
             try {
-                const attrF = ['idCurrentUser', 'idFriend', 'level', 'createdAt'];
-                const attrFl = ['id_following', 'id_followed', 'flwing', 'flwed', 'createdAt', 'updatedAt'];
                 if (first) {
                     const data = await prisma.user.findUnique({
                         where: { id: id },
                         select: params,
                     });
-                    console.log(data, 'data');
-
                     if (data) resolve(data);
                 } else {
-                    console.log(id_reqs, '({ status: 1, data: data })');
                     const data = await prisma.user.findMany({
                         where: { id: { in: id_reqs } },
                         select: {

@@ -138,6 +138,10 @@ class AuthServices {
                         resolve({ status: 404, message: 'Error getting refresh token in Redis' });
                     }
                     if (count) {
+                        const currentDate = moment(new Date()).format('YYYY-MM-DD HH:mm:ss');
+                        redisClient.set(`online_duration: ${userId}`, currentDate, () => {
+                            redisClient.expire(`online_duration: ${userId}`, 24 * 60 * 60);
+                        });
                         resolve({ status: 200, message: 'Logged out !' });
                     } else {
                         resolve({ status: 401, message: 'unauthorized !' });

@@ -6,13 +6,15 @@ class VerifyService {
     verifyOTP(phoneMail: string, otp: string) {
         return new Promise(async (resolve, reject) => {
             try {
-                const data = await VerifyMail.find({ email: phoneMail }).exec();
                 const users = await prisma.user.findMany({
                     where: { phoneNumberEmail: phoneMail },
                     select: {
                         id: true,
                     },
                 });
+                if (!users.length) resolve({ status: 0, message: "Account doesn't exist" });
+                const data = await VerifyMail.find({ email: phoneMail }).exec();
+
                 if (data.length > 0) {
                     const d: any = data[data.length - 1].createdAt;
                     const date = new Date(d);
@@ -36,7 +38,7 @@ class VerifyService {
                     const oldDate = moment(a);
                     const curDate = moment(b);
                     const checkDate: boolean = curDate.diff(oldDate) < 65000;
-                    const checkOTP = await bcrypt.compareSync(otp, data[data.length - 1].otp);
+                    const checkOTP = bcrypt.compareSync(otp, data[data.length - 1].otp);
                     if (checkOTP && checkDate) console.log(checkDate, checkOTP, curDate.diff(oldDate));
                     if (checkDate) {
                         if (checkOTP) resolve({ status: 1, message: 'ok', acc: users.length });

@@ -36,13 +36,14 @@ const chats = new Schema(
                 imageOrVideos: [
                     {
                         type: { type: String, maxLength: 20 },
-                        _id: { type: String, maxLength: 50, unique: true },
+                        _id: { type: String, maxLength: 50 },
                         v: { type: String, maxLength: 50 },
                         icon: { type: String, maxLength: 1, default: '' },
                     },
                     { _id: false },
                 ],
                 delete: { type: String, maxLength: 50, default: '' },
+                update: { type: String, maxLength: 50, default: '' },
                 seenBy: { type: [String], maxLength: 50 },
                 createdAt: { type: Date, default: Date.now() },
                 updatedAt: { type: Date, default: '' },

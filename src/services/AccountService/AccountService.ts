@@ -6,7 +6,7 @@ class Account {
     get(phoneMail: string) {
         return new Promise(async (resolve, reject) => {
             try {
-                const user = await prisma.user.findMany({
+                const users = await prisma.user.findMany({
                     where: { phoneNumberEmail: phoneMail },
                     select: {
                         id: true,
@@ -15,8 +15,8 @@ class Account {
                         gender: true,
                     },
                 });
-                if (user.length > 0) {
-                    resolve(user);
+                if (users.length > 0) {
+                    resolve(users);
                 } else {
                     reject(false);
                 }

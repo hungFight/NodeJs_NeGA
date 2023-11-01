@@ -190,12 +190,14 @@ class SendChat {
             const value: string = req.body.value;
             const userIdCur = req.cookies.k_user;
             const userId: string = req.body.userId;
+            const id_other: string = req.body.id_other;
+            const files = req.files;
             console.log(roomId, chatId);
 
-            if (!roomId || !chatId)
-                throw new NotFound('updateChat UP', 'roomId, userId or chatId or userId not provided');
+            if (!roomId || !chatId || !id_other)
+                throw new NotFound('updateChat UP', 'roomId, userId, id_other or chatId or userId not provided');
             if (userId === userIdCur) {
-                const data = await SendChatServiceSN.updateChat(roomId, chatId, userId, value);
+                const data = await SendChatServiceSN.updateChat(roomId, chatId, userId, id_other, value, files);
                 return res.status(200).json(data);
             }
             throw new Forbidden('updateChat Down', 'You are no allowed!');
