@@ -90,7 +90,7 @@ class SendChat {
             const id_other = req.query.id_other;
             const limit = req.query.limit;
             const offset: number = req.query.offset;
-            const moreChat = req.query.moreChat;
+            const moreChat: string = req.query.moreChat;
 
             if (id_other) {
                 const data: any = await SendChatServiceSN.getChat(
@@ -101,18 +101,22 @@ class SendChat {
                     Number(offset),
                     moreChat,
                 );
-                if (Number(offset) === 0 && data._id) {
-                    // get and send seenBy to other
-                    for (let i = 0; i < data.room.length; i++) {
-                        if (data.room[i].id === id_other) {
-                            io.emit(`phrase_chatRoom_response_${data?._id}_${data?.user?.id}`, data?.room[i]?._id);
-                            break;
+
+                if (data) {
+                    if (Number(offset) === 0) {
+                        // get and send seenBy to other
+                        if (moreChat === 'false') {
+                            for (let i = 0; i < data.room.length; i++) {
+                                if (data.room[i].id === id_other) {
+                                    io.emit(`phrase_chatRoom_response_${data._id}_${data.user.id}`, data?.room[i]._id);
+                                    break;
+                                }
+                            }
                         }
                     }
+                    return res.status(200).json(data);
                 }
-                console.log('come phrase_chatRoom_response', data._id, offset);
-
-                return res.status(200).json(data);
+                throw new NotFound('GetChat', 'Conversation is Not Found ');
             }
             throw new NotFound('GetChat', 'Not Found id_room or id_other');
         } catch (error) {

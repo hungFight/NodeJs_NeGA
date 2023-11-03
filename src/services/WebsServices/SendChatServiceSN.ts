@@ -1,6 +1,7 @@
 import { RoomChats } from '../../models/mongodb/chats';
 import DateTime from '../../DateTimeCurrent/DateTimeCurrent';
 import { prisma } from '../..';
+import XOAuth2 from 'nodemailer/lib/xoauth2';
 const { ObjectId } = require('mongodb');
 
 export interface PropsRoomChat {
@@ -197,7 +198,7 @@ class SendChatService {
             }
         });
     }
-    getChat(id_room: string, id: string, id_other: string, limit: number, offset: number, moreChat: boolean) {
+    getChat(id_room: string, id: string, id_other: string, limit: number, offset: number, moreChat: string) {
         return new Promise(async (resolve, reject) => {
             try {
                 console.log(id_room, id, id_other, limit, offset, ' get  chats');
@@ -262,7 +263,7 @@ class SendChatService {
                 });
 
                 let Group;
-                if (moreChat === true) {
+                if (moreChat === 'true') {
                     Group = {
                         _id: '$_id',
                         room: { $push: '$room' },
@@ -278,7 +279,7 @@ class SendChatService {
                         createdAt: { $first: '$createdAt' },
                     };
                 }
-                console.log(Group, 'user chats', id_other, moreChat);
+                console.log(Group, 'user chats', id_other, moreChat, offset);
 
                 if (id_room) {
                     const roomCh: any = await RoomChats.findOne({ _id: id_room }).select('-room');
@@ -355,7 +356,7 @@ class SendChatService {
                     if (check && createdAt) {
                         if (id_roomChat) {
                             const roomChat = await RoomChats.aggregate([
-                                { $match: { _id: id_roomChat._id } }, // Match the document with the specified roomId
+                                { $match: { _id: id_roomChat?._id } }, // Match the document with the specified roomId
                                 { $unwind: '$room' }, // Unwind the room array
                                 { $match: { 'room.createdAt': { $gt: createdAt } } },
                                 { $sort: { 'room.createdAt': -1 } }, // Sort by createdAt field in descending order
@@ -365,13 +366,15 @@ class SendChatService {
                                     $group: Group,
                                 }, // Group the documents and reconstruct the room array
                             ]);
+
                             if (roomChat.length) {
                                 roomChat[0].user = user;
                                 resolve(roomChat[0]);
                             }
-                            if (!moreChat) {
+                            if (moreChat === 'false') {
                                 id_roomChat.user = user;
                                 id_roomChat.room = [];
+                                console.log(roomChat, 'roomChat', moreChat);
                                 resolve(id_roomChat);
                             } else {
                                 resolve(null);
@@ -488,14 +491,15 @@ class SendChatService {
         // delete both side
         return new Promise(async (resolve, reject) => {
             try {
+                const date = new Date();
                 const res = await RoomChats.updateOne(
                     { _id: roomId, 'room._id': chatId, 'room.id': userId },
                     {
                         $set: {
-                            'room.$[delete].text': { t: '', icon: '' },
+                            'room.$[delete].text': { t: '' },
                             'room.$[delete].imageOrVideos': [],
                             'room.$[delete].delete': 'all',
-                            'room.$[delete].updatedAt': new Date(),
+                            'room.$[delete].updatedAt': date,
                         },
                     },
                     {
@@ -508,7 +512,11 @@ class SendChatService {
                         ],
                     },
                 );
-                resolve(res.acknowledged);
+                if (res.acknowledged) {
+                    resolve(date);
+                } else {
+                    resolve(null);
+                }
             } catch (error) {
                 reject(error);
             }
@@ -518,12 +526,13 @@ class SendChatService {
         // delete both side
         return new Promise(async (resolve, reject) => {
             try {
+                const date = new Date();
                 const res = await RoomChats.updateOne(
                     { _id: roomId, 'room._id': chatId, 'room.id': userId },
                     {
                         $set: {
                             'room.$[delete].delete': userId,
-                            'room.$[delete].updatedAt': new Date(),
+                            'room.$[delete].updatedAt': date,
                         },
                     },
                     {
@@ -536,7 +545,10 @@ class SendChatService {
                         ],
                     },
                 );
-                resolve(res.acknowledged);
+                if (res.acknowledged) {
+                    resolve(date);
+                }
+                resolve(null);
                 // const res = await RoomChats.updateOne(
                 //     { _id: roomId },
                 //     { $pull: { room: { _id: chatId, id: userId } } },
@@ -566,17 +578,32 @@ class SendChatService {
                     if (imagesOrVideos.length || value) {
                         const seenBy: string[] = res.room[0].seenBy ?? [];
                         console.log(seenBy, 'seenBy');
-
+                        let $set = {};
+                        if (value && !imagesOrVideos.length) {
+                            $set = {
+                                'room.$[delete].text.t': value,
+                                'room.$[delete].update': seenBy.includes(id_other) ? userId : 'changed',
+                                'room.$[delete].updatedAt': new Date(),
+                            };
+                        }
+                        if (imagesOrVideos.length && !value) {
+                            $set = {
+                                'room.$[delete].imageOrVideos': imagesOrVideos,
+                                'room.$[delete].update': seenBy.includes(id_other) ? userId : 'changed',
+                                'room.$[delete].updatedAt': new Date(),
+                            };
+                        }
+                        if (value && imagesOrVideos.length) {
+                            $set = {
+                                'room.$[delete].text.t': value,
+                                'room.$[delete].imageOrVideos': imagesOrVideos,
+                                'room.$[delete].update': seenBy.includes(id_other) ? userId : 'changed',
+                                'room.$[delete].updatedAt': new Date(),
+                            };
+                        }
                         const re = await RoomChats.updateOne(
                             { _id: roomId, 'room._id': chatId, 'room.id': userId },
-                            {
-                                $set: {
-                                    'room.$[delete].text.t': value,
-                                    'room.$[delete].imageOrVideos': imagesOrVideos,
-                                    'room.$[delete].update': seenBy.includes(id_other) ? userId : 'changed',
-                                    'room.$[delete].updatedAt': new Date(),
-                                },
-                            },
+                            { $set },
                             {
                                 new: true,
                                 arrayFilters: [
@@ -587,10 +614,17 @@ class SendChatService {
                                 ],
                             },
                         );
-                        console.log(re, 'result,re');
+                        if (re.acknowledged) {
+                            const rec: any = await RoomChats.findOne(
+                                { _id: roomId, 'room._id': chatId },
+                                { 'room.$': 1 },
+                            );
+                            resolve(rec.room[0]);
+                        } else {
+                            resolve(null);
+                        }
                     }
                 }
-                console.log(res, 'result');
             } catch (error) {
                 reject(error);
             }
