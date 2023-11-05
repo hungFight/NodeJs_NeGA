@@ -274,6 +274,7 @@ class SendChatService {
                         id_us: { $first: '$id_us' },
                         background: { $first: '$background' },
                         status: { $first: '$status' },
+                        pins: { $first: '$pins' },
                         room: { $push: '$room' },
                         deleted: { $first: '$deleted' },
                         createdAt: { $first: '$createdAt' },
@@ -440,7 +441,7 @@ class SendChatService {
                             _id: id_room,
                         },
                         {
-                            $addToSet: { deleted: { id: id, createdAt: DateTime(), show: true } as any },
+                            $addToSet: { deleted: { id: id, createdAt: DateTime(), show: true } as any }, // push with unique
                         },
                         { new: true },
                     ).select('deleted');
@@ -487,13 +488,13 @@ class SendChatService {
             }
         });
     }
-    delChatAll(roomId: string, chatId: string, userId: string) {
+    delChatAll(conversationId: string, chatId: string, userId: string) {
         // delete both side
         return new Promise(async (resolve, reject) => {
             try {
                 const date = new Date();
                 const res = await RoomChats.updateOne(
-                    { _id: roomId, 'room._id': chatId, 'room.id': userId },
+                    { _id: conversationId, 'room._id': chatId, 'room.id': userId },
                     {
                         $set: {
                             'room.$[delete].text': { t: '' },
@@ -522,13 +523,13 @@ class SendChatService {
             }
         });
     }
-    delChatSelf(roomId: string, chatId: string, userId: string) {
+    delChatSelf(conversationId: string, chatId: string, userId: string) {
         // delete both side
         return new Promise(async (resolve, reject) => {
             try {
                 const date = new Date();
                 const res = await RoomChats.updateOne(
-                    { _id: roomId, 'room._id': chatId, 'room.id': userId },
+                    { _id: conversationId, 'room._id': chatId, 'room.id': userId },
                     {
                         $set: {
                             'room.$[delete].delete': userId,
@@ -550,7 +551,7 @@ class SendChatService {
                 }
                 resolve(null);
                 // const res = await RoomChats.updateOne(
-                //     { _id: roomId },
+                //     { _id: conversationId },
                 //     { $pull: { room: { _id: chatId, id: userId } } },
                 // );
             } catch (error) {
@@ -558,7 +559,7 @@ class SendChatService {
             }
         });
     }
-    updateChat(roomId: string, chatId: string, userId: string, id_other: string, value: string, files: any) {
+    updateChat(conversationId: string, chatId: string, userId: string, id_other: string, value: string, files: any) {
         // delete both side
         return new Promise(async (resolve, reject) => {
             try {
@@ -572,12 +573,10 @@ class SendChatService {
                         imagesOrVideos.push({ _id: id.id, v: id.id, icon: '', type: id.type });
                     }
                 }
-                console.log(files, imagesOrVideos, 'imagesOrVideos');
-                const res: any = await RoomChats.findOne({ _id: roomId, 'room._id': chatId }, { 'room.$': 1 });
+                const res: any = await RoomChats.findOne({ _id: conversationId, 'room._id': chatId }, { 'room.$': 1 });
                 if (res?.room.length) {
                     if (imagesOrVideos.length || value) {
                         const seenBy: string[] = res.room[0].seenBy ?? [];
-                        console.log(seenBy, 'seenBy');
                         let $set = {};
                         if (value && !imagesOrVideos.length) {
                             $set = {
@@ -602,7 +601,7 @@ class SendChatService {
                             };
                         }
                         const re = await RoomChats.updateOne(
-                            { _id: roomId, 'room._id': chatId, 'room.id': userId },
+                            { _id: conversationId, 'room._id': chatId, 'room.id': userId },
                             { $set },
                             {
                                 new: true,
@@ -616,7 +615,7 @@ class SendChatService {
                         );
                         if (re.acknowledged) {
                             const rec: any = await RoomChats.findOne(
-                                { _id: roomId, 'room._id': chatId },
+                                { _id: conversationId, 'room._id': chatId },
                                 { 'room.$': 1 },
                             );
                             resolve(rec.room[0]);
@@ -625,6 +624,65 @@ class SendChatService {
                         }
                     }
                 }
+            } catch (error) {
+                reject(error);
+            }
+        });
+    }
+    pin(conversationId: string, chatId: string, userId: string) {
+        // delete both side
+        return new Promise(async (resolve, reject) => {
+            try {
+                const date = new Date();
+                const res = await RoomChats.findOneAndUpdate(
+                    { _id: conversationId, 'pins.chatId': { $ne: chatId } }, // $ne check chatId in pins, did it exist? if yes it won't be updated
+                    {
+                        $addToSet: { pins: { chatId, userId, createdAt: date } }, // push an element into pins
+                    },
+                    { new: true },
+                ).select('pins');
+                if (res) {
+                    resolve(res.pins);
+                }
+                resolve(null);
+            } catch (error) {
+                reject(error);
+            }
+        });
+    }
+    getPins(conversationId: string, pins: string[]) {
+        // delete both side
+        return new Promise(async (resolve, reject) => {
+            try {
+                const res = await RoomChats.aggregate([
+                    // Match documents with the specified conversationId
+                    {
+                        $match: {
+                            _id: ObjectId(conversationId), // Convert to ObjectId if not already
+                        },
+                    },
+                    // Unwind the 'room' array to work with its elements
+                    {
+                        $unwind: '$room',
+                    },
+                    // Filter 'room' elements where '_id' is in the 'pins' array
+                    {
+                        $match: {
+                            'room._id': { $in: pins },
+                        },
+                    },
+                    // Group the filtered elements back into an array
+                    {
+                        $group: {
+                            _id: '$_id', // Group by the conversation document's _id
+                            room: { $push: '$room' },
+                        },
+                    },
+                ]);
+                if (res?.length) {
+                    resolve(res[0].room);
+                }
+                resolve(null);
             } catch (error) {
                 reject(error);
             }

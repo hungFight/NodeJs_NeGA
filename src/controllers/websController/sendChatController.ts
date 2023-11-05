@@ -151,16 +151,16 @@ class SendChat {
     };
     delChatAll = async (req: express.Request, res: express.Response, next: express.NextFunction) => {
         try {
-            const roomId = req.body.roomId;
+            const conversationId = req.body.conversationId;
             const chatId = req.body.chatId;
             const userId = req.body.userId;
             const userIdCur = req.cookies.k_user;
-            console.log(roomId, chatId, userId);
+            console.log(conversationId, chatId, userId);
 
-            if (!roomId || !chatId || !userId)
-                throw new NotFound('delChatAll', 'roomId, userId or chatId or userId not provided');
+            if (!conversationId || !chatId || !userId)
+                throw new NotFound('delChatAll', 'conversationId, userId or chatId or userId not provided');
             if (userId === userIdCur) {
-                const data = await SendChatServiceSN.delChatAll(roomId, chatId, userId);
+                const data = await SendChatServiceSN.delChatAll(conversationId, chatId, userId);
                 return res.status(200).json(data);
             }
             throw new Forbidden('DelChatALL', 'You are no allowed!');
@@ -170,16 +170,16 @@ class SendChat {
     };
     delChatSelf = async (req: express.Request, res: express.Response, next: express.NextFunction) => {
         try {
-            const roomId = req.body.roomId;
+            const conversationId = req.body.conversationId;
             const chatId = req.body.chatId;
             const userId = req.body.userId;
             const userIdCur = req.cookies.k_user;
-            console.log(roomId, chatId, userId);
+            console.log(conversationId, chatId, userId);
 
-            if (!roomId || !chatId || !userId)
-                throw new NotFound('delChatAll', 'roomId, userId or chatId or userId not provided');
+            if (!conversationId || !chatId || !userId)
+                throw new NotFound('delChatAll', 'conversationId, userId or chatId or userId not provided');
             if (userId === userIdCur) {
-                const data = await SendChatServiceSN.delChatSelf(roomId, chatId, userId);
+                const data = await SendChatServiceSN.delChatSelf(conversationId, chatId, userId);
                 return res.status(200).json(data);
             }
             throw new Forbidden('DelChatALL', 'You are no allowed!');
@@ -189,22 +189,51 @@ class SendChat {
     };
     updateChat = async (req: express.Request, res: express.Response, next: express.NextFunction) => {
         try {
-            const roomId: string = req.body.roomId;
+            const conversationId: string = req.body.conversationId;
             const chatId: string = req.body.id_chat;
             const value: string = req.body.value;
             const userIdCur = req.cookies.k_user;
             const userId: string = req.body.userId;
             const id_other: string = req.body.id_other;
             const files = req.files;
-            console.log(roomId, chatId);
+            console.log(conversationId, chatId);
 
-            if (!roomId || !chatId || !id_other)
-                throw new NotFound('updateChat UP', 'roomId, userId, id_other or chatId or userId not provided');
+            if (!conversationId || !chatId || !id_other)
+                throw new NotFound(
+                    'updateChat UP',
+                    'conversationId, userId, id_other or chatId or userId not provided',
+                );
             if (userId === userIdCur) {
-                const data = await SendChatServiceSN.updateChat(roomId, chatId, userId, id_other, value, files);
+                const data = await SendChatServiceSN.updateChat(conversationId, chatId, userId, id_other, value, files);
                 return res.status(200).json(data);
             }
             throw new Forbidden('updateChat Down', 'You are no allowed!');
+        } catch (error) {
+            next(error);
+        }
+    };
+    pin = async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+        try {
+            const conversationId: string = req.body.conversationId;
+            const chatId: string = req.body.chatId;
+            const userId: string = req.body.userId;
+
+            if (!conversationId || !chatId || !userId)
+                throw new NotFound('Pin chat', 'conversationId, userId, chatId or chatId or userId not provided');
+            const data = await SendChatServiceSN.pin(conversationId, chatId, userId);
+            return res.status(200).json(data);
+        } catch (error) {
+            next(error);
+        }
+    };
+    getPins = async (req: any, res: express.Response, next: express.NextFunction) => {
+        try {
+            const conversationId = req.query.conversationId;
+            const pins = req.query.pins;
+            if (!conversationId || !pins?.length)
+                throw new NotFound('getPin chat', 'conversationId, pins  not provided');
+            const data = await SendChatServiceSN.getPins(conversationId, pins);
+            return res.status(200).json(data);
         } catch (error) {
             next(error);
         }

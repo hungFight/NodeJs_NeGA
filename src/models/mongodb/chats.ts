@@ -25,6 +25,14 @@ const chats = new Schema(
         status: { type: String, maxLength: 11 },
         first: { id: { type: String, maxLength: 50 } },
         background: { type: String, maxLength: 50 },
+        pins: [
+            {
+                chatId: { type: String, maxLength: 50 },
+                userId: { type: String, maxLength: 50 },
+                createdAt: { type: Date, default: Date.now() },
+                updatedAt: { type: Date, default: '' },
+            },
+        ],
         room: [
             {
                 id: { type: String, required: true, maxLength: 50 },

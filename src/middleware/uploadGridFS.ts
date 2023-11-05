@@ -74,7 +74,7 @@ export const upload = multer({
     }),
 });
 class FileGridFs {
-    getFile = async (req: any, res: any) => {
+    getFile = async (req: any, res?: any) => {
         const id_file = req.query.id_file;
         const type = req.query.type;
         console.log(id_file, 'id_file send');

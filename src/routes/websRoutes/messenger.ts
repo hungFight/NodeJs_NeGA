@@ -14,5 +14,7 @@ router.post('/delChatAll', uploadGridFS.delete, sendChatController.delChatAll);
 router.post('/updateChat', upload.array('files'), sendChatController.updateChat);
 router.post('/delChatSelf', sendChatController.delChatSelf);
 router.post('/undo', sendChatController.undo);
+router.post('/pin', sendChatController.pin);
+router.get('/getPins', sendChatController.getPins);
 router.use(errorHandler);
 export default router;
