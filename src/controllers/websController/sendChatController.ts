@@ -217,10 +217,17 @@ class SendChat {
             const conversationId: string = req.body.conversationId;
             const chatId: string = req.body.chatId;
             const userId: string = req.body.userId;
+            const latestChatId: string = req.body.latestChatId;
 
-            if (!conversationId || !chatId || !userId)
-                throw new NotFound('Pin chat', 'conversationId, userId, chatId or chatId or userId not provided');
-            const data = await SendChatServiceSN.pin(conversationId, chatId, userId);
+            if (!conversationId || !chatId || !userId || !latestChatId)
+                throw new NotFound(
+                    'Pin chat',
+                    'conversationId, userId, chatId, latestChatId or chatId or userId not provided',
+                );
+            const data = await SendChatServiceSN.pin(conversationId, chatId, userId, latestChatId);
+            if (data) {
+                io.emit(`conversation_pins_room_${conversationId}`, data);
+            }
             return res.status(200).json(data);
         } catch (error) {
             next(error);
@@ -233,6 +240,20 @@ class SendChat {
             if (!conversationId || !pins?.length)
                 throw new NotFound('getPin chat', 'conversationId, pins  not provided');
             const data = await SendChatServiceSN.getPins(conversationId, pins);
+            return res.status(200).json(data);
+        } catch (error) {
+            next(error);
+        }
+    };
+    deletePin = async (req: any, res: express.Response, next: express.NextFunction) => {
+        try {
+            const conversationId = req.query.conversationId;
+            const pinId = req.query.pinId;
+            if (!conversationId || !pinId) throw new NotFound('deletePin chat', 'conversationId, pinId  not provided');
+            const data = await SendChatServiceSN.deletePin(conversationId, pinId);
+            if (data) {
+                io.emit(`conversation_deletedPin_room_${conversationId}`, pinId);
+            }
             return res.status(200).json(data);
         } catch (error) {
             next(error);

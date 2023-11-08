@@ -16,5 +16,6 @@ router.post('/delChatSelf', sendChatController.delChatSelf);
 router.post('/undo', sendChatController.undo);
 router.post('/pin', sendChatController.pin);
 router.get('/getPins', sendChatController.getPins);
+router.delete('/deletePin', sendChatController.deletePin);
 router.use(errorHandler);
 export default router;

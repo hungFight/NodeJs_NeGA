@@ -2,6 +2,7 @@ import { RoomChats } from '../../models/mongodb/chats';
 import DateTime from '../../DateTimeCurrent/DateTimeCurrent';
 import { prisma } from '../..';
 import XOAuth2 from 'nodemailer/lib/xoauth2';
+import { v4 as primaryKey } from 'uuid';
 const { ObjectId } = require('mongodb');
 
 export interface PropsRoomChat {
@@ -573,31 +574,31 @@ class SendChatService {
                         imagesOrVideos.push({ _id: id.id, v: id.id, icon: '', type: id.type });
                     }
                 }
-                const res: any = await RoomChats.findOne({ _id: conversationId, 'room._id': chatId }, { 'room.$': 1 });
+                const res: any = await RoomChats.findOne({ _id: conversationId, 'room._id': chatId }, { 'room.$': 1 }); // it's an array
                 if (res?.room.length) {
                     if (imagesOrVideos.length || value) {
                         const seenBy: string[] = res.room[0].seenBy ?? [];
                         let $set = {};
                         if (value && !imagesOrVideos.length) {
                             $set = {
-                                'room.$[delete].text.t': value,
-                                'room.$[delete].update': seenBy.includes(id_other) ? userId : 'changed',
-                                'room.$[delete].updatedAt': new Date(),
+                                'room.$[roomId].text.t': value,
+                                'room.$[roomId].update': seenBy.includes(id_other) ? userId : 'changed',
+                                'room.$[roomId].updatedAt': new Date(),
                             };
                         }
                         if (imagesOrVideos.length && !value) {
                             $set = {
-                                'room.$[delete].imageOrVideos': imagesOrVideos,
-                                'room.$[delete].update': seenBy.includes(id_other) ? userId : 'changed',
-                                'room.$[delete].updatedAt': new Date(),
+                                'room.$[roomId].imageOrVideos': imagesOrVideos,
+                                'room.$[roomId].update': seenBy.includes(id_other) ? userId : 'changed',
+                                'room.$[roomId].updatedAt': new Date(),
                             };
                         }
                         if (value && imagesOrVideos.length) {
                             $set = {
-                                'room.$[delete].text.t': value,
-                                'room.$[delete].imageOrVideos': imagesOrVideos,
-                                'room.$[delete].update': seenBy.includes(id_other) ? userId : 'changed',
-                                'room.$[delete].updatedAt': new Date(),
+                                'room.$[roomId].text.t': value,
+                                'room.$[roomId].imageOrVideos': imagesOrVideos,
+                                'room.$[roomId].update': seenBy.includes(id_other) ? userId : 'changed',
+                                'room.$[roomId].updatedAt': new Date(),
                             };
                         }
                         const re = await RoomChats.updateOne(
@@ -607,8 +608,8 @@ class SendChatService {
                                 new: true,
                                 arrayFilters: [
                                     {
-                                        'delete._id': chatId,
-                                        'delete.id': userId, // Replace with the specific element ID you want to update
+                                        'roomId._id': chatId,
+                                        'roomId.id': userId, // Replace with the specific element ID you want to update
                                     },
                                 ],
                             },
@@ -629,20 +630,24 @@ class SendChatService {
             }
         });
     }
-    pin(conversationId: string, chatId: string, userId: string) {
+    pin(conversationId: string, chatId: string, userId: string, latestChatId: string) {
         // delete both side
         return new Promise(async (resolve, reject) => {
             try {
                 const date = new Date();
-                const res = await RoomChats.findOneAndUpdate(
+                const _id = primaryKey();
+                const res = await RoomChats.updateOne(
                     { _id: conversationId, 'pins.chatId': { $ne: chatId } }, // $ne check chatId in pins, did it exist? if yes it won't be updated
                     {
-                        $addToSet: { pins: { chatId, userId, createdAt: date } }, // push an element into pins
+                        $addToSet: { pins: { chatId, userId, createdAt: date, latestChatId, _id } }, // push an element into pins
                     },
-                    { new: true },
-                ).select('pins');
-                if (res) {
-                    resolve(res.pins);
+
+                    {
+                        new: true,
+                    },
+                );
+                if (res.acknowledged) {
+                    resolve({ chatId, userId, createdAt: date, latestChatId, _id });
                 }
                 resolve(null);
             } catch (error) {
@@ -683,6 +688,23 @@ class SendChatService {
                     resolve(res[0].room);
                 }
                 resolve(null);
+            } catch (error) {
+                reject(error);
+            }
+        });
+    }
+    deletePin(conversationId: string, pinId: string) {
+        // delete both side
+        return new Promise(async (resolve, reject) => {
+            try {
+                const res = await RoomChats.updateOne(
+                    {
+                        _id: conversationId,
+                    },
+                    { $pull: { pins: { _id: pinId } } },
+                    { new: true },
+                );
+                resolve(res.acknowledged);
             } catch (error) {
                 reject(error);
             }
