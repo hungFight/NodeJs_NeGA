@@ -161,6 +161,9 @@ class SendChat {
                 throw new NotFound('delChatAll', 'conversationId, userId or chatId or userId not provided');
             if (userId === userIdCur) {
                 const data = await SendChatServiceSN.delChatAll(conversationId, chatId, userId);
+                if (data) {
+                    io.emit(`Conversation_chat_deleteAll_${conversationId}`, { userId, updatedAt: data, chatId });
+                }
                 return res.status(200).json(data);
             }
             throw new Forbidden('DelChatALL', 'You are no allowed!');
@@ -205,6 +208,9 @@ class SendChat {
                 );
             if (userId === userIdCur) {
                 const data = await SendChatServiceSN.updateChat(conversationId, chatId, userId, id_other, value, files);
+                if (data) {
+                    io.emit(`Conversation_chat_update_${conversationId}`, { data, chatId, userId });
+                }
                 return res.status(200).json(data);
             }
             throw new Forbidden('updateChat Down', 'You are no allowed!');
@@ -249,10 +255,12 @@ class SendChat {
         try {
             const conversationId = req.query.conversationId;
             const pinId = req.query.pinId;
-            if (!conversationId || !pinId) throw new NotFound('deletePin chat', 'conversationId, pinId  not provided');
+            const roomId = req.query.roomId;
+            if (!conversationId || !pinId || !roomId)
+                throw new NotFound('deletePin chat', 'conversationId, pinId, roomId  not provided');
             const data = await SendChatServiceSN.deletePin(conversationId, pinId);
             if (data) {
-                io.emit(`conversation_deletedPin_room_${conversationId}`, pinId);
+                io.emit(`conversation_deletedPin_room_${conversationId}`, { pinId, roomId });
             }
             return res.status(200).json(data);
         } catch (error) {
