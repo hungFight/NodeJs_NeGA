@@ -267,5 +267,24 @@ class SendChat {
             next(error);
         }
     };
+    setBackground = async (req: any, res: express.Response, next: express.NextFunction) => {
+        try {
+            const conversationId = req.body.conversationId;
+            const latestChatId = req.body.latestChatId;
+            const userId = req.body.userId;
+            const files = req.files;
+            console.log(files, 'files');
+
+            if (!conversationId || !files || !latestChatId || !userId)
+                throw new NotFound('setBackground chat', 'conversationId, files, latestChatId, userId not provided');
+            const data = await SendChatServiceSN.setBackground(conversationId, files, latestChatId, userId);
+            if (data) {
+                io.emit(`conversation_changeBG_room_${conversationId}`, data);
+            }
+            return res.status(200).json(data);
+        } catch (error) {
+            next(error);
+        }
+    };
 }
 export default new SendChat();

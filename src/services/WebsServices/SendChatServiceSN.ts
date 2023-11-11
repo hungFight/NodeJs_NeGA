@@ -480,7 +480,19 @@ class SendChatService {
                         }, // Group the documents and reconstruct the room array
                     ]);
                     res.room = roomChat[0].room;
-                    console.log('Undo', roomChat[0], res);
+                    const user: any = await prisma.user.findUnique({
+                        // one
+                        where: {
+                            id: res.id_us.filter((f) => f !== id)[0],
+                        },
+                        select: {
+                            id: true,
+                            avatar: true,
+                            fullName: true,
+                            gender: true,
+                        },
+                    });
+                    if (user) res.user = user;
                     resolve(res);
                 }
                 resolve(false);
@@ -705,6 +717,37 @@ class SendChatService {
                     { new: true },
                 );
                 resolve(res.acknowledged);
+            } catch (error) {
+                reject(error);
+            }
+        });
+    }
+    setBackground(conversationId: string, file: any, latestChatId: string, userId: string) {
+        // delete both side
+        return new Promise(async (resolve, reject) => {
+            try {
+                const ids_file = {
+                    type: file[0].mimetype,
+                    v: file[0].metadata.id_file,
+                    id: file[0].metadata.id_file,
+                    userId,
+                    latestChatId,
+                };
+                const res = await RoomChats.updateOne(
+                    {
+                        _id: conversationId,
+                    },
+                    {
+                        $set: {
+                            background: ids_file,
+                        },
+                    },
+                    { new: true },
+                );
+                if (res.acknowledged) {
+                    resolve(ids_file);
+                }
+                resolve(null);
             } catch (error) {
                 reject(error);
             }

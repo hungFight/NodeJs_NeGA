@@ -23,28 +23,52 @@ export const upload = multer({
         file: async (req, files) => {
             console.log(req.body, files);
             const update: boolean = req.body.update;
+            const background: string = req.body.background;
             const id_files: string[] = req.body.id_filesDel ? JSON.parse(req.body.id_filesDel) : [];
-            if (update && id_files?.length) {
+            console.log(background, 'background delete');
+
+            if ((update && id_files?.length) || background) {
                 try {
+                    const bucket = new mongoose.mongo.GridFSBucket(conn.db, { bucketName: 'uploads' });
                     console.log(id_files, 'id_file delete');
                     // Find the file in GridFS using the id
-                    const bucket = new mongoose.mongo.GridFSBucket(conn.db, { bucketName: 'uploads' });
+                    if (background) {
+                        await gfs.files.findOne(
+                            { metadata: { id_file: background } },
+                            (err: any, file: { _id: any }) => {
+                                // // Delete the file
+                                if (err) console.log(err);
+                                console.log(file, 'delete file');
 
-                    id_files.forEach(async (f) => {
-                        await gfs.files.findOne({ metadata: { id_file: f } }, (err: any, file: { _id: any }) => {
-                            // // Delete the file
-                            if (file) {
-                                bucket
-                                    .delete(file._id)
-                                    .then(() => {
-                                        console.log('File deleted successfully');
-                                    })
-                                    .catch((error) => {
-                                        console.error('Error deleting file:', error);
-                                    });
-                            }
+                                if (file) {
+                                    bucket
+                                        .delete(file._id)
+                                        .then(() => {
+                                            console.log('File deleted successfully');
+                                        })
+                                        .catch((error) => {
+                                            console.error('Error deleting file:', error);
+                                        });
+                                }
+                            },
+                        );
+                    } else {
+                        id_files.forEach(async (f) => {
+                            await gfs.files.findOne({ metadata: { id_file: f } }, (err: any, file: { _id: any }) => {
+                                // // Delete the file
+                                if (file) {
+                                    bucket
+                                        .delete(file._id)
+                                        .then(() => {
+                                            console.log('File deleted successfully');
+                                        })
+                                        .catch((error) => {
+                                            console.error('Error deleting file:', error);
+                                        });
+                                }
+                            });
                         });
-                    });
+                    }
                 } catch (error) {
                     console.log(error, 'update file');
                 }
