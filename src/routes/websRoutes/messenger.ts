@@ -18,5 +18,6 @@ router.post('/pin', sendChatController.pin);
 router.get('/getPins', sendChatController.getPins);
 router.delete('/deletePin', sendChatController.deletePin);
 router.post('/setBackground', upload.array('files'), sendChatController.setBackground);
+router.post('/delBackground', uploadGridFS.delete, sendChatController.delBackground);
 router.use(errorHandler);
 export default router;

@@ -6,6 +6,7 @@ import ServerError from '../utils/errors/ServerError';
 class ExcessiveRequests {
     ip = async (req: express.Request, res: any, next: any) => {
         try {
+            const id = req.cookies.k_user;
             const ip_User = req.socket.remoteAddress || req.ip;
             await new Promise<void>((resolve, reject) => {
                 redisClient.get(ip_User + '_prohibited', async (errGet, prohibit) => {
@@ -19,7 +20,7 @@ class ExcessiveRequests {
                         );
                     } else {
                         await new Promise((resolve, _) => {
-                            redisClient.incr(ip_User, async (err, mun) => {
+                            redisClient.incr(ip_User + ':' + id, async (err, mun) => {
                                 redisClient.expire(ip_User, 60, (err, sTime) => {
                                     // per minute only to be requested up to 25
                                     if (err)

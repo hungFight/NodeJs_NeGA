@@ -176,16 +176,12 @@ class SendChat {
             const conversationId = req.body.conversationId;
             const chatId = req.body.chatId;
             const userId = req.body.userId;
-            const userIdCur = req.cookies.k_user;
             console.log(conversationId, chatId, userId);
 
             if (!conversationId || !chatId || !userId)
                 throw new NotFound('delChatAll', 'conversationId, userId or chatId or userId not provided');
-            if (userId === userIdCur) {
-                const data = await SendChatServiceSN.delChatSelf(conversationId, chatId, userId);
-                return res.status(200).json(data);
-            }
-            throw new Forbidden('DelChatALL', 'You are no allowed!');
+            const data = await SendChatServiceSN.delChatSelf(conversationId, chatId, userId);
+            return res.status(200).json(data);
         } catch (error) {
             next(error);
         }
@@ -280,6 +276,20 @@ class SendChat {
             const data = await SendChatServiceSN.setBackground(conversationId, files, latestChatId, userId);
             if (data) {
                 io.emit(`conversation_changeBG_room_${conversationId}`, data);
+            }
+            return res.status(200).json(data);
+        } catch (error) {
+            next(error);
+        }
+    };
+    delBackground = async (req: any, res: express.Response, next: express.NextFunction) => {
+        try {
+            const conversationId = req.body.conversationId;
+
+            if (!conversationId) throw new NotFound('delBackground chat', 'conversationId not provided');
+            const data = await SendChatServiceSN.delBackground(conversationId);
+            if (data) {
+                io.emit(`conversation_deleteBG_room_${conversationId}`);
             }
             return res.status(200).json(data);
         } catch (error) {

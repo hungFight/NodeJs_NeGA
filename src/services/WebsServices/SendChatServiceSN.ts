@@ -73,7 +73,7 @@ class SendChatService {
                     const room: any = await RoomChats.create({
                         id_us: [id, id_other],
                         status: friend ? 'isFriend' : 'isNotFriend',
-                        background: '',
+                        pin: [],
                         users: [],
                         room: [
                             {
@@ -142,6 +142,7 @@ class SendChatService {
                         $group: {
                             _id: '$_id',
                             createdAt: { $first: '$createdAt' },
+                            background: { $first: '$background' },
                             id_us: { $first: '$id_us' },
                             users: { $first: '$users' },
                             room: { $first: '$room' },
@@ -206,9 +207,9 @@ class SendChatService {
                 const data = {
                     _id: '',
                     id_us: [],
+                    pins: [],
                     user: {},
                     status: '',
-                    background: '',
                     room: [
                         {
                             _id: '',
@@ -542,7 +543,7 @@ class SendChatService {
             try {
                 const date = new Date();
                 const res = await RoomChats.updateOne(
-                    { _id: conversationId, 'room._id': chatId, 'room.id': userId },
+                    { _id: conversationId, 'room._id': chatId },
                     {
                         $set: {
                             'room.$[delete].delete': userId,
@@ -554,7 +555,6 @@ class SendChatService {
                         arrayFilters: [
                             {
                                 'delete._id': chatId,
-                                'delete.id': userId, // Replace with the specific element ID you want to update
                             },
                         ],
                     },
@@ -714,6 +714,27 @@ class SendChatService {
                         _id: conversationId,
                     },
                     { $pull: { pins: { _id: pinId } } },
+                    { new: true },
+                );
+                resolve(res.acknowledged);
+            } catch (error) {
+                reject(error);
+            }
+        });
+    }
+    delBackground(conversationId: string) {
+        // delete both side
+        return new Promise(async (resolve, reject) => {
+            try {
+                const res = await RoomChats.updateOne(
+                    {
+                        _id: conversationId,
+                    },
+                    {
+                        $set: {
+                            background: null,
+                        },
+                    },
                     { new: true },
                 );
                 resolve(res.acknowledged);
