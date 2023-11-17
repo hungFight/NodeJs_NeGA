@@ -12,16 +12,25 @@ class SendChat {
             const id = req.cookies.k_user;
             const value = req.body.value;
             const id_other = req.body.id_others;
-            const id_ = req.body.id_;
-            const id_s = req.body.id_s;
             const id_room = req.body.id_room;
-            console.log(id_room, 'id_room');
+            const id_s = req.body.id_s;
+            const reply = req.body.reply;
+            const conversationId = req.body.conversationId;
+            console.log(conversationId, 'conversationId');
             const files = req.files;
 
-            if (id_other && id_) {
+            if (id_other && id_room) {
                 console.log(id_other, 'id_others');
 
-                const data = await SendChatServiceSN.send(id_room, id, id_other, value, files, id_, id_s);
+                const data = await SendChatServiceSN.send(
+                    conversationId,
+                    id,
+                    id_other,
+                    value,
+                    files,
+                    id_room,
+                    reply ? JSON.parse(reply) : id_s,
+                );
                 const key_redis = id_other + '-' + 'AmountMessageIsNotSeen' + '-' + data._id;
 
                 if (data) {

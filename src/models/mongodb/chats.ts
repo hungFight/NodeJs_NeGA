@@ -65,6 +65,12 @@ const chats = new Schema(
                 createdAt: { type: Date, default: Date.now() },
                 updatedAt: { type: Date, default: '' },
                 secondary: { type: String, required: true, maxLength: 50 },
+                reply: {
+                    id_reply: { type: String, maxLength: 50 },
+                    id_replied: { type: String, maxLength: 50 },
+                    text: { type: String, maxLength: 50 },
+                    imageOrVideos: { type: Boolean, default: false },
+                },
             },
             { _id: false },
         ],

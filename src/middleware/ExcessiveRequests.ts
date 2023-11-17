@@ -30,7 +30,7 @@ class ExcessiveRequests {
                                     throw new ServerError('Increment by Redis in MiddleWare ExcessiveRequests', err);
                                 console.log(mun, 'redisClient');
 
-                                if (mun && mun >= 100) {
+                                if (mun && mun >= Number(process.env.REDIS_EXCESSIVE)) {
                                     redisClient.set(ip_User + '_prohibited', 'true', (err) => {
                                         if (err)
                                             reject(

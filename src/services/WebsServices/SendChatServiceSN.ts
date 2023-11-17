@@ -35,7 +35,22 @@ export interface PropsRoomChat {
 }
 
 class SendChatService {
-    send(id_room: string, id: string, id_other: string, value: string, files: any, _id: string, id_s?: string) {
+    send(
+        conversationId: string,
+        id: string,
+        id_other: string,
+        value: string,
+        files: any,
+        _id_room: string,
+        id_sOrReply?:
+            | string
+            | {
+                  id_reply: string;
+                  id_replied: string;
+                  text: string;
+                  imageOrVideos: boolean;
+              },
+    ) {
         return new Promise<PropsRoomChat>(async (resolve, reject) => {
             try {
                 const ids_file: any = files.map((f: any) => {
@@ -49,9 +64,9 @@ class SendChatService {
                     }
                 }
                 console.log(imagesOrVideos, 'imagesOrVideos');
-                const res = id_room
+                const res = conversationId
                     ? await RoomChats.findOne({
-                          _id: id_room,
+                          _id: conversationId,
                           id_us: { $all: [id, id_other] },
                       })
                     : await RoomChats.findOne({
@@ -78,13 +93,13 @@ class SendChatService {
                         room: [
                             {
                                 id: id,
-                                _id,
+                                _id: _id_room,
                                 text: {
                                     t: value,
                                 },
                                 imagesOrVideos,
                                 createdAt: DateTime(),
-                                secondary: id_s,
+                                secondary: id_sOrReply,
                             },
                         ],
                         createdAt: DateTime(),
@@ -102,15 +117,17 @@ class SendChatService {
                             icon: '',
                         },
                         id: id,
-                        _id,
+                        _id: _id_room,
                         seenBy: [],
                         imageOrVideos: imagesOrVideos,
                         createdAt: DateTime(),
+                        reply: id_sOrReply,
                     };
 
                     const roomUpdate: any = await RoomChats.findOneAndUpdate(
                         {
                             _id: res._id,
+                            'room._id': { $nin: _id_room },
                             id_us: { $all: [id, id_other] }, // only id and id_other
                         },
                         { $push: { room: chat }, $set: { 'deleted.$[elm].show': false } }, // set show to false
@@ -200,10 +217,10 @@ class SendChatService {
             }
         });
     }
-    getChat(id_room: string, id: string, id_other: string, limit: number, offset: number, moreChat: string) {
+    getChat(conversationId: string, id: string, id_other: string, limit: number, offset: number, moreChat: string) {
         return new Promise(async (resolve, reject) => {
             try {
-                console.log(id_room, id, id_other, limit, offset, ' get  chats');
+                console.log(conversationId, id, id_other, limit, offset, ' get  chats');
                 const data = {
                     _id: '',
                     id_us: [],
@@ -227,9 +244,9 @@ class SendChatService {
                     deleted: [],
                     createdAt: '',
                 };
-                if (id_room && id_other) {
+                if (conversationId && id_other) {
                     const seenBy = await RoomChats.findByIdAndUpdate(
-                        { _id: id_room, room: { id: id_other } },
+                        { _id: conversationId, room: { id: id_other } },
                         {
                             $addToSet: {
                                 'room.$[].seenBy': id, //push all elements in the seenBy document and unique
@@ -284,8 +301,8 @@ class SendChatService {
                 }
                 console.log(Group, 'user chats', id_other, moreChat, offset);
 
-                if (id_room) {
-                    const roomCh: any = await RoomChats.findOne({ _id: id_room }).select('-room');
+                if (conversationId) {
+                    const roomCh: any = await RoomChats.findOne({ _id: conversationId }).select('-room');
                     let check = false;
                     let createdAt = '';
                     roomCh?.deleted.forEach((d: { id: string; createdAt: string }) => {
@@ -296,7 +313,7 @@ class SendChatService {
                     });
                     if (check && createdAt) {
                         const roomChat = await RoomChats.aggregate([
-                            { $match: { _id: id_room } }, // Match the document with the specified roomId
+                            { $match: { _id: conversationId } }, // Match the document with the specified roomId
                             { $unwind: '$room' }, // Unwind the room array
                             { $match: { 'room.createdAt': { $gt: createdAt } } },
                             { $sort: { 'room.createdAt': -1 } }, // Sort by createdAt field in descending order
