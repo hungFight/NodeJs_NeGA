@@ -45,7 +45,7 @@ const chats = new Schema(
         room: [
             {
                 id: { type: String, required: true, maxLength: 50 },
-                _id: { type: String, required: true, maxLength: 50 },
+                _id: { type: String, required: true, maxLength: 50, index: true },
                 text: {
                     t: { type: String, text: String },
                     icon: { type: String, default: '' },
@@ -53,7 +53,7 @@ const chats = new Schema(
                 imageOrVideos: [
                     {
                         type: { type: String, maxLength: 20 },
-                        _id: { type: String, maxLength: 50 },
+                        _id: { type: String, maxLength: 50, unique: true },
                         v: { type: String, maxLength: 50 },
                         icon: { type: String, maxLength: 1, default: '' },
                     },
@@ -67,9 +67,18 @@ const chats = new Schema(
                 secondary: { type: String, required: true, maxLength: 50 },
                 reply: {
                     id_reply: { type: String, maxLength: 50 },
+                    id_room: { type: String, maxLength: 50, unique: true },
                     id_replied: { type: String, maxLength: 50 },
                     text: { type: String, maxLength: 50 },
-                    imageOrVideos: { type: Boolean, default: false },
+                    imageOrVideos: [
+                        {
+                            type: { type: String, maxLength: 20 },
+                            _id: { type: String, maxLength: 50 },
+                            v: { type: String, maxLength: 50 },
+                            icon: { type: String, maxLength: 1, default: '' },
+                        },
+                        { _id: false },
+                    ],
                 },
             },
             { _id: false },

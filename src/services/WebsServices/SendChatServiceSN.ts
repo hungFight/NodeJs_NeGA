@@ -48,7 +48,12 @@ class SendChatService {
                   id_reply: string;
                   id_replied: string;
                   text: string;
-                  imageOrVideos: boolean;
+                  imageOrVideos: {
+                      _id: string;
+                      v: any;
+                      icon: string;
+                      type: string;
+                  }[];
               },
     ) {
         return new Promise<PropsRoomChat>(async (resolve, reject) => {
