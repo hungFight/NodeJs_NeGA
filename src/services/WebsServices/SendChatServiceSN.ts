@@ -54,6 +54,7 @@ class SendChatService {
                       icon: string;
                       type: string;
                   }[];
+                  byWhoCreatedAt: string;
               },
     ) {
         return new Promise<PropsRoomChat>(async (resolve, reject) => {
@@ -104,7 +105,7 @@ class SendChatService {
                                 },
                                 imagesOrVideos,
                                 createdAt: DateTime(),
-                                secondary: id_sOrReply,
+                                secondary: typeof id_sOrReply === 'string' ? id_sOrReply : '',
                             },
                         ],
                         createdAt: DateTime(),

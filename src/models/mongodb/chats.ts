@@ -79,6 +79,7 @@ const chats = new Schema(
                         },
                         { _id: false },
                     ],
+                    byWhoCreatedAt: { type: Date },
                 },
             },
             { _id: false },
