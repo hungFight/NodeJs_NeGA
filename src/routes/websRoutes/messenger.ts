@@ -19,5 +19,6 @@ router.get('/getPins', sendChatController.getPins);
 router.delete('/deletePin', sendChatController.deletePin);
 router.post('/setBackground', upload.array('files'), sendChatController.setBackground);
 router.post('/delBackground', uploadGridFS.delete, sendChatController.delBackground);
+router.post('/getConversationBalloon', sendChatController.getConversationBalloon);
 router.use(errorHandler);
 export default router;

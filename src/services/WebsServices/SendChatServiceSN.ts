@@ -3,6 +3,7 @@ import DateTime from '../../DateTimeCurrent/DateTimeCurrent';
 import { prisma } from '../..';
 import XOAuth2 from 'nodemailer/lib/xoauth2';
 import { v4 as primaryKey } from 'uuid';
+import { Types } from 'mongoose';
 const { ObjectId } = require('mongodb');
 
 export interface PropsRoomChat {
@@ -792,6 +793,61 @@ class SendChatService {
                     resolve(ids_file);
                 }
                 resolve(null);
+            } catch (error) {
+                reject(error);
+            }
+        });
+    }
+    getConversationBalloon(conversationId: string[], userId: string) {
+        // delete both side
+        return new Promise(async (resolve, reject) => {
+            try {
+                const res = await RoomChats.find({
+                    _id: { $in: conversationId },
+                }).select('id_us user');
+                const newRes: {
+                    _id: Types.ObjectId;
+                    userId: string;
+                    user?: {
+                        id: string;
+                        avatar: any;
+                        fullName: string;
+                        gender: number;
+                    };
+                }[] = res.map((r) => ({ _id: r._id, userId: r.id_us.filter((u) => u !== userId)[0] }));
+                console.log(newRes, 'newRes old');
+
+                const allData = await new Promise(async (resolve, reject) => {
+                    try {
+                        await Promise.all(
+                            newRes.map(async (r) => {
+                                const user = await prisma.user.findUnique({
+                                    where: { id: r.userId },
+                                    select: {
+                                        id: true,
+                                        avatar: true,
+                                        fullName: true,
+                                        gender: true,
+                                    },
+                                });
+                                if (user) r.user = user;
+                            }),
+                        );
+                        resolve(newRes);
+                    } catch (error) {
+                        reject(error);
+                    }
+                });
+
+                // more than 2
+                //    await Promise.all(res.map(async(r) => {
+                //     await Promise.all(r.id_us.map(async(u) => {
+                //         if(u !== userId){
+
+                //         }
+                //     }));
+                //    }));
+                resolve(allData);
             } catch (error) {
                 reject(error);
             }

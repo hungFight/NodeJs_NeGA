@@ -305,5 +305,16 @@ class SendChat {
             next(error);
         }
     };
+    getConversationBalloon = async (req: any, res: express.Response, next: express.NextFunction) => {
+        try {
+            const conversationId = req.body.conversationId;
+            const userId = req.cookies.k_user;
+            if (!conversationId) throw new NotFound('delBackground chat', 'conversationId not provided');
+            const data = await SendChatServiceSN.getConversationBalloon(conversationId, userId);
+            return res.status(200).json(data);
+        } catch (error) {
+            next(error);
+        }
+    };
 }
 export default new SendChat();
