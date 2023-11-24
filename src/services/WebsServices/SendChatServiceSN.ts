@@ -260,7 +260,6 @@ class SendChatService {
                             },
                         },
                     );
-                    console.log(seenBy, 'seenBy');
                 } else {
                     const seenBy = await RoomChats.findOneAndUpdate(
                         {
@@ -306,8 +305,6 @@ class SendChatService {
                         createdAt: { $first: '$createdAt' },
                     };
                 }
-                console.log(Group, 'user chats', id_other, moreChat, offset);
-
                 if (conversationId) {
                     const roomCh: any = await RoomChats.findOne({ _id: conversationId }).select('-room');
                     let check = false;
@@ -330,8 +327,6 @@ class SendChatService {
                                 $group: Group,
                             }, // Group the documents and reconstruct the room array
                         ]);
-                        console.log(roomChat, 'get greater createdAt', createdAt);
-
                         if (roomChat.length) {
                             if (!offset) {
                                 roomChat[0].user = user;
@@ -358,13 +353,11 @@ class SendChatService {
                             }
                             resolve(roomChat[0]);
                         }
-                        console.log(roomCh, 'roomCh', roomChat);
                         roomCh.user = user;
                         roomCh.room = [];
                         resolve(roomCh);
                     }
                 } else {
-                    console.log('two data chat pending');
                     let check = false;
                     let createdAt = '';
                     if (!id_other) resolve(false);
@@ -372,7 +365,6 @@ class SendChatService {
                         // set any to set createdAt below
                         $and: [{ id_us: { $all: [id, id_other] } }, { id_us: { $size: 2 } }],
                     }).select('-room');
-                    console.log('one data chat pending', id_roomChat);
                     id_roomChat?.deleted.forEach((d: { id: string; createdAt: string }) => {
                         // check deleted watch who deleted that room, another area is the same
                         if (d.id === id) {
@@ -407,7 +399,6 @@ class SendChatService {
                                 resolve(null);
                             }
                         } else {
-                            console.log(data, 'data chat pending');
                             resolve({ ...data, user });
                         }
                     } else {
@@ -422,7 +413,6 @@ class SendChatService {
                                     $group: Group,
                                 }, // Group the documents and reconstruct the room array
                             ]);
-                            console.log(roomChat, 'roomChat 11');
 
                             if (roomChat.length) {
                                 roomChat[0].user = user;
@@ -432,7 +422,6 @@ class SendChatService {
                                 resolve({ ...data, user });
                             }
                         } else {
-                            console.log('id_roomChat no');
                             data.room = [];
                             resolve({ ...data, user });
                         }

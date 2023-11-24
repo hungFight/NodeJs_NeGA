@@ -5,6 +5,7 @@ import ServerError from '../../utils/errors/ServerError';
 import NotFound from '../../utils/errors/NotFound';
 import Forbidden from '../../utils/errors/Forbidden';
 import { RoomChats } from '../../models/mongodb/chats';
+import { Types } from 'mongoose';
 
 class SendChat {
     sendChat = async (req: any, res: any, next: express.NextFunction) => {
@@ -307,11 +308,43 @@ class SendChat {
     };
     getConversationBalloon = async (req: any, res: express.Response, next: express.NextFunction) => {
         try {
-            const conversationId = req.body.conversationId;
+            const conversationId: string[] = req.body.conversationId;
             const userId = req.cookies.k_user;
             if (!conversationId) throw new NotFound('delBackground chat', 'conversationId not provided');
-            const data = await SendChatServiceSN.getConversationBalloon(conversationId, userId);
-            return res.status(200).json(data);
+            redisClient.get(`managerFactory_balloon_${userId}`, async (err, dataB) => {
+                if (dataB) {
+                    const dd: {
+                        state: string[];
+                        newRes: {
+                            _id: Types.ObjectId;
+                            userId: string;
+                            user: {
+                                id: string;
+                                avatar: any;
+                                fullName: string;
+                                gender: number;
+                            };
+                        }[];
+                    } = JSON.parse(dataB);
+                    if (JSON.stringify(dd.state) === JSON.stringify(conversationId)) {
+                        console.log(
+                            'redis b',
+                            JSON.stringify(dd.state),
+                            JSON.stringify(conversationId),
+                            JSON.stringify(dd.state) === JSON.stringify(conversationId),
+                        );
+                        return res.status(200).json(dd.newRes);
+                    }
+                }
+                const data = await SendChatServiceSN.getConversationBalloon(conversationId, userId);
+                console.log('mysql b');
+
+                redisClient.set(
+                    `managerFactory_balloon_${userId}`,
+                    JSON.stringify({ state: conversationId, newRes: data }),
+                );
+                return res.status(200).json(data);
+            });
         } catch (error) {
             next(error);
         }
