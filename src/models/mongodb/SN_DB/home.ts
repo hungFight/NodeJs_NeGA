@@ -38,11 +38,13 @@ const Posts = new Schema({
     id_user: { type: String, maxLength: 50, required: true },
     user: [],
     category: { type: Number, maxLength: 1 },
+    hashTag: [{ type: String, maxLength: 250 }],
     content: {
         text: { type: String, text: String },
         fontFamily: { type: String, maxLength: 20 },
         options: {
             default: [
+                //1
                 {
                     file: { type: String, maxLength: 50 },
                     title: { type: String, maxLength: 100 },
@@ -51,6 +53,7 @@ const Posts = new Schema({
                 },
             ],
             swiper: {
+                //2
                 id: { type: Number, maxLength: 1 },
                 name: { type: String, maxLength: 20 },
                 // raw: { type: Number, maxLength: 1 },
@@ -67,11 +70,12 @@ const Posts = new Schema({
                 },
             },
             grid: {
+                //3
                 file: [{ type: String, maxLength: 50 }],
                 BgColor: { type: String, maxLength: 10 },
                 column: { type: Number, maxLength: 2 },
             },
-            onlyImage: [{ type: String, maxLength: 50 }],
+            onlyImage: [{ type: String, maxLength: 50 }], //4
         },
     },
     feel,
