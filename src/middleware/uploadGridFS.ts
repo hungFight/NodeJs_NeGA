@@ -22,9 +22,9 @@ export const upload = multer({
 
         file: async (req, files) => {
             console.log(req.body, files);
-            const update: boolean = req.body.update;
-            const background: string = req.body.background;
-            const id_files: string[] = req.body.id_filesDel ? JSON.parse(req.body.id_filesDel) : [];
+            const update: boolean = req.body.update; // update file
+            const background: string = req.body.background; // bg of chat box
+            const id_files: string[] = req.body.id_filesDel ? JSON.parse(req.body.id_filesDel) : []; // all by id_filesDel
             console.log(background, 'background delete');
 
             if ((update && id_files?.length) || background) {

@@ -20,7 +20,7 @@ const comments = [
         user: [],
         content: {
             text: { type: String, text: String },
-            imageOrVideos: [{ file: { type: String, maxLength: 50 }, feel }],
+            imageOrVideos: [{ id: { type: Number, maxLength: 3 }, file: { type: String, maxLength: 50 }, feel }],
         },
         feel,
         reply: [

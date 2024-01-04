@@ -538,8 +538,8 @@ class UserService {
                         where: { id: id },
                         data: { [`${av || akg || name}`]: value },
                     });
-                    console.log('value', data);
-                    if (data) resolve(data[`${av || akg || name}`]);
+                    if (name) resolve(data[`${name}`]);
+                    if (akg || av) resolve(true);
                 }
             } catch (error) {
                 reject(error);
