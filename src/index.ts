@@ -30,6 +30,7 @@ const app = express();
 const port = 3001;
 const httpServer = require('http').createServer(app);
 export const io = new Server(httpServer, {
+    path: '/socket.io',
     pingTimeout: 60000, // Set a longer ping timeout in milliseconds
     pingInterval: 25000, // Adjust the ping interval if needed
 });
@@ -134,11 +135,14 @@ app.use((req: any, res: any, next) => {
     res.io = io;
     next();
 });
+app.get('/', (req, res) => {
+    return res.json('Hello');
+});
 app.use(cookieParser(process.env.SECRET));
 app.use(
     cors({
         credentials: true,
-        origin: ['http://192.168.99.102:3000', `${process.env.REACT_URL}`],
+        origin: ['http://192.168.0.100:3000', `${process.env.REACT_URL}`],
     }),
 );
 app.use(morgan('combined'));
@@ -158,7 +162,7 @@ async function listen() {
             context: async ({ req, res }) => ({ req, res }),
         }),
     );
-    await new Promise((resolve, reject) => httpServer.listen({ port }, resolve));
+    await new Promise((resolve, reject) => httpServer.listen({ host: '192.168.0.100', port }, resolve));
     console.log(`🚀 Server ready at http://localhost:${port}`);
 }
 listen();

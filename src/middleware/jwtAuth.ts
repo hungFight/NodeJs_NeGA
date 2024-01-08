@@ -21,6 +21,8 @@ class JWTVERIFY {
             console.log('JWTVERIFY');
             const IP_USER = req.socket.remoteAddress || req.ip;
             redisClient.get(userId + 'refreshToken', (err, data) => {
+                console.log('JWTVERIFY', userId, data);
+
                 // save token into redis
                 if (err) {
                     return res.status(404).json('Error getting refresh token: ' + err);
