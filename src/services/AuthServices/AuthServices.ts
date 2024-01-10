@@ -33,11 +33,13 @@ class AuthServices {
                                 const checkP = bcrypt.compareSync(password, u.password);
                                 if (checkP) {
                                     if (subAccount && !id_other) {
+                                        // in process add the subAccount
                                         delete u.password;
                                         Object.freeze(u);
                                         if (id && !(id === u.id)) {
                                             // create a new SubAccount
                                             const sub = await prisma.subAccounts.findFirst({
+                                                //find the account
                                                 where: {
                                                     userId: id,
                                                     phoneNumberEmail: phoneNumberEmail,
@@ -49,10 +51,9 @@ class AuthServices {
                                                     userId: id,
                                                 },
                                             });
-                                            console.log('Sub', sub);
-
                                             if (!sub && subCount < 5) {
                                                 const resSub = await prisma.subAccounts.create({
+                                                    // create
                                                     data: {
                                                         userId: id,
                                                         phoneNumberEmail: phoneNumberEmail,
@@ -79,6 +80,7 @@ class AuthServices {
                                             resolve(null);
                                         }
                                     } else {
+                                        // in process login both
                                         const accessToken = Token.accessTokenF(u.id, secret);
                                         const refreshToken = Token.refreshTokenF(
                                             { id: u.id, IP_USER: IP_USER + u.id },

@@ -30,13 +30,20 @@ class authController {
             const error = ['<script></script>', '<script>', '</script>'];
             const phoneNumberEmail = req.body.nameAccount;
             const password = req.body.password;
-            const id = req.cookies.k_user;
+            const id_you = req.cookies.k_user;
             const id_other = req.body.id;
             const IP_USER = req.socket.remoteAddress || req.ip;
             if (!phoneNumberEmail || !password || phoneNumberEmail.includes(error) || password.includes(error)) {
                 throw new NotFound('Login', 'Please enter your Account!');
             } else {
-                const userData: any = await authServices.login(phoneNumberEmail, password, IP_USER, true, id, id_other);
+                const userData: any = await authServices.login(
+                    phoneNumberEmail,
+                    password,
+                    IP_USER,
+                    true,
+                    id_you,
+                    id_other,
+                );
                 return res.status(200).json(userData);
             }
         } catch (error) {
