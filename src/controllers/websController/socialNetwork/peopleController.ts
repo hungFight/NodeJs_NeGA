@@ -1,7 +1,7 @@
 import express from 'express';
-import { redisClient } from '../../../';
 import peopleServiceSN from '../../../services/WebsServices/SocialNetwork/peopleServiceSN';
 import ServerError from '../../../utils/errors/ServerError';
+import { Redis } from 'ioredis';
 // yousent, friends, others;
 class peopleController {
     getPeopleAll = async (req: any, res: any) => {
@@ -22,6 +22,7 @@ class peopleController {
             const id_friend: string = req.body.params.id_friend;
             const key_user: string = id + 'people';
             const key_friend: string = id_friend + 'people';
+            const redisClient: Redis = res.redisClient;
             const io = res.io;
             const per = req.body.params.per;
             console.log('Hung');
@@ -90,6 +91,7 @@ class peopleController {
             const offset = req.query.offset;
             const limit = req.query.limit;
             const type = req.query.type;
+            const redisClient: Redis = res.redisClient;
             const key = id + 'Get_Friends' + type;
             redisClient.get(key, async (err, rs) => {
                 if (err) throw new ServerError('Redis_Get_Friends', err);
@@ -111,6 +113,7 @@ class peopleController {
     delete = async (req: any, res: any) => {
         try {
             const id: string = req.cookies.k_user;
+            const redisClient: Redis = res.redisClient;
             const id_req = req.body.params.id_req;
             const kindOf = req.body.params.kindOf;
             const io = res.io;
@@ -183,6 +186,7 @@ class peopleController {
             const id: string = req.cookies.k_user;
             const kindOf = req.body.params.kindOf;
             const id_fr = req.body.params.id_req;
+            const redisClient: Redis = res.redisClient;
             const per = req.body.params.per;
             const io = res.io;
             const atInfo = req.body.params.atInfor;
@@ -223,6 +227,7 @@ class peopleController {
             const id = req.cookies.k_user;
             const limit = req.query.limit;
             const rel = req.query.rel;
+            const redisClient: Redis = res.redisClient;
             const key = id + 'strangers';
             const key_Reload = id + 'Reload';
             redisClient.get(key, async (err, data) => {

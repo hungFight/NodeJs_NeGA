@@ -1,21 +1,23 @@
 import express from 'express';
 import authServices from '../../services/AuthServices/AuthServices';
 import Token from '../../services/TokensService/Token';
-import { redisClient } from '../../';
+
 import Forbidden from '../../utils/errors/Forbidden';
 import NotFound from '../../utils/errors/NotFound';
+import { Redis } from 'ioredis';
 
 class authController {
-    login = async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    login = async (req: express.Request, res: any, next: express.NextFunction) => {
         try {
             const error = ['<script></script>', '<script>', '</script>'];
             const phoneNumberEmail = req.body.params.nameAccount;
             const password = req.body.params.password;
+            const redisClient: Redis = res.redisClient;
             const IP_USER = req.socket.remoteAddress || req.ip;
             if (!phoneNumberEmail || !password || phoneNumberEmail.includes(error) || password.includes(error)) {
                 throw new NotFound('Login', 'Please enter your Account!');
             } else {
-                const userData: any = await authServices.login(phoneNumberEmail, password, IP_USER);
+                const userData: any = await authServices.login(redisClient, phoneNumberEmail, password, IP_USER);
                 if (userData) {
                     return res.status(200).json(userData);
                 }
@@ -25,18 +27,20 @@ class authController {
             next(error);
         }
     };
-    subLogin = async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    subLogin = async (req: express.Request, res: any, next: express.NextFunction) => {
         try {
             const error = ['<script></script>', '<script>', '</script>'];
             const phoneNumberEmail = req.body.nameAccount;
             const password = req.body.password;
             const id_you = req.cookies.k_user;
+            const redisClient: Redis = res.redisClient;
             const id_other = req.body.id;
             const IP_USER = req.socket.remoteAddress || req.ip;
             if (!phoneNumberEmail || !password || phoneNumberEmail.includes(error) || password.includes(error)) {
                 throw new NotFound('Login', 'Please enter your Account!');
             } else {
                 const userData: any = await authServices.login(
+                    redisClient,
                     phoneNumberEmail,
                     password,
                     IP_USER,
@@ -50,12 +54,13 @@ class authController {
             next(error);
         }
     };
-    logOut = async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    logOut = async (req: express.Request, res: any, next: express.NextFunction) => {
         try {
             console.log('allright');
             const id = req.cookies.k_user;
+            const redisClient: Redis = res.redisClient;
             const key_Reload = id + 'Reload';
-            const data: any = await authServices.logOut(req, res);
+            const data: any = await authServices.logOut(req, res, redisClient);
             if (data?.status === 200) {
                 redisClient.lrange(key_Reload, 0, -1, (err, items) => {
                     if (err) console.log(err);

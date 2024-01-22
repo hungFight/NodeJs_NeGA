@@ -1,6 +1,6 @@
 import moment from 'moment';
 import { v4 as primaryKey } from 'uuid';
-import { prisma, redisClient } from '../../..';
+import { prisma } from '../../..';
 moment.locale('vi');
 class PeopleService {
     setFriend(id: string, id_friend: string, per: string) {

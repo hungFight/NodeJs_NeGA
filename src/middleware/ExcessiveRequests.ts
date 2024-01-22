@@ -1,13 +1,14 @@
 import { Reject } from 'twilio/lib/twiml/VoiceResponse';
-import { redisClient } from '..';
 import Token from '../services/TokensService/Token';
 import express from 'express';
 import ServerError from '../utils/errors/ServerError';
 import moment from 'moment';
+import { Redis } from 'ioredis';
 class ExcessiveRequests {
     ip = async (req: express.Request, res: any, next: any) => {
         try {
             const id = req.cookies.k_user;
+            const redisClient: Redis = res.redisClient;
             const ip_User = req.socket.remoteAddress || req.ip;
             if (id) {
                 await new Promise<void>((resolve, reject) => {
@@ -168,7 +169,8 @@ class ExcessiveRequests {
         }
     };
 
-    changeText = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    changeText = (req: express.Request, res: any, next: express.NextFunction) => {
+        const redisClient: Redis = res.redisClient;
         const id = req.cookies.k_user;
         const params = req.body.params.params;
         if (params.fullName) {

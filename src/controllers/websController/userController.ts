@@ -1,10 +1,10 @@
 import express from 'express';
 import moment from 'moment';
-import { redisClient } from '../../';
 import UserServiceSN from '../../services/WebsServices/UserServiceSN';
 import Validation from '../../utils/errors/Validation';
 import NotFound from '../../utils/errors/NotFound';
 import ServerError from '../../utils/errors/ServerError';
+import { Redis } from 'ioredis';
 class userController {
     getById = async (req: express.Request, res: express.Response, next: express.NextFunction) => {
         try {
@@ -75,9 +75,10 @@ class userController {
             console.log(error);
         }
     };
-    delMessage = async (req: express.Request | any, res: express.Response) => {
+    delMessage = async (req: express.Request | any, res: any) => {
         try {
             const id = req.cookies.k_user;
+            const redisClient: Redis = res.redisClient;
             redisClient.get(`${id} message`, (err, rs) => {
                 if (err) console.log(err);
                 if (rs && JSON.parse(rs).quantity > 0)
@@ -99,12 +100,13 @@ class userController {
             console.log(error);
         }
     };
-    changesOne = async (req: express.Request | any, res: express.Response, next: express.NextFunction) => {
+    changesOne = async (req: express.Request | any, res: any, next: express.NextFunction) => {
         try {
             const dateTime = moment().format('HH:mm:ss DD-MM-YYYY');
             const id = req.body.params.id;
             const id_req = req.cookies.k_user;
             const params = req.body.params.params;
+            const redisClient: Redis = res.redisClient;
             const value = req.body.params.value;
             console.log(id, 'heeeee', params);
             if (params.fullName === 'fullName') {
@@ -181,10 +183,11 @@ class userController {
             console.log(error);
         }
     };
-    setHistory = async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    setHistory = async (req: express.Request, res: any, next: express.NextFunction) => {
         try {
             const id = req.cookies.k_user;
             const history = req.body.params.data;
+            const redisClient: Redis = res.redisClient;
             console.log(history, 'more');
             redisClient.get(id + 'history_search', (err, results) => {
                 if (err) throw new ServerError('setHistory at Redis in CTL user', err);
@@ -206,9 +209,10 @@ class userController {
             next(error);
         }
     };
-    getHistorySearch = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    getHistorySearch = (req: express.Request, res: any, next: express.NextFunction) => {
         try {
             const id = req.cookies.k_user;
+            const redisClient: Redis = res.redisClient;
             redisClient.get(id + 'history_search', (err, results) => {
                 const newData = [];
                 if (err) throw new ServerError('getHistorySearch at Redis in CTL user', err);
@@ -223,9 +227,10 @@ class userController {
             next(error);
         }
     };
-    getActiveStatus = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    getActiveStatus = (req: express.Request, res: any, next: express.NextFunction) => {
         try {
             const id_other = req.query.id_other;
+            const redisClient: Redis = res.redisClient;
             if (!id_other) throw new NotFound('getActiveStatus', 'Id_other is empty');
             redisClient.get(`online_duration: ${id_other}`, (err, results) => {
                 if (err) throw new ServerError('getActiveStatus at Redis in CTL user', err);

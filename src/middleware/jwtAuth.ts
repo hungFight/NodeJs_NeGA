@@ -2,17 +2,18 @@ import express from 'express';
 import jwt from 'jsonwebtoken';
 import token from '../services/TokensService/Token';
 import moment from 'moment';
-import { redisClient } from '..';
 import ServerError from '../utils/errors/ServerError';
+import { Redis } from 'ioredis';
 moment.locale('vi');
 // status = 0 is login again
 // status = 9999 is server busy
 // status = 8888 is Unauthorized
 class JWTVERIFY {
-    verifyToken = async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    verifyToken = async (req: express.Request, res: any, next: express.NextFunction) => {
         try {
             const userId = req.cookies.k_user;
             const authHeader = req.cookies.tks;
+            const redisClient: Redis = res.redisClient;
             const dateTime = moment().format('HH:mm:ss DD-MM-YYYY');
             const warning = JSON.stringify({
                 id: 0,

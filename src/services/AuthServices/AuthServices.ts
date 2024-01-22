@@ -8,10 +8,12 @@ import Security from './Security';
 import UserSecurity from './Security';
 import UserIT from '../interface/inTerFaceUser';
 import token from '../TokensService/Token';
-import { prisma, redisClient } from '../../';
+import { prisma } from '../../';
+import { Redis } from 'ioredis';
 moment.locale('vi');
 class AuthServices {
     login = async (
+        redisClient: Redis,
         phoneNumberEmail: string,
         password: string,
         IP_USER: string,
@@ -129,7 +131,7 @@ class AuthServices {
             }
         });
     };
-    logOut = (req: any, res: any) => {
+    logOut = (req: any, res: any, redisClient: Redis) => {
         return new Promise(async (resolve, reject) => {
             try {
                 const userId = req.cookies.k_user;

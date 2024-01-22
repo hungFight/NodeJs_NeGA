@@ -1,11 +1,13 @@
 import express from 'express';
 import SendChatServiceSN, { PropsRoomChat } from '../../services/WebsServices/SendChatServiceSN';
-import { io, redisClient } from '../..';
 import ServerError from '../../utils/errors/ServerError';
 import NotFound from '../../utils/errors/NotFound';
 import Forbidden from '../../utils/errors/Forbidden';
 import { RoomChats } from '../../models/mongodb/chats';
 import { Types } from 'mongoose';
+import { Redis } from 'ioredis';
+import { DefaultEventsMap } from 'socket.io/dist/typed-events';
+import { Server } from 'socket.io';
 
 class SendChat {
     sendChat = async (req: any, res: any, next: express.NextFunction) => {
@@ -15,6 +17,7 @@ class SendChat {
             const id_other = req.body.id_others;
             const id_room = req.body.id_room;
             const id_s = req.body.id_s;
+            const io: Server<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any> = res.io;
             const reply = req.body.reply;
             const conversationId = req.body.conversationId;
             console.log(conversationId, 'conversationId');
@@ -65,10 +68,11 @@ class SendChat {
             next(error);
         }
     };
-    getRoom = async (req: any, res: express.Response) => {
+    getRoom = async (req: any, res: any) => {
         try {
             const id = req.cookies.k_user;
             const limit = req.query.limit;
+            const redisClient: Redis = res.redisClient;
             const offset = req.query.offset;
             const data = await SendChatServiceSN.getRoom(id, Number(limit), Number(offset));
             await Promise.all(
@@ -93,12 +97,13 @@ class SendChat {
             console.log(error);
         }
     };
-    getChat = async (req: any, res: express.Response, next: express.NextFunction) => {
+    getChat = async (req: any, res: any, next: express.NextFunction) => {
         try {
             const id = req.cookies.k_user;
             const id_room = req.query.id_room;
             const id_other = req.query.id_other;
             const limit = req.query.limit;
+            const io: Server<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any> = res.io;
             const offset: number = req.query.offset;
             const moreChat: string = req.query.moreChat;
 
@@ -159,14 +164,14 @@ class SendChat {
             next(error);
         }
     };
-    delChatAll = async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    delChatAll = async (req: express.Request, res: any, next: express.NextFunction) => {
         try {
             const conversationId = req.body.conversationId;
             const chatId = req.body.chatId;
             const userId = req.body.userId;
             const userIdCur = req.cookies.k_user;
             console.log(conversationId, chatId, userId);
-
+            const io: Server<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any> = res.io;
             if (!conversationId || !chatId || !userId)
                 throw new NotFound('delChatAll', 'conversationId, userId or chatId or userId not provided');
             if (userId === userIdCur) {
@@ -196,7 +201,7 @@ class SendChat {
             next(error);
         }
     };
-    updateChat = async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    updateChat = async (req: express.Request, res: any, next: express.NextFunction) => {
         try {
             const conversationId: string = req.body.conversationId;
             const chatId: string = req.body.id_chat;
@@ -205,6 +210,7 @@ class SendChat {
             const userId: string = req.body.userId;
             const id_other: string = req.body.id_other;
             const files = req.files;
+            const io: Server<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any> = res.io;
             console.log(conversationId, chatId);
 
             if (!conversationId || !chatId || !id_other)
@@ -224,11 +230,12 @@ class SendChat {
             next(error);
         }
     };
-    pin = async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    pin = async (req: express.Request, res: any, next: express.NextFunction) => {
         try {
             const conversationId: string = req.body.conversationId;
             const chatId: string = req.body.chatId;
             const userId: string = req.body.userId;
+            const io: Server<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any> = res.io;
             const latestChatId: string = req.body.latestChatId;
 
             if (!conversationId || !chatId || !userId || !latestChatId)
@@ -245,10 +252,11 @@ class SendChat {
             next(error);
         }
     };
-    getPins = async (req: any, res: express.Response, next: express.NextFunction) => {
+    getPins = async (req: any, res: any, next: express.NextFunction) => {
         try {
             const conversationId = req.query.conversationId;
             const pins = req.query.pins;
+            const io: Server<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any> = res.io;
             if (!conversationId || !pins?.length)
                 throw new NotFound('getPin chat', 'conversationId, pins  not provided');
             const data = await SendChatServiceSN.getPins(conversationId, pins);
@@ -257,11 +265,12 @@ class SendChat {
             next(error);
         }
     };
-    deletePin = async (req: any, res: express.Response, next: express.NextFunction) => {
+    deletePin = async (req: any, res: any, next: express.NextFunction) => {
         try {
             const conversationId = req.query.conversationId;
             const pinId = req.query.pinId;
             const roomId = req.query.roomId;
+            const io: Server<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any> = res.io;
             if (!conversationId || !pinId || !roomId)
                 throw new NotFound('deletePin chat', 'conversationId, pinId, roomId  not provided');
             const data = await SendChatServiceSN.deletePin(conversationId, pinId);
@@ -273,12 +282,13 @@ class SendChat {
             next(error);
         }
     };
-    setBackground = async (req: any, res: express.Response, next: express.NextFunction) => {
+    setBackground = async (req: any, res: any, next: express.NextFunction) => {
         try {
             const conversationId = req.body.conversationId;
             const latestChatId = req.body.latestChatId;
             const userId = req.body.userId;
             const files = req.files;
+            const io: Server<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any> = res.io;
             console.log(files, 'files');
 
             if (!conversationId || !files || !latestChatId || !userId)
@@ -292,10 +302,10 @@ class SendChat {
             next(error);
         }
     };
-    delBackground = async (req: any, res: express.Response, next: express.NextFunction) => {
+    delBackground = async (req: any, res: any, next: express.NextFunction) => {
         try {
             const conversationId = req.body.conversationId;
-
+            const io: Server<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any> = res.io;
             if (!conversationId) throw new NotFound('delBackground chat', 'conversationId not provided');
             const data = await SendChatServiceSN.delBackground(conversationId);
             if (data) {
@@ -306,10 +316,11 @@ class SendChat {
             next(error);
         }
     };
-    getConversationBalloon = async (req: any, res: express.Response, next: express.NextFunction) => {
+    getConversationBalloon = async (req: any, res: any, next: express.NextFunction) => {
         try {
             const conversationId: string[] = req.body.conversationId;
             const userId = req.cookies.k_user;
+            const redisClient: Redis = res.redisClient;
             if (!conversationId) throw new NotFound('delBackground chat', 'conversationId not provided');
             redisClient.get(`managerFactory_balloon_${userId}`, async (err, dataB) => {
                 if (dataB) {

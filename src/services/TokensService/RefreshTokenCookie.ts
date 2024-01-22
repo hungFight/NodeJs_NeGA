@@ -2,13 +2,14 @@ import Token from './Token';
 import jwt from 'jsonwebtoken';
 import token from './Token';
 import express from 'express';
-import { redisClient } from '../..';
 import ServerError from '../../utils/errors/ServerError';
+import { Redis } from 'ioredis';
 class RefreshTokenCookie {
-    refreshToken = async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    refreshToken = async (req: express.Request, res: any, next: express.NextFunction) => {
         try {
             const userId = req.cookies.k_user;
             const accessToken = req.cookies.tks;
+            const redisClient: Redis = res.redisClient;
             const IP_USER = req.socket.remoteAddress || req.ip;
             const warning = JSON.stringify({
                 id: 0,
