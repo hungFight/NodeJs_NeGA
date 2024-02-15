@@ -50,6 +50,7 @@ const Posts = new Schema({
                     title: { type: String, maxLength: 100 },
                     love: { act: { type: Number, maxLength: 11, defaultValue: 0 }, id_user: [String] },
                     comments,
+                    required: false,
                 },
             ],
             swiper: {
@@ -68,12 +69,14 @@ const Posts = new Schema({
                         },
                     ],
                 },
+                required: false,
             },
             grid: {
                 //3
                 file: [{ type: String, maxLength: 50 }],
                 BgColor: { type: String, maxLength: 10 },
                 column: { type: Number, maxLength: 2 },
+                required: false,
             },
             onlyImage: [{ type: String, maxLength: 50 }], //4
         },

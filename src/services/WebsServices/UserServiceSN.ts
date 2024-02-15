@@ -370,6 +370,7 @@ class UserService {
                                     },
                                     {
                                         [`${cateMore}`]: {
+                                            // other fields
                                             contains: searchMore,
                                         },
                                     },

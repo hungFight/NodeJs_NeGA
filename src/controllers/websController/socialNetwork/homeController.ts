@@ -1,5 +1,6 @@
 import axios from 'axios';
 import HomeServiceSN from '../../../services/WebsServices/SocialNetwork/HomeServiceSN';
+import ReactDOMServer from 'react-dom/server';
 class homeController {
     setPost = async (req: any, res: any, next: any) => {
         try {

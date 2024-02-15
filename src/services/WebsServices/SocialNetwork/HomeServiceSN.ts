@@ -168,7 +168,7 @@ class HomeServiceSN {
                     //         },
                     //     },
                     // ]);
-                    const dataPost = await NewPost.find({ id_user: { $in: follow_id } })
+                    const dataPost = await NewPost.find({ id_user: { $in: [...follow_id, id] } })
                         .sort({ createdAt: -1 })
                         .limit(limit)
                         .skip(offset);

@@ -9,7 +9,7 @@ class Database {
         try {
             mongoose.set('strictQuery', false);
             const URL = 'mongodb+srv://Spaceship:hung0507200301645615023@cluster0.chumwfw.mongodb.net/spaceship';
-            await mongoose.connect(URL, { serverSelectionTimeoutMS: 15000 });
+            await mongoose.connect(URL, { serverSelectionTimeoutMS: 10000 });
             console.log('Connected to MongoDB Successful!');
         } catch (error) {
             return error;

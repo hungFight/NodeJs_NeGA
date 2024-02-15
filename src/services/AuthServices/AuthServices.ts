@@ -10,6 +10,7 @@ import UserIT from '../interface/inTerFaceUser';
 import token from '../TokensService/Token';
 import { prisma } from '../../';
 import { Redis } from 'ioredis';
+import Validation from '../../utils/errors/Validation';
 moment.locale('vi');
 class AuthServices {
     login = async (
@@ -160,14 +161,15 @@ class AuthServices {
         return new Promise(async (resolve, reject) => {
             if (data) {
                 const validateEmail = /^\w+([\\.-]?\w+)*@\w+([\\.-]?\w+)*(\.\w{2,5})+$/;
+                const validate = new Validation();
                 if (isNaN(data.phoneMail)) {
-                    if (!validateEmail.test(data.phoneMail)) resolve({ check: 5, message: 'Email invalid' });
+                    if (!validate.validEmail(data.phoneMail)) resolve({ check: 5, message: 'Email invalid' });
                 } else {
-                    if (data.phoneMail.length <= 11 && data.phoneMail.length >= 9)
+                    if (!validate.validLength(data.phoneMail, 9, 11))
                         resolve({ check: 5, message: 'Phone Number must 9 - 11 characters' });
                 }
-                if (data.password.length <= 5)
-                    resolve({ check: 5, message: 'Password must be greater than 6 characters' });
+                if (!validate.validLength(data.password, 6, 100))
+                    resolve({ check: 5, message: 'Password must be greater than 6 characters and less than 100' });
                 const checkPhoneNumberEmail = await prisma.user.findMany({
                     where: { phoneNumberEmail: data.phoneMail },
                 });
