@@ -36,6 +36,11 @@ class HomeServiceSN {
         BgColor: string,
         columnGrid: number,
         act: number,
+        hashTags: {
+            _id: string;
+            value: string;
+        }[],
+        tags: string[],
     ) => {
         return new Promise(async (resolve, reject) => {
             try {
@@ -97,6 +102,7 @@ class HomeServiceSN {
                 const res = await NewPost.create({
                     id_user: id,
                     category,
+                    hashTag: hashTags.map((h) => h.value),
                     content: {
                         text: value,
                         fontFamily: fontFamily,

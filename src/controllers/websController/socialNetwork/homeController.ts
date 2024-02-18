@@ -8,7 +8,8 @@ class homeController {
 
             const id = req.cookies.k_user;
             const io = res.io;
-
+            const hashTags = req.body.hashTags ? JSON.parse(req.body.hashTags) : undefined;
+            const tags = req.body.tags ? JSON.parse(req.body.tags) : undefined;
             const value = req.body.text;
             const files = req.files;
             const category = req.body.category ? JSON.parse(req.body.category) : undefined; // must be number
@@ -62,6 +63,8 @@ class homeController {
                 BgColor,
                 columnGrid,
                 act, //icon imotion
+                hashTags,
+                tags,
             );
             return res.status(200).json(data);
         } catch (error) {
