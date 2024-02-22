@@ -98,11 +98,16 @@ class HomeServiceSN {
                         };
                         break;
                 }
-                console.log(options, 'options', category);
+                console.log(
+                    options,
+                    'options',
+                    category,
+                    hashTags.map((h) => h.value),
+                );
                 const res = await NewPost.create({
                     id_user: id,
                     category,
-                    hashTag: hashTags.map((h) => h.value),
+                    hashTag: hashTags.map((h) => ({ value: h.value })),
                     content: {
                         text: value,
                         fontFamily: fontFamily,

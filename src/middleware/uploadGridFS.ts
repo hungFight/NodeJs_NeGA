@@ -26,74 +26,95 @@ export const upload = multer({
             const background: string = req.body.background; // bg of chat box
             const id_files: string[] = req.body.id_filesDel ? JSON.parse(req.body.id_filesDel) : []; // all by id_filesDel
             console.log(background, 'background delete');
+            if (
+                [
+                    'image/jpg',
+                    'image/jpeg',
+                    'image/webp',
+                    'image/png',
+                    'video/mp4',
+                    'video/mov',
+                    'video/x-matroska',
+                ].includes(files.mimetype)
+            ) {
+                if ((update && id_files?.length) || background) {
+                    try {
+                        const bucket = new mongoose.mongo.GridFSBucket(conn.db, { bucketName: 'uploads' });
+                        console.log(id_files, 'id_file delete');
+                        // Find the file in GridFS using the id
+                        if (background) {
+                            await gfs.files.findOne(
+                                { metadata: { id_file: background } },
+                                (err: any, file: { _id: any }) => {
+                                    // // Delete the file
+                                    if (err) console.log(err);
+                                    console.log(file, 'delete file');
 
-            if ((update && id_files?.length) || background) {
-                try {
-                    const bucket = new mongoose.mongo.GridFSBucket(conn.db, { bucketName: 'uploads' });
-                    console.log(id_files, 'id_file delete');
-                    // Find the file in GridFS using the id
-                    if (background) {
-                        await gfs.files.findOne(
-                            { metadata: { id_file: background } },
-                            (err: any, file: { _id: any }) => {
-                                // // Delete the file
-                                if (err) console.log(err);
-                                console.log(file, 'delete file');
-
-                                if (file) {
-                                    bucket
-                                        .delete(file._id)
-                                        .then(() => {
-                                            console.log('File deleted successfully');
-                                        })
-                                        .catch((error) => {
-                                            console.error('Error deleting file:', error);
-                                        });
-                                }
-                            },
-                        );
-                    } else {
-                        id_files.forEach(async (f) => {
-                            await gfs.files.findOne({ metadata: { id_file: f } }, (err: any, file: { _id: any }) => {
-                                // // Delete the file
-                                if (file) {
-                                    bucket
-                                        .delete(file._id)
-                                        .then(() => {
-                                            console.log('File deleted successfully');
-                                        })
-                                        .catch((error) => {
-                                            console.error('Error deleting file:', error);
-                                        });
-                                }
+                                    if (file) {
+                                        bucket
+                                            .delete(file._id)
+                                            .then(() => {
+                                                console.log('File deleted successfully');
+                                            })
+                                            .catch((error) => {
+                                                console.error('Error deleting file:', error);
+                                            });
+                                    }
+                                },
+                            );
+                        } else {
+                            id_files.forEach(async (f) => {
+                                await gfs.files.findOne(
+                                    { metadata: { id_file: f } },
+                                    (err: any, file: { _id: any }) => {
+                                        // // Delete the file
+                                        if (file) {
+                                            bucket
+                                                .delete(file._id)
+                                                .then(() => {
+                                                    console.log('File deleted successfully');
+                                                })
+                                                .catch((error) => {
+                                                    console.error('Error deleting file:', error);
+                                                });
+                                        }
+                                    },
+                                );
                             });
-                        });
-                    }
-                } catch (error) {
-                    console.log(error, 'update file');
-                }
-            }
-            return new Promise((resolve, reject) => {
-                try {
-                    crypto.randomBytes(16, (err: any, buf: { toString: (arg0: string) => any }) => {
-                        if (err) {
-                            return reject(err);
                         }
-                        const filename = buf.toString('hex') + path.extname(files.originalname);
-                        const fileInfo = {
-                            filename: filename,
-                            bucketName: 'uploads',
-                            metadata: {
-                                id_file: files.originalname, // Trường để lưu _id của tệp tin
-                            },
-                        };
-
-                        resolve(fileInfo);
-                    });
-                } catch (error) {
-                    console.log('Fuck', error);
+                    } catch (error) {
+                        console.log(error, 'update file');
+                    }
                 }
-            });
+                return new Promise((resolve, reject) => {
+                    try {
+                        crypto.randomBytes(16, (err: any, buf: { toString: (arg0: string) => any }) => {
+                            if (err) {
+                                return reject(err);
+                            }
+                            const id = primaryKey();
+                            if (id) {
+                                const filename = buf.toString('hex') + path.extname(files.originalname);
+                                const fileInfo = {
+                                    filename: filename,
+                                    bucketName: 'uploads',
+                                    metadata: {
+                                        id_file: id, // Trường để lưu _id của tệp tin
+                                    },
+                                };
+
+                                resolve(fileInfo);
+                            } else {
+                                console.log('Fuck id is empty upload file');
+                            }
+                        });
+                    } catch (error) {
+                        console.log('Fuck', error);
+                    }
+                });
+            } else {
+                console.log('format is not supported!');
+            }
         },
     }),
 });
@@ -112,9 +133,15 @@ class FileGridFs {
             }
             // Check if image
             if (
-                ['image/jpg', 'image/jpeg', 'image/png', 'video/mp4', 'video/mov', 'video/x-matroska'].includes(
-                    file.contentType,
-                )
+                [
+                    'image/jpg',
+                    'image/jpeg',
+                    'image/webp',
+                    'image/png',
+                    'video/mp4',
+                    'video/mov',
+                    'video/x-matroska',
+                ].includes(file.contentType)
             ) {
                 let dataTest: any = '';
                 const file_ss: any = [];

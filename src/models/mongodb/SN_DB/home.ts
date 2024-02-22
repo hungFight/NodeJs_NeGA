@@ -94,5 +94,7 @@ const Posts = new Schema({
     anonymous: { type: Boolean, defaultValue: false }, // comments
     private: [{ id: { type: Number, maxLength: 1 }, name: { type: String, maxLength: 20 } }],
     createdAt: { type: Date, required: true, default: Date.now() },
+    deletedAt: { type: Date, default: null },
+    repository: { type: Date, default: null },
 });
 export const NewPost = mongoose.model('NewPost', Posts);
