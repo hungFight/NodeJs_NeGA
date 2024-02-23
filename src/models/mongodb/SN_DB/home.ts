@@ -39,6 +39,7 @@ const Posts = new Schema({
     user: [],
     category: { type: Number, maxLength: 1 },
     hashTag: [{ value: String }, { _id: true }],
+    background: { type: String, maxLength: 20 },
     Tags: [{ id_user: { type: String, maxLength: 50 } }],
     content: {
         text: { type: String, text: String },
@@ -47,7 +48,7 @@ const Posts = new Schema({
             default: [
                 //0
                 {
-                    file: { type: String, maxLength: 50 },
+                    file: { link: { type: String, maxLength: 50 }, type: { type: String, maxLength: 15 } },
                     title: { type: String, maxLength: 100 },
                     love: { act: { type: Number, maxLength: 11, defaultValue: 0 }, id_user: [String] },
                     comments,

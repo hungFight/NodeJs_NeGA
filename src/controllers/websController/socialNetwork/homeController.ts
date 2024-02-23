@@ -14,6 +14,7 @@ class homeController {
             const files = req.files;
             const category = req.body.category ? JSON.parse(req.body.category) : undefined; // must be number
             const fontFamily = req.body.fontFamily;
+            const bg_default = req.body.bg_default;
             const act = req.body.act ? JSON.parse(req.body.act) : undefined;
             // const expire = req.body.expire;
             const privates = req.body.privacy ? JSON.parse(req.body.privacy) : undefined;
@@ -65,6 +66,7 @@ class homeController {
                 act, //icon imotion
                 hashTags,
                 tags,
+                bg_default,
             );
             return res.status(200).json(data);
         } catch (error) {

@@ -41,6 +41,7 @@ class HomeServiceSN {
             value: string;
         }[],
         tags: string[],
+        bg_default: string,
     ) => {
         return new Promise(async (resolve, reject) => {
             try {
@@ -51,7 +52,7 @@ class HomeServiceSN {
                     case 0:
                         const imageOrVideosDe: any = files.map((f: any) => {
                             return {
-                                file: f.metadata.id_file.toString(),
+                                file: { link: f.metadata.id_file.toString(), type: f.contentType },
                                 title: f.metadata.title,
                             };
                         });
@@ -108,6 +109,7 @@ class HomeServiceSN {
                     id_user: id,
                     category,
                     hashTag: hashTags.map((h) => ({ value: h.value })),
+                    background: bg_default,
                     content: {
                         text: value,
                         fontFamily: fontFamily,
