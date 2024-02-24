@@ -189,13 +189,22 @@ class HomeServiceSN {
                         try {
                             await Promise.all(
                                 dataPost.map(async (p, index: number) => {
-                                    const users = await prisma.user.findMany({
-                                        where: {
-                                            id: p.id_user,
-                                        },
-                                        select: { id: true, avatar: true, fullName: true, gender: true },
-                                    });
-                                    dataPost[index].user = users;
+                                    if (p.id_user === id) {
+                                        dataPost[index].user = [
+                                            { id: "It's me", fullName: "It's me", avatar: undefined, gender: 0 },
+                                        ];
+                                    } else {
+                                        const user = await prisma.user.findUnique({
+                                            where: {
+                                                id: p.id_user,
+                                            },
+                                            select: { id: true, avatar: true, fullName: true, gender: true },
+                                        });
+                                        if (user) {
+                                            const dr: any = [user];
+                                            dataPost[index].user = dr;
+                                        }
+                                    }
                                 }),
                             );
                             resolve(dataPost);

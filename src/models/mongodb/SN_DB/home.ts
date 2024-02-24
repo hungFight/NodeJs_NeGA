@@ -17,7 +17,12 @@ const comments = [
             required: true,
             maxLength: 50,
         },
-        user: [],
+        user: {
+            id: { type: String, maxLength: 50 },
+            fullName: { type: String, maxLength: 30 },
+            avatar: { type: Buffer },
+            gender: { type: Number, maxLength: 1 },
+        },
         content: {
             text: { type: String, text: String },
             imageOrVideos: [{ id: { type: Number, maxLength: 3 }, file: { type: String, maxLength: 50 }, feel }],
@@ -36,7 +41,14 @@ const comments = [
 ];
 const Posts = new Schema({
     id_user: { type: String, maxLength: 50, required: true },
-    user: [],
+    user: [
+        {
+            id: { type: String, maxLength: 50, required: true },
+            fullName: { type: String, maxLength: 30, required: true },
+            avatar: { type: Buffer },
+            gender: { type: Number, maxLength: 1, required: true },
+        },
+    ],
     category: { type: Number, maxLength: 1 },
     hashTag: [{ value: String }, { _id: true }],
     background: { type: String, maxLength: 20 },
