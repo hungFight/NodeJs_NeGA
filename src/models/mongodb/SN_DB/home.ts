@@ -1,12 +1,14 @@
 import mongoose from 'mongoose';
 const Schema = mongoose.Schema;
 const feel = {
-    like: { act: { type: Number, maxLength: 10, defaultValue: 0 }, id_user: [String] },
-    love: { act: { type: Number, maxLength: 10, defaultValue: 0 }, id_user: [String] },
-    smile: { act: { type: Number, maxLength: 10, defaultValue: 0 }, id_user: [String] },
-    sad: { act: { type: Number, maxLength: 10, defaultValue: 0 }, id_user: [String] },
-    angry: { act: { type: Number, maxLength: 10, defaultValue: 0 }, id_user: [String] },
-    only: [{ id: { type: Number, maxLength: 1 }, icon: { type: String, maxLength: 10 } }],
+    emo: {
+        like: { act: { type: Number, maxLength: 10, defaultValue: 0 }, id_user: [String] },
+        love: { act: { type: Number, maxLength: 10, defaultValue: 0 }, id_user: [String] },
+        smile: { act: { type: Number, maxLength: 10, defaultValue: 0 }, id_user: [String] },
+        sad: { act: { type: Number, maxLength: 10, defaultValue: 0 }, id_user: [String] },
+        angry: { act: { type: Number, maxLength: 10, defaultValue: 0 }, id_user: [String] },
+        only: [{ id: { type: Number, maxLength: 1 }, icon: { type: String, maxLength: 10 } }],
+    },
     amount: { type: Number, maxLength: 20, defaultValue: 0 },
     act: { type: Number, maxLength: 1, defaultValue: 1 },
 };
@@ -40,7 +42,7 @@ const comments = [
     },
 ];
 const Posts = new Schema({
-    id_user: { type: String, maxLength: 50, required: true },
+    id_user: { type: String, maxLength: 50, required: true, index: true },
     user: [
         {
             id: { type: String, maxLength: 50, required: true },

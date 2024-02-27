@@ -9,11 +9,11 @@ import fileGridFS from './fileGridFS';
 import errorHandler from '../../middleware/errorHandles';
 function routeSN(app: any) {
     console.log('erararea');
-    app.use('/api/user', userRoute);
-    app.use('/api/SN/home', homeRoute);
-    app.use('/api/SN/profile', searchRoute);
-    app.use('/api/SN/people', peopleRoute);
-    app.use('/api/messenger', messenger);
-    app.use('/api/fileGridFS', fileGridFS);
+    app.use('/api/v1/user', userRoute);
+    app.use('/api/v1/SN/home', homeRoute);
+    app.use('/api/v1/SN/profile', searchRoute);
+    app.use('/api/v1/SN/people', peopleRoute);
+    app.use('/api/v1/messenger', messenger);
+    app.use('/api/v1/fileGridFS', fileGridFS);
 }
 export default routeSN;

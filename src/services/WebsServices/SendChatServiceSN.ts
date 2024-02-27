@@ -319,7 +319,7 @@ class SendChatService {
                         const roomChat = await RoomChats.aggregate([
                             { $match: { _id: conversationId } }, // Match the document with the specified roomId
                             { $unwind: '$room' }, // Unwind the room array
-                            { $match: { 'room.createdAt': { $gt: createdAt } } },
+                            { $match: { 'room.createdAt': { $gt: createdAt } } }, // get data by date
                             { $sort: { 'room.createdAt': -1 } }, // Sort by createdAt field in descending order
                             { $skip: offset }, // Skip the specified number of documents
                             { $limit: limit }, // Limit the number of documents to retrieve

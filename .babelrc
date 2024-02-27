@@ -1,3 +1,6 @@
 {
     "presets": ["@babel/preset-env"]
 }
+/*Presets: Đây là một tập hợp các plugin được nhóm lại để dễ dàng sử dụng. Ví dụ, @babel/preset-env cho phép
+ bạn chỉ định các tính năng JavaScript mà bạn muốn sử dụng và Babel sẽ tự động chuyển đổi mã của bạn để hoạt 
+ động trên các trình duyệt hoặc môi trường cụ thể.*/

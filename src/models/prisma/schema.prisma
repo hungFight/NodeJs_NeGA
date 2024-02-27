@@ -12,13 +12,13 @@ model User {
     fullName         String         @db.VarChar(30)
     phoneNumberEmail String         @db.VarChar(50)
     password         String         @db.VarChar(100)
-    avatar           Bytes?         @db.LongBlob
+    avatar           String?        @db.VarChar(50)
     active           Boolean        @default(true)
     biography        String?        @db.VarChar(50)
     gender           Int
     birthday         String         @db.VarChar(13)
     address          String?        @db.VarChar(250)
-    background       Bytes?         @db.LongBlob
+    background       String?        @db.VarChar(50)
     hobby            Json?          @db.Json
     schoolName       String?        @db.VarChar(100)
     occupation       String?        @db.VarChar(100)

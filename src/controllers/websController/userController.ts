@@ -12,6 +12,7 @@ class userController {
             const id_reqs: string[] = req.body.id;
             const first = req.body.first;
             const userData = await UserServiceSN.getById(id, id_reqs, req.body.params, req.body.mores, first);
+
             if (userData) return res.status(200).json(userData);
             throw new NotFound('GetById', 'login again', { status: 0 });
         } catch (error) {
@@ -108,7 +109,7 @@ class userController {
             const params = req.body.params.params;
             const redisClient: Redis = res.redisClient;
             const value = req.body.params.value;
-            console.log(id, 'heeeee', params);
+            console.log('heeeee', params);
             if (params.fullName === 'fullName') {
                 const fullName = `${id} update Name`;
                 redisClient.get(fullName, async (err, data) => {
@@ -127,7 +128,7 @@ class userController {
                 });
             } else {
                 const data: any = await UserServiceSN.changesOne(id, id_req, value, params);
-                return res.status(200).json(data);
+                return res.status(200).json('data');
             }
         } catch (error) {
             next(error);

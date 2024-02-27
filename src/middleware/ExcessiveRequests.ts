@@ -172,30 +172,31 @@ class ExcessiveRequests {
     changeText = (req: express.Request, res: any, next: express.NextFunction) => {
         const redisClient: Redis = res.redisClient;
         const id = req.cookies.k_user;
-        const params = req.body.params.params;
-        if (params.fullName) {
-            redisClient.get(`${id} update Name`, (err, data) => {
-                if (err)
-                    throw new ServerError('Update FullName: Limit times changeText by MiddleWare changeText ', err);
-                if (data) {
-                    return res.status(200).json(data);
-                } else {
-                    next();
-                }
-            });
-        } else if (params.nickName) {
-            redisClient.get(`${id} update Nick Name`, (err, data) => {
-                if (err)
-                    throw new ServerError('Update NickName: Limit times changeText by MiddleWare changeText ', err);
-                if (data && JSON.parse(data)?.length >= 10) {
-                    return res.status(200).json(JSON.parse(data));
-                } else {
-                    next();
-                }
-            });
-        } else {
-            next();
-        }
+        // const params = req.query.params;
+        // if (params.fullName) {
+        //     redisClient.get(`${id} update Name`, (err, data) => {
+        //         if (err)
+        //             throw new ServerError('Update FullName: Limit times changeText by MiddleWare changeText ', err);
+        //         if (data) {
+        //             return res.status(200).json(data);
+        //         } else {
+        //             next();
+        //         }
+        //     });
+        // } else if (params.nickName) {
+        //     redisClient.get(`${id} update Nick Name`, (err, data) => {
+        //         if (err)
+        //             throw new ServerError('Update NickName: Limit times changeText by MiddleWare changeText ', err);
+        //         if (data && JSON.parse(data)?.length >= 10) {
+        //             return res.status(200).json(JSON.parse(data));
+        //         } else {
+        //             next();
+        //         }
+        //     });
+        // } else {
+        //     next();
+        // }
+        next();
     };
 }
 export default new ExcessiveRequests();

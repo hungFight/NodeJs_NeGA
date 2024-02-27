@@ -1,5 +1,3 @@
-import cluster from 'cluster';
-import os from 'os';
 import express from 'express';
 import connectDatabase from './connectDatabase/connectDatabase';
 import { PrismaClient } from '@prisma/client';

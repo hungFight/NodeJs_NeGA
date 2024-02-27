@@ -1,6 +1,7 @@
 import moment from 'moment';
 import { prisma } from '../..';
 import xPrismaF from '../../models/prisma/extension/xPrismaF';
+import { InfoFile } from '../../models/mongodb/infoFile';
 export interface PropsParams {
     fullName?: boolean;
     active?: boolean;
@@ -486,7 +487,16 @@ class UserService {
         id: string,
         id_req: string,
         value: any, //string or buffer
-        params: { avatar: string; background: string; fullName: string; mores: { loverAmount: string } },
+        params: {
+            avatar?: string;
+            background?: string;
+            fullName?: string;
+            mores?: { loverAmount: string };
+            id_file?: string;
+            type?: string;
+            name?: string;
+            title?: string;
+        },
     ) {
         return new Promise(async (resolve: any, reject: (arg0: unknown) => void) => {
             try {
@@ -533,11 +543,17 @@ class UserService {
 
                     if (name) if (value.length > 30) resolve(0);
                     if ((av || akg) && value) {
-                        value = Buffer.from(value);
+                        const infoFile = await InfoFile.create({
+                            id: value.id_file,
+                            name: value.name,
+                            type: value.type,
+                            title: value.title,
+                        });
+                        console.log(infoFile, 'infoFile');
                     }
                     const data: any = await prisma.user.update({
                         where: { id: id },
-                        data: { [`${av || akg || name}`]: value },
+                        data: { [`${av || akg || name}`]: av ? value.id_file : value },
                     });
                     if (name) resolve(data[`${name}`]);
                     if (akg || av) resolve(true);
