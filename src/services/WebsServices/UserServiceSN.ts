@@ -543,17 +543,24 @@ class UserService {
 
                     if (name) if (value.length > 30) resolve(0);
                     if ((av || akg) && value) {
-                        const infoFile = await InfoFile.create({
-                            id: value.id_file,
-                            name: value.name,
-                            type: value.type,
-                            title: value.title,
+                        InfoFile.findOneAndDelete({ id: value.old_id }, async (err: any, deletedDocument: any) => {
+                            if (err) {
+                                console.error('Error:', err);
+                                return;
+                            }
+                            const infoFile = await InfoFile.create({
+                                id: value.id_file,
+                                name: value.name,
+                                type: value.type,
+                                title: value.title,
+                            });
+                            console.log(infoFile, 'infoFile');
+                            console.log('Deleted document:', deletedDocument);
                         });
-                        console.log(infoFile, 'infoFile');
                     }
                     const data: any = await prisma.user.update({
                         where: { id: id },
-                        data: { [`${av || akg || name}`]: av ? value.id_file : value },
+                        data: { [`${av || akg || name}`]: av || akg ? value.id_file : value },
                     });
                     if (name) resolve(data[`${name}`]);
                     if (akg || av) resolve(true);
