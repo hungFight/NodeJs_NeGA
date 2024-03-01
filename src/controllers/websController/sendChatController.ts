@@ -17,6 +17,7 @@ class SendChat {
             const id_other = req.body.id_others;
             const id_room = req.body.id_room;
             const id_s = req.body.id_s;
+            const id_files = req.body.id_files ? JSON.parse(req.body.id_files) : [];
             const io: Server<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any> = res.io;
             const reply = req.body.reply;
             const conversationId = req.body.conversationId;
@@ -31,7 +32,7 @@ class SendChat {
                     id,
                     id_other,
                     value,
-                    files,
+                    id_files,
                     id_room,
                     reply ? JSON.parse(reply) : id_s,
                 );
@@ -63,7 +64,7 @@ class SendChat {
                 }
                 return res.status(404).json('Send message failed!');
             }
-            throw new NotFound('Send', 'id_other or id_ not found');
+            throw new NotFound('Send', 'id_other or id_room not found');
         } catch (error) {
             next(error);
         }

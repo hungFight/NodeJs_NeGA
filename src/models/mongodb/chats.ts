@@ -52,9 +52,7 @@ const chats = new Schema(
                 },
                 imageOrVideos: [
                     {
-                        type: { type: String, maxLength: 20 },
                         _id: { type: String, maxLength: 50, unique: true },
-                        v: { type: String, maxLength: 50 },
                         icon: { type: String, maxLength: 1, default: '' },
                     },
                     { _id: false },

@@ -41,7 +41,7 @@ class SendChatService {
         id: string,
         id_other: string,
         value: string,
-        files: any,
+        id_files: string[],
         _id_room: string,
         id_sOrReply?:
             | string
@@ -60,16 +60,10 @@ class SendChatService {
     ) {
         return new Promise<PropsRoomChat>(async (resolve, reject) => {
             try {
-                const ids_file: any = files.map((f: any) => {
-                    return { id: f.metadata.id_file.toString(), type: f.mimetype };
+                const imagesOrVideos: { _id: string; icon: string }[] = [];
+                id_files.forEach((id_f) => {
+                    imagesOrVideos.push({ _id: id_f, icon: '' });
                 });
-                const imagesOrVideos: { _id: string; v: any; icon: string; type: string }[] = [];
-                if (ids_file) {
-                    for (let id of ids_file) {
-                        console.log(id);
-                        imagesOrVideos.push({ _id: id.id, v: id.id, icon: '', type: id.type });
-                    }
-                }
                 console.log(imagesOrVideos, 'imagesOrVideos');
                 const res = conversationId
                     ? await RoomChats.findOne({
