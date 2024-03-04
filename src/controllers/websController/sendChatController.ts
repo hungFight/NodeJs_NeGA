@@ -17,12 +17,10 @@ class SendChat {
             const id_other = req.body.id_others;
             const id_room = req.body.id_room;
             const id_s = req.body.id_s;
-            const id_files = req.body.id_files ? JSON.parse(req.body.id_files) : [];
+            const valueInfoFile = req.body.valueInfoFile;
             const io: Server<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any> = res.io;
             const reply = req.body.reply;
             const conversationId = req.body.conversationId;
-            console.log(conversationId, 'conversationId');
-            const files = req.files;
 
             if (id_other && id_room) {
                 console.log(id_other, 'id_others');
@@ -32,7 +30,7 @@ class SendChat {
                     id,
                     id_other,
                     value,
-                    id_files,
+                    valueInfoFile,
                     id_room,
                     reply ? JSON.parse(reply) : id_s,
                 );

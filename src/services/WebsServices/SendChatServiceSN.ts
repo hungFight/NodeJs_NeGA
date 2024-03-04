@@ -41,7 +41,7 @@ class SendChatService {
         id: string,
         id_other: string,
         value: string,
-        id_files: string[],
+        valueInfoFile: { id: string; type: string; tail: string; name: string }[],
         _id_room: string,
         id_sOrReply?:
             | string
@@ -60,11 +60,16 @@ class SendChatService {
     ) {
         return new Promise<PropsRoomChat>(async (resolve, reject) => {
             try {
-                const imagesOrVideos: { _id: string; icon: string }[] = [];
-                id_files.forEach((id_f) => {
-                    imagesOrVideos.push({ _id: id_f, icon: '' });
-                });
-                console.log(imagesOrVideos, 'imagesOrVideos');
+                const imageOrVideos: {
+                    _id: string;
+                    icon: string;
+                    type: string;
+                    tail: string;
+                }[] = [];
+                valueInfoFile.forEach((f) => {
+                    imageOrVideos.push({ _id: f.id, icon: '', tail: f.tail, type: f.type });
+                }),
+                    console.log(imageOrVideos, 'imagesOrVideos');
                 const res = conversationId
                     ? await RoomChats.findOne({
                           _id: conversationId,
@@ -98,7 +103,7 @@ class SendChatService {
                                 text: {
                                     t: value,
                                 },
-                                imagesOrVideos,
+                                imageOrVideos,
                                 createdAt: DateTime(),
                                 secondary: typeof id_sOrReply === 'string' ? id_sOrReply : '',
                             },
@@ -120,7 +125,7 @@ class SendChatService {
                         id: id,
                         _id: _id_room,
                         seenBy: [],
-                        imageOrVideos: imagesOrVideos,
+                        imageOrVideos: imageOrVideos,
                         createdAt: DateTime(),
                         reply: id_sOrReply,
                     };
@@ -155,7 +160,14 @@ class SendChatService {
                     { $match: { id_us: id, 'deleted.show': { $ne: true } } }, // Lọc theo điều kiện tương ứng với _id của document
                     { $unwind: '$room' }, // Tách mỗi phần tử trong mảng room thành một document riêng
                     { $sort: { 'room.createdAt': -1 } }, // Sắp xếp theo trường createdAt trong mỗi phần tử room
-
+                    {
+                        $lookup: {
+                            from: 'infoFile',
+                            localField: 'room.imageOrVideos._id',
+                            foreignField: 'id',
+                            as: 'infoFile',
+                        },
+                    },
                     {
                         $group: {
                             _id: '$_id',
@@ -321,6 +333,8 @@ class SendChatService {
                                 $group: Group,
                             }, // Group the documents and reconstruct the room array
                         ]);
+                        console.log(roomChat, 'roomChat0');
+
                         if (roomChat.length) {
                             if (!offset) {
                                 roomChat[0].user = user;
@@ -341,6 +355,8 @@ class SendChatService {
                                 $group: Group,
                             }, // Group the documents and reconstruct the room array
                         ]);
+                        console.log(roomChat, 'roomChat1');
+
                         if (roomChat.length) {
                             if (!offset) {
                                 resolve({ ...roomChat[0], user: user });
@@ -376,10 +392,19 @@ class SendChatService {
                                 { $skip: offset }, // Skip the specified number of documents
                                 { $limit: limit }, // Limit the number of documents to retrieve
                                 {
+                                    $lookup: {
+                                        from: 'infoFile',
+                                        localField: 'room.imageOrVideos._id',
+                                        foreignField: 'id',
+                                        as: 'infoFile',
+                                    },
+                                },
+                                {
                                     $group: Group,
                                 }, // Group the documents and reconstruct the room array
                             ]);
 
+                            console.log(roomChat, 'roomChat2s', moreChat);
                             if (roomChat.length) {
                                 roomChat[0].user = user;
                                 resolve(roomChat[0]);
@@ -387,7 +412,6 @@ class SendChatService {
                             if (moreChat === 'false') {
                                 id_roomChat.user = user;
                                 id_roomChat.room = [];
-                                console.log(roomChat, 'roomChat', moreChat);
                                 resolve(id_roomChat);
                             } else {
                                 resolve(null);
@@ -404,9 +428,18 @@ class SendChatService {
                                 { $skip: offset }, // Skip the specified number of documents
                                 { $limit: limit }, // Limit the number of documents to retrieve
                                 {
+                                    $lookup: {
+                                        from: 'infoFile',
+                                        localField: 'room.imageOrVideos._id',
+                                        foreignField: 'id',
+                                        as: 'infoFile',
+                                    },
+                                },
+                                {
                                     $group: Group,
                                 }, // Group the documents and reconstruct the room array
                             ]);
+                            console.log(roomChat, 'roomChat6s');
 
                             if (roomChat.length) {
                                 roomChat[0].user = user;
