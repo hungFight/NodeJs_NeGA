@@ -612,43 +612,52 @@ class SendChatService {
             }
         });
     }
-    updateChat(conversationId: string, chatId: string, userId: string, id_other: string, value: string, files: any) {
+    updateChat(
+        conversationId: string,
+        chatId: string,
+        userId: string,
+        id_other: string,
+        value: string,
+        files: { id: string; type: string; tail: string; name: string }[],
+    ) {
         // delete both side
         return new Promise(async (resolve, reject) => {
             try {
                 const ids_file: any = files.map((f: any) => {
                     return { id: f.metadata.id_file.toString(), type: f.mimetype };
                 });
-                const imagesOrVideos: { readonly _id: string; readonly v: any; icon: string; type: string }[] = [];
-                if (ids_file) {
-                    for (let id of ids_file) {
-                        console.log(id);
-                        imagesOrVideos.push({ _id: id.id, v: id.id, icon: '', type: id.type });
-                    }
-                }
+                const imageOrVideos: {
+                    readonly _id: string;
+                    readonly icon: string;
+                    readonly type: string;
+                    readonly tail: string;
+                }[] = [];
+                files.forEach((f) => {
+                    imageOrVideos.push({ _id: f.id, icon: '', tail: f.tail, type: f.type });
+                });
                 const res: any = await RoomChats.findOne({ _id: conversationId, 'room._id': chatId }, { 'room.$': 1 }); // it's an array
                 if (res?.room.length) {
-                    if (imagesOrVideos.length || value) {
+                    if (imageOrVideos.length || value) {
                         const seenBy: string[] = res.room[0].seenBy ?? [];
                         let $set = {};
-                        if (value && !imagesOrVideos.length) {
+                        if (value && !imageOrVideos.length) {
                             $set = {
                                 'room.$[roomId].text.t': value,
                                 'room.$[roomId].update': seenBy.includes(id_other) ? userId : 'changed',
                                 'room.$[roomId].updatedAt': new Date(),
                             };
                         }
-                        if (imagesOrVideos.length && !value) {
+                        if (imageOrVideos.length && !value) {
                             $set = {
-                                'room.$[roomId].imageOrVideos': imagesOrVideos,
+                                'room.$[roomId].imageOrVideos': imageOrVideos,
                                 'room.$[roomId].update': seenBy.includes(id_other) ? userId : 'changed',
                                 'room.$[roomId].updatedAt': new Date(),
                             };
                         }
-                        if (value && imagesOrVideos.length) {
+                        if (value && imageOrVideos.length) {
                             $set = {
                                 'room.$[roomId].text.t': value,
-                                'room.$[roomId].imageOrVideos': imagesOrVideos,
+                                'room.$[roomId].imageOrVideos': imageOrVideos,
                                 'room.$[roomId].update': seenBy.includes(id_other) ? userId : 'changed',
                                 'room.$[roomId].updatedAt': new Date(),
                             };

@@ -9,7 +9,7 @@ router.post('/sendChat', sendChatController.sendChat);
 router.get('/getRoom', sendChatController.getRoom);
 router.get('/getChat', sendChatController.getChat);
 router.delete('/delete', sendChatController.delete);
-// router.post('/delChatAll', uploadGridFS.delete, sendChatController.delChatAll);
+router.post('/delChatAll', sendChatController.delChatAll);
 router.post('/updateChat', sendChatController.updateChat);
 router.post('/delChatSelf', sendChatController.delChatSelf);
 router.post('/undo', sendChatController.undo);

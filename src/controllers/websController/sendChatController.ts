@@ -208,7 +208,7 @@ class SendChat {
             const userIdCur = req.cookies.k_user;
             const userId: string = req.body.userId;
             const id_other: string = req.body.id_other;
-            const files = req.files;
+            const files = req.body.ids;
             const io: Server<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any> = res.io;
             console.log(conversationId, chatId);
 
