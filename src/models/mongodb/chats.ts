@@ -33,7 +33,7 @@ const chats = new Schema(
         },
         pins: [
             {
-                _id: { type: String, required: true, maxLength: 50 },
+                _id: { type: String, required: true, maxLength: 50, index: true },
                 chatId: { type: String, maxLength: 50 },
                 userId: { type: String, maxLength: 50 },
                 createdAt: { type: Date, default: Date.now() },

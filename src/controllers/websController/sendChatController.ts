@@ -210,8 +210,6 @@ class SendChat {
             const id_other: string = req.body.id_other;
             const files = req.body.ids;
             const io: Server<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any> = res.io;
-            console.log(conversationId, chatId);
-
             if (!conversationId || !chatId || !id_other)
                 throw new NotFound(
                     'updateChat UP',

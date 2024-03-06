@@ -623,9 +623,6 @@ class SendChatService {
         // delete both side
         return new Promise(async (resolve, reject) => {
             try {
-                const ids_file: any = files.map((f: any) => {
-                    return { id: f.metadata.id_file.toString(), type: f.mimetype };
-                });
                 const imageOrVideos: {
                     readonly _id: string;
                     readonly icon: string;
