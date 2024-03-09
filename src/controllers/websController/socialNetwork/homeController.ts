@@ -9,16 +9,15 @@ class homeController {
             const hashTags = req.body.hashTags ? JSON.parse(req.body.hashTags) : undefined;
             const tags = req.body.tags ? JSON.parse(req.body.tags) : undefined;
             const value = req.body.text;
-            const files = req.files;
             const category = req.body.category ? JSON.parse(req.body.category) : undefined; // must be number
             const fontFamily = req.body.fontFamily;
             const bg_default = req.body.bg_default;
+            const data_file = req.body.data_file;
             const act = req.body.act ? JSON.parse(req.body.act) : undefined;
             // const expire = req.body.expire;
             const privates = req.body.privacy ? JSON.parse(req.body.privacy) : undefined;
             const whoCanSeePost = req.body.whoSeePost ? JSON.parse(req.body.whoSeePost) : undefined;
             const imotions = req.body.imotions ? JSON.parse(req.body.imotions) : undefined;
-            console.log(files, 'ss', whoCanSeePost, 'whoCanSeePost');
 
             // swiper
 
@@ -29,29 +28,28 @@ class homeController {
             // grid
             const BgColor = req.body.BgColor;
             const columnGrid = req.body.columnOfGrid ? JSON.parse(req.body.columnOfGrid) : undefined;
-            if (category === 1) {
-                // swiper
-                files.forEach((file: any) => {
-                    if (file.metadata.title) {
-                        if (JSON.parse(file.metadata.title) === 1) {
-                            Centered1?.data.push(file.metadata.id_file);
-                        }
-                        if (JSON.parse(file.metadata.title) === 2) {
-                            Centered2?.data.push(file.metadata.id_file);
-                        }
-                        if (JSON.parse(file.metadata.title) === 3) {
-                            Centered3?.data.push(file.metadata.id_file);
-                        }
-                    }
-                });
-            }
+            // if (category === 1) {
+            //     // swiper
+            //     files.forEach((file: any) => {
+            //         if (file.metadata.title) {
+            //             if (JSON.parse(file.metadata.title) === 1) {
+            //                 Centered1?.data.push(file.metadata.id_file);
+            //             }
+            //             if (JSON.parse(file.metadata.title) === 2) {
+            //                 Centered2?.data.push(file.metadata.id_file);
+            //             }
+            //             if (JSON.parse(file.metadata.title) === 3) {
+            //                 Centered3?.data.push(file.metadata.id_file);
+            //             }
+            //         }
+            //     });
+            // }
             console.log(value, Centered1, Centered2, Centered3, 'body', categoryOfSwiper, 'categoryOfSwiper');
             const data = await HomeServiceSN.setPost(
                 id,
                 value, // value text
                 category, // type post
                 fontFamily,
-                files,
                 privates, //privacy fiels of post
                 whoCanSeePost,
                 imotions,
@@ -65,6 +63,7 @@ class homeController {
                 hashTags,
                 tags,
                 bg_default,
+                data_file,
             );
             return res.status(200).json(data);
         } catch (error) {
@@ -78,6 +77,7 @@ class homeController {
             const limit = req.query.limit;
             const offset = req.query.offset;
             const status = req.query.status;
+            const data_file = req.query.id_file;
             console.log('limit', limit, offset, 'offset', status, 'status');
             const data: any = await HomeServiceSN.getPosts(id, limit, offset, status);
             return res.status(200).json(data);

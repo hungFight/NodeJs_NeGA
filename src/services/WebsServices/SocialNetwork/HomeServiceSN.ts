@@ -2,6 +2,7 @@ import { file } from 'googleapis/build/src/apis/file';
 import DateTime from '../../../DateTimeCurrent/DateTimeCurrent';
 import { NewPost } from '../../../models/mongodb/SN_DB/home';
 import { prisma } from '../../..';
+import { PropsInfoFile } from '../SendChatServiceSN';
 // const Sequelize = require('sequelize');
 // const Op = Sequelize.Op;
 
@@ -13,7 +14,6 @@ class HomeServiceSN {
         value: string,
         category: number,
         fontFamily: string,
-        files: any,
         privates: { id: number; name: string }[], // lists of privacies
         whoCanSeePost: { id: number; name: string },
         imotigons: { id: number; name: string }[],
@@ -42,18 +42,19 @@ class HomeServiceSN {
         }[],
         tags: string[],
         bg_default: string,
+        data_file: PropsInfoFile[],
     ) => {
         return new Promise(async (resolve, reject) => {
             try {
-                const id_c = files?.map((f: any) => f.id);
+                const id_c = data_file?.map((f) => f.id);
                 let options = {};
-                const imageOrVideos: any = files?.map((f: any) => f.metadata.id_file.toString());
+                const imageOrVideos = data_file?.map((f) => f.id);
                 switch (category) {
                     case 0:
-                        const imageOrVideosDe: any = files.map((f: any) => {
+                        const imageOrVideosDe = data_file?.map((f) => {
                             return {
-                                file: { link: f.metadata.id_file.toString(), type: f.contentType },
-                                title: f.metadata.title,
+                                file: { link: f.id.toString(), type: f.type },
+                                title: f.title,
                             };
                         });
                         options = {

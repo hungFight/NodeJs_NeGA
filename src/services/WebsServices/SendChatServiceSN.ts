@@ -5,6 +5,13 @@ import XOAuth2 from 'nodemailer/lib/xoauth2';
 import { v4 as primaryKey } from 'uuid';
 import { Types } from 'mongoose';
 const { ObjectId } = require('mongodb');
+export interface PropsInfoFile {
+    id: string;
+    type: string;
+    tail: string;
+    name: string;
+    title?: string;
+}
 
 export interface PropsRoomChat {
     _id: any;
@@ -41,7 +48,7 @@ class SendChatService {
         id: string,
         id_other: string,
         value: string,
-        valueInfoFile: { id: string; type: string; tail: string; name: string }[],
+        valueInfoFile: PropsInfoFile[],
         _id_room: string,
         id_sOrReply?:
             | string
@@ -618,7 +625,7 @@ class SendChatService {
         userId: string,
         id_other: string,
         value: string,
-        files: { id: string; type: string; tail: string; name: string }[],
+        files: PropsInfoFile[],
     ) {
         // delete both side
         return new Promise(async (resolve, reject) => {
