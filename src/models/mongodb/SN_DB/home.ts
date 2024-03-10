@@ -7,8 +7,8 @@ const feel = {
         smile: { act: { type: Number, maxLength: 10, defaultValue: 0 }, id_user: [String] },
         sad: { act: { type: Number, maxLength: 10, defaultValue: 0 }, id_user: [String] },
         angry: { act: { type: Number, maxLength: 10, defaultValue: 0 }, id_user: [String] },
-        only: [{ id: { type: Number, maxLength: 1 }, icon: { type: String, maxLength: 10 } }],
     },
+    onlyEmo: [{ id: { type: Number, maxLength: 1 }, icon: { type: String, maxLength: 10 } }], // display icons will be chosen
     amount: { type: Number, maxLength: 20, defaultValue: 0 },
     act: { type: Number, maxLength: 1, defaultValue: 1 },
 };

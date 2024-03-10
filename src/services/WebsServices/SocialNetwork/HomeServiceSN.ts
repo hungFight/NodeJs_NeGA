@@ -48,17 +48,17 @@ class HomeServiceSN {
             try {
                 const id_c = data_file?.map((f) => f.id);
                 let options = {};
-                const imageOrVideos = data_file?.map((f) => f.id);
+                const imageOrVideosD = data_file?.map((f) => f.id);
                 switch (category) {
                     case 0:
-                        const imageOrVideosDe = data_file?.map((f) => {
+                        const imageOrVideos = data_file?.map((f) => {
                             return {
-                                file: { link: f.id.toString(), type: f.type },
+                                file: { link: f.id, type: f.type },
                                 title: f.title,
                             };
                         });
                         options = {
-                            default: imageOrVideosDe,
+                            default: imageOrVideos,
                         };
                         console.log(options, '0');
                         break;
@@ -74,7 +74,7 @@ class HomeServiceSN {
                             };
                         } else {
                             data = {
-                                file: imageOrVideos,
+                                file: imageOrVideosD,
                             };
                         }
                         options = {
@@ -88,7 +88,7 @@ class HomeServiceSN {
                     case 2:
                         options = {
                             grid: {
-                                file: imageOrVideos,
+                                file: imageOrVideosD,
                                 BgColor,
                                 column: columnGrid,
                             },
@@ -96,7 +96,7 @@ class HomeServiceSN {
                         break;
                     case 3:
                         options = {
-                            onlyImage: imageOrVideos,
+                            onlyImage: imageOrVideosD,
                         };
                         break;
                 }

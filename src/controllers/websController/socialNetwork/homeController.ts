@@ -12,7 +12,7 @@ class homeController {
             const category = req.body.category ? JSON.parse(req.body.category) : undefined; // must be number
             const fontFamily = req.body.fontFamily;
             const bg_default = req.body.bg_default;
-            const data_file = req.body.data_file;
+            const data_file = req.body.id_file;
             const act = req.body.act ? JSON.parse(req.body.act) : undefined;
             // const expire = req.body.expire;
             const privates = req.body.privacy ? JSON.parse(req.body.privacy) : undefined;
