@@ -1,6 +1,7 @@
-import HomeServiceSN from '../../../services/WebsServices/SocialNetwork/HomeServiceSN';
+import PostServiceSN from '../../../services/WebsServices/SocialNetwork/PostServiceSN';
+import express from 'express';
 class homeController {
-    setPost = async (req: any, res: any, next: any) => {
+    setPost = async (req: any, res: any, next: express.NextFunction) => {
         try {
             console.log(req.body);
 
@@ -44,8 +45,8 @@ class homeController {
             //         }
             //     });
             // }
-            console.log(value, Centered1, Centered2, Centered3, 'body', categoryOfSwiper, 'categoryOfSwiper');
-            const data = await HomeServiceSN.setPost(
+            console.log(value, Centered1, Centered2, Centered3, 'body', imotions, 'categoryOfSwiper');
+            const data = await PostServiceSN.setPost(
                 id,
                 value, // value text
                 category, // type post
@@ -67,11 +68,24 @@ class homeController {
             );
             return res.status(200).json(data);
         } catch (error) {
-            console.log(error);
+            next(error);
         }
     };
     search = () => {};
-    getPosts = async (req: any, res: any, next: any) => {
+    setEmotion = async (req: any, res: any, next: express.NextFunction) => {
+        try {
+            const _id = req.body._id;
+            const index = req.body.index;
+            const id_user = req.body.id_user;
+            const state = req.body.state;
+            const oldIndex = req.body.oldIndex;
+            const data = await PostServiceSN.setEmotion(_id, index, id_user, state, oldIndex);
+            return res.status(200).json(data);
+        } catch (error) {
+            next(error);
+        }
+    };
+    getPosts = async (req: any, res: any, next: express.NextFunction) => {
         try {
             const id = req.cookies.k_user;
             const limit = req.query.limit;
@@ -79,10 +93,10 @@ class homeController {
             const status = req.query.status;
             const data_file = req.query.id_file;
             console.log('limit', limit, offset, 'offset', status, 'status');
-            const data: any = await HomeServiceSN.getPosts(id, limit, offset, status);
+            const data: any = await PostServiceSN.getPosts(id, limit, offset, status);
             return res.status(200).json(data);
         } catch (error) {
-            console.error('Error Server:', error);
+            next(error);
         }
     };
 }

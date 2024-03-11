@@ -1,14 +1,7 @@
 import mongoose from 'mongoose';
 const Schema = mongoose.Schema;
 const feel = {
-    emo: {
-        like: { act: { type: Number, maxLength: 10, defaultValue: 0 }, id_user: [String] },
-        love: { act: { type: Number, maxLength: 10, defaultValue: 0 }, id_user: [String] },
-        smile: { act: { type: Number, maxLength: 10, defaultValue: 0 }, id_user: [String] },
-        sad: { act: { type: Number, maxLength: 10, defaultValue: 0 }, id_user: [String] },
-        angry: { act: { type: Number, maxLength: 10, defaultValue: 0 }, id_user: [String] },
-    },
-    onlyEmo: [{ id: { type: Number, maxLength: 1 }, icon: { type: String, maxLength: 10 } }], // display icons will be chosen
+    onlyEmo: [{ id: { type: Number, maxLength: 1 }, icon: { type: String, maxLength: 10 }, id_user: [String] }], // display icons will be chosen
     amount: { type: Number, maxLength: 20, defaultValue: 0 },
     act: { type: Number, maxLength: 1, defaultValue: 1 },
 };

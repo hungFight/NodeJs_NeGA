@@ -8,7 +8,7 @@ import { PropsInfoFile } from '../SendChatServiceSN';
 
 // const db = require('../../../models');
 
-class HomeServiceSN {
+class PostServiceSN {
     setPost = (
         id: string,
         value: string,
@@ -16,7 +16,7 @@ class HomeServiceSN {
         fontFamily: string,
         privates: { id: number; name: string }[], // lists of privacies
         whoCanSeePost: { id: number; name: string },
-        imotigons: { id: number; name: string }[],
+        imotions: { id: number; name: string }[],
         categoryOfSwiper: { id: number; name: string },
         Centered1: {
             id: number;
@@ -117,7 +117,7 @@ class HomeServiceSN {
                         options,
                     },
                     feel: {
-                        only: imotigons,
+                        onlyEmo: imotions,
                         amount: 0,
                         act: act,
                     },
@@ -244,5 +244,38 @@ class HomeServiceSN {
             }
         });
     };
+    setEmotion = (_id: string, index: number, id_user: string, state: string, oldIndex: number): Promise<boolean> => {
+        return new Promise(async (resolve, reject) => {
+            try {
+                if (state === 'remove') {
+                    const post = await NewPost.findByIdAndUpdate(
+                        _id,
+                        { $pull: { 'feel.onlyEmo.$[elm].id_user': id_user }, $inc: { 'feel.amount': -1 } },
+                        { arrayFilters: [{ 'elm.id': index }], new: true },
+                    );
+                    resolve(true);
+                } else if (state === 'add') {
+                    const post = await NewPost.findByIdAndUpdate(
+                        _id,
+                        { $addToSet: { 'feel.onlyEmo.$[elm].id_user': id_user }, $inc: { 'feel.amount': 1 } },
+                        { arrayFilters: [{ 'elm.id': index }], new: true },
+                    );
+                    resolve(true);
+                } else {
+                    const post = await NewPost.findByIdAndUpdate(
+                        _id,
+                        {
+                            $pull: { 'feel.onlyEmo.$[old].id_user': oldIndex }, // remove
+                            $addToSet: { 'feel.onlyEmo.$[elm].id_user': id_user }, // add new
+                        },
+                        { arrayFilters: [{ 'elm.id': index }, { 'old.id': oldIndex }], new: true },
+                    );
+                    resolve(true);
+                }
+            } catch (error) {
+                reject(error);
+            }
+        });
+    };
 }
-export default new HomeServiceSN();
+export default new PostServiceSN();
