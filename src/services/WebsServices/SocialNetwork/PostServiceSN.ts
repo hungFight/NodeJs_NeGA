@@ -265,7 +265,7 @@ class PostServiceSN {
                     const post = await NewPost.findByIdAndUpdate(
                         _id,
                         {
-                            $pull: { 'feel.onlyEmo.$[old].id_user': oldIndex }, // remove
+                            $pull: { 'feel.onlyEmo.$[old].id_user': id_user }, // remove
                             $addToSet: { 'feel.onlyEmo.$[elm].id_user': id_user }, // add new
                         },
                         { arrayFilters: [{ 'elm.id': index }, { 'old.id': oldIndex }], new: true },
