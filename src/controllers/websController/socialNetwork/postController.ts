@@ -91,8 +91,6 @@ class homeController {
             const limit = req.query.limit;
             const offset = req.query.offset;
             const status = req.query.status;
-            const data_file = req.query.id_file;
-            console.log('limit', limit, offset, 'offset', status, 'status');
             const data: any = await PostServiceSN.getPosts(id, limit, offset, status);
             return res.status(200).json(data);
         } catch (error) {

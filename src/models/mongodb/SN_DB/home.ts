@@ -2,7 +2,6 @@ import mongoose from 'mongoose';
 const Schema = mongoose.Schema;
 const feel = {
     onlyEmo: [{ id: { type: Number, maxLength: 1 }, icon: { type: String, maxLength: 10 }, id_user: [String] }], // display icons will be chosen
-    amount: { type: Number, maxLength: 20, defaultValue: 0 },
     act: { type: Number, maxLength: 1, defaultValue: 1 },
 };
 const comments = [
@@ -40,7 +39,7 @@ const Posts = new Schema({
         {
             id: { type: String, maxLength: 50, required: true },
             fullName: { type: String, maxLength: 30, required: true },
-            avatar: { type: Buffer },
+            avatar: { type: String, required: false, maxLength: 50 },
             gender: { type: Number, maxLength: 1, required: true },
         },
     ],

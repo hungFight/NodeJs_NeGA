@@ -118,7 +118,6 @@ class PostServiceSN {
                     },
                     feel: {
                         onlyEmo: imotions,
-                        amount: 0,
                         act: act,
                     },
                     private: privates,
@@ -182,11 +181,11 @@ class PostServiceSN {
                     //         },
                     //     },
                     // ]);
-                    const dataPost = await NewPost.find({ id_user: { $in: [...follow_id, id] } })
+                    const dataPost = await NewPost.find({ id_user: { $in: [...friends_id, ...follow_id, id] } })
                         .sort({ createdAt: -1 })
                         .limit(limit)
                         .skip(offset);
-                    const newData = await new Promise(async (resolve, reject) => {
+                    const newData: any = await new Promise(async (resolve, reject) => {
                         try {
                             await Promise.all(
                                 dataPost.map(async (p, index: number) => {
@@ -195,15 +194,15 @@ class PostServiceSN {
                                             { id: "It's me", fullName: "It's me", avatar: undefined, gender: 0 },
                                         ];
                                     } else {
-                                        const user = await prisma.user.findUnique({
+                                        const user: any = await prisma.user.findUnique({
                                             where: {
                                                 id: p.id_user,
                                             },
                                             select: { id: true, avatar: true, fullName: true, gender: true },
                                         });
+                                        console.log(user, 'user');
                                         if (user) {
-                                            const dr: any = [user];
-                                            dataPost[index].user = dr;
+                                            dataPost[index].user = [user];
                                         }
                                     }
                                 }),
@@ -232,7 +231,7 @@ class PostServiceSN {
                     //                 : f.id_following,
                     //         ),
                     //     );
-                    console.log(newData, 'newData');
+                    console.log(newData[0].user, 'newData');
                     resolve(newData);
                 }
                 // const data = await db.users.findAll({
@@ -244,23 +243,23 @@ class PostServiceSN {
             }
         });
     };
-    setEmotion = (_id: string, index: number, id_user: string, state: string, oldIndex: number): Promise<boolean> => {
+    setEmotion = (_id: string, index: number, id_user: string, state: string, oldIndex: number) => {
         return new Promise(async (resolve, reject) => {
             try {
                 if (state === 'remove') {
                     const post = await NewPost.findByIdAndUpdate(
                         _id,
-                        { $pull: { 'feel.onlyEmo.$[elm].id_user': id_user }, $inc: { 'feel.amount': -1 } },
+                        { $pull: { 'feel.onlyEmo.$[elm].id_user': id_user } },
                         { arrayFilters: [{ 'elm.id': index }], new: true },
                     );
-                    resolve(true);
+                    resolve(post?.feel);
                 } else if (state === 'add') {
                     const post = await NewPost.findByIdAndUpdate(
                         _id,
-                        { $addToSet: { 'feel.onlyEmo.$[elm].id_user': id_user }, $inc: { 'feel.amount': 1 } },
+                        { $addToSet: { 'feel.onlyEmo.$[elm].id_user': id_user } },
                         { arrayFilters: [{ 'elm.id': index }], new: true },
                     );
-                    resolve(true);
+                    resolve(post?.feel);
                 } else {
                     const post = await NewPost.findByIdAndUpdate(
                         _id,
@@ -270,7 +269,7 @@ class PostServiceSN {
                         },
                         { arrayFilters: [{ 'elm.id': index }, { 'old.id': oldIndex }], new: true },
                     );
-                    resolve(true);
+                    resolve(post?.feel);
                 }
             } catch (error) {
                 reject(error);

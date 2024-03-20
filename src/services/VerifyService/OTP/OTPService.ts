@@ -22,6 +22,7 @@ class OTPService {
                 const CLIENT_SECRET = process.env.CLIENT_SECRET;
                 const REDIRECT_URL = process.env.REDIRECT_URL;
                 const REFRESH_TOKEN = process.env.REFRESH_TOKEN;
+                const EMAIL_ADDRESS = process.env.EMAIL_ADDRESS;
                 const OAUTH2Client = new google.auth.OAuth2(CLIENT_ID, CLIENT_SECRET, REDIRECT_URL);
 
                 OAUTH2Client.setCredentials({ refresh_token: REFRESH_TOKEN });
@@ -61,7 +62,7 @@ class OTPService {
                                 service: 'gmail',
                                 auth: {
                                     type: 'OAuth2',
-                                    user: 'hungsendemail@gmail.com',
+                                    user: String(EMAIL_ADDRESS),
                                     clientId: String(CLIENT_ID),
                                     clientSecret: String(CLIENT_SECRET),
                                     refreshToken: String(REFRESH_TOKEN),
