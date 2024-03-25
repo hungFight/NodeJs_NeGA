@@ -160,7 +160,6 @@ class AuthServices {
     add = async (data: UserIT) => {
         return new Promise(async (resolve, reject) => {
             if (data) {
-                const validateEmail = /^\w+([\\.-]?\w+)*@\w+([\\.-]?\w+)*(\.\w{2,5})+$/;
                 const validate = new Validation();
                 if (isNaN(data.phoneMail)) {
                     if (!validate.validEmail(data.phoneMail)) resolve({ check: 5, message: 'Email invalid' });

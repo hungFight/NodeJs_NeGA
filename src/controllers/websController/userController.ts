@@ -9,10 +9,11 @@ class userController {
     getById = async (req: express.Request, res: express.Response, next: express.NextFunction) => {
         try {
             const id: string = req.cookies.k_user;
-            const id_reqs: string[] = req.body.id;
+            const id_reqs: string[] = req.body.id; // getting personal page
             const first = req.body.first;
+            const valid = new Validation();
+            if (!valid.validUUID(id)) throw new Validation('getById', 'Invalid Id of uuid');
             const userData = await UserServiceSN.getById(id, id_reqs, req.body.params, req.body.mores, first);
-
             if (userData) return res.status(200).json(userData);
             throw new NotFound('GetById', 'login again', { status: 0 });
         } catch (error) {
