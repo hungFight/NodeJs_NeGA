@@ -20,7 +20,7 @@ class AuthServices {
         IP_USER: string,
         subAccount?: boolean,
         id?: string,
-        id_other?: string,
+        id_other?: string, // an another user login by subAccount
     ) => {
         return new Promise(async (resolve, reject) => {
             try {
@@ -84,9 +84,9 @@ class AuthServices {
                                         }
                                     } else {
                                         // in process login both
-                                        const accessToken = Token.accessTokenF(u.id, secret);
+                                        const accessToken = Token.accessTokenF({ id: u.id, IP_USER }, secret);
                                         const refreshToken = Token.refreshTokenF(
-                                            { id: u.id, IP_USER: IP_USER + u.id },
+                                            { id: u.id, IP_USER: IP_USER },
                                             secret,
                                         );
                                         delete u.phoneNumberEmail;
@@ -108,17 +108,47 @@ class AuthServices {
                                                 }
                                             });
                                         }
-                                        redisClient.set(
-                                            u.id + 'refreshToken',
-                                            refreshToken + '@_@' + secret,
-                                            (err: any, res: any) => {
-                                                if (err) {
-                                                    console.log('Error setting refreshToken', err);
-                                                    resolve(null);
-                                                }
-                                                redisClient.expire(u.id + 'refreshToken', 15 * 24 * 60 * 60);
-                                            },
-                                        );
+                                        redisClient.get(u.id + 'refreshToken', (err, data) => {
+                                            console.log(data, 'IN AuthService');
+
+                                            if (err) console.log(err, 'IN AuthService');
+                                            if (data && JSON.parse(data)?.length) {
+                                                redisClient.set(
+                                                    u.id + 'refreshToken',
+                                                    JSON.stringify(
+                                                        JSON.parse(data).push({
+                                                            refreshToken: refreshToken + '@_@' + secret,
+                                                            awaiting: IP_USER,
+                                                        }),
+                                                    ),
+                                                    (err: any, res: any) => {
+                                                        if (err) {
+                                                            console.log('Error setting refreshToken', err);
+                                                            resolve(null);
+                                                        }
+                                                        redisClient.expire(u.id + 'refreshToken', 15 * 24 * 60 * 60);
+                                                    },
+                                                );
+                                            } else {
+                                                redisClient.set(
+                                                    u.id + 'refreshToken',
+                                                    JSON.stringify([
+                                                        {
+                                                            refreshToken: refreshToken + '@_@' + secret,
+                                                            accepted: IP_USER,
+                                                        },
+                                                    ]),
+                                                    (err: any, res: any) => {
+                                                        if (err) {
+                                                            console.log('Error setting refreshToken', err);
+                                                            resolve(null);
+                                                        }
+                                                        redisClient.expire(u.id + 'refreshToken', 15 * 24 * 60 * 60);
+                                                    },
+                                                );
+                                            }
+                                        });
+
                                         resolve({ ...u, accessToken });
                                     }
                                 }

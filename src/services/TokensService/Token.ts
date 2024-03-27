@@ -2,9 +2,9 @@ import express from 'express';
 import jwt from 'jsonwebtoken';
 import UserIT from '../interface/inTerFaceUser';
 class Token {
-    accessTokenF = (id: string, secret: string) => {
+    accessTokenF = (data: { id: string; IP_USER: string }, secret: string) => {
         try {
-            return jwt.sign({ id }, secret, {
+            return jwt.sign(data, secret, {
                 expiresIn: '3m',
                 algorithm: 'HS256',
                 issuer: process.env.REACT_URL,
