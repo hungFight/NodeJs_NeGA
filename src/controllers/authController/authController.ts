@@ -5,7 +5,7 @@ import Token from '../../services/TokensService/Token';
 import Forbidden from '../../utils/errors/Forbidden';
 import NotFound from '../../utils/errors/NotFound';
 import { Redis } from 'ioredis';
-
+import getMAC, { isMAC } from 'getmac';
 class authController {
     login = async (req: express.Request, res: any, next: express.NextFunction) => {
         try {
@@ -13,16 +13,27 @@ class authController {
             const phoneNumberEmail = req.body.params.nameAccount;
             const password = req.body.params.password;
             const redisClient: Redis = res.redisClient;
+            const IP_MAC = getMAC();
             const IP_USER = req.socket.remoteAddress || req.ip;
-            if (!phoneNumberEmail || !password || phoneNumberEmail.includes(error) || password.includes(error)) {
-                throw new NotFound('Login', 'Please enter your Account!');
-            } else {
-                const userData: any = await authServices.login(redisClient, phoneNumberEmail, password, IP_USER);
-                if (userData) {
-                    return res.status(200).json(userData);
+            console.log(getMAC(), 'x-mac-address');
+            if (isMAC(IP_MAC)) {
+                if (!phoneNumberEmail || !password || phoneNumberEmail.includes(error) || password.includes(error)) {
+                    throw new NotFound('Login', 'Please enter your Account!');
+                } else {
+                    const userData: any = await authServices.login(
+                        redisClient,
+                        phoneNumberEmail,
+                        password,
+                        IP_USER,
+                        IP_MAC,
+                    );
+                    if (userData) {
+                        return res.status(200).json(userData);
+                    }
+                    throw new NotFound('Login', userData);
                 }
-                throw new NotFound('Login', userData);
             }
+            throw new NotFound('Login', 'Please enter your Account! !');
         } catch (error) {
             next(error);
         }
@@ -36,7 +47,15 @@ class authController {
             const redisClient: Redis = res.redisClient;
             const id_other = req.body.id;
             const IP_USER = req.socket.remoteAddress || req.ip;
-            if (!phoneNumberEmail || !password || phoneNumberEmail.includes(error) || password.includes(error)) {
+            const IP_MAC = getMAC();
+
+            if (
+                !phoneNumberEmail ||
+                !password ||
+                phoneNumberEmail.includes(error) ||
+                password.includes(error) ||
+                !isMAC(IP_MAC)
+            ) {
                 throw new NotFound('Login', 'Please enter your Account!');
             } else {
                 const userData: any = await authServices.login(
@@ -44,6 +63,7 @@ class authController {
                     phoneNumberEmail,
                     password,
                     IP_USER,
+                    IP_MAC,
                     true,
                     id_you,
                     id_other,

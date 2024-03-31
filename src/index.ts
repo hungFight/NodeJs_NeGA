@@ -23,7 +23,6 @@ import moment from 'moment';
 import { Server } from 'socket.io';
 import { RoomChats } from './models/mongodb/chats';
 const connection = new Set();
-
 export const prisma = new PrismaClient();
 
 // if (cluster.isPrimary) { create child process
