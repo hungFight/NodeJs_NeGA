@@ -5,5 +5,6 @@ import postController from '../../../controllers/websController/socialNetwork/po
 const router = express.Router();
 router.get('/getPosts', postController.getPosts);
 router.post('/setPost', postController.setPost);
+router.post('/sendComment', postController.sendComment);
 router.post('/setEmotion', postController.setEmotion);
 export default router;

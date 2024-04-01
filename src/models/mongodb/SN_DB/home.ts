@@ -18,8 +18,8 @@ const comments = [
             gender: { type: Number, maxLength: 1 },
         },
         content: {
-            text: { type: String, text: String },
-            imageOrVideos: [{ id: { type: Number, maxLength: 3 }, file: { type: String, maxLength: 50 }, feel }],
+            text: { type: String },
+            imageOrVideos: [{ id: { type: String, maxLength: 50 } }],
         },
         feel,
         reply: [
@@ -91,15 +91,13 @@ const Posts = new Schema({
     },
     feel,
     amountComments: { type: Number, maxLength: 11, default: 0 },
-    commentsOne: comments,
-    commentsTwo: comments,
-    commentsThree: comments,
+    comments,
     whoCanSeePost: {
-        id: { type: Number, maxLength: 1 },
+        id: { type: String, maxLength: 50 },
         name: { type: String, maxLength: 20 },
     },
     anonymous: { type: Boolean, defaultValue: false }, // comments
-    private: [{ id: { type: Number, maxLength: 1 }, name: { type: String, maxLength: 20 } }],
+    private: [{ id: { type: String, maxLength: 50 }, name: { type: String, maxLength: 20 } }],
     createdAt: { type: Date, required: true, default: Date.now() },
     deletedAt: { type: Date, default: null },
     repository: { type: Date, default: null },

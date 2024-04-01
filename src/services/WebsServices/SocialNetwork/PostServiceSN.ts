@@ -185,33 +185,44 @@ class PostServiceSN {
                         .sort({ createdAt: -1 })
                         .limit(limit)
                         .skip(offset);
-                    const newData: any = await new Promise(async (resolve, reject) => {
-                        try {
-                            await Promise.all(
-                                dataPost.map(async (p, index: number) => {
-                                    if (p.id_user === id) {
-                                        dataPost[index].user = [
-                                            { id: "It's me", fullName: "It's me", avatar: undefined, gender: 0 },
-                                        ];
-                                    } else {
-                                        const user: any = await prisma.user.findUnique({
-                                            where: {
-                                                id: p.id_user,
-                                            },
-                                            select: { id: true, avatar: true, fullName: true, gender: true },
-                                        });
-                                        console.log(user, 'user');
-                                        if (user) {
-                                            dataPost[index].user = [user];
+                    if (dataPost.length) {
+                        const newData: any = await new Promise(async (resolve, reject) => {
+                            try {
+                                await Promise.all(
+                                    dataPost.map(async (p, index: number) => {
+                                        if (p.id_user === id) {
+                                            dataPost[index].user = [
+                                                {
+                                                    id: "It's me",
+                                                    fullName: "It's me",
+                                                    avatar: undefined,
+                                                    gender: 0,
+                                                },
+                                            ];
+                                        } else {
+                                            const user: any = await prisma.user.findUnique({
+                                                where: {
+                                                    id: p.id_user,
+                                                },
+                                                select: { id: true, avatar: true, fullName: true, gender: true },
+                                            });
+                                            console.log(user, 'user');
+                                            if (user) {
+                                                dataPost[index].user = [user];
+                                            }
                                         }
-                                    }
-                                }),
-                            );
-                            resolve(dataPost);
-                        } catch (error) {
-                            console.log('Error: get post', error);
-                        }
-                    });
+                                    }),
+                                );
+                                resolve(dataPost);
+                            } catch (error) {
+                                console.log('Error: get post', error);
+                            }
+                        });
+                        console.log(newData[0].user, 'newData');
+                        resolve(newData);
+                    }
+                    resolve([]);
+
                     // console.log(dataPost, 'dataPost', users);
                     // const follow_id = await db.follows
                     //     .findAll({
@@ -231,8 +242,6 @@ class PostServiceSN {
                     //                 : f.id_following,
                     //         ),
                     //     );
-                    console.log(newData[0].user, 'newData');
-                    resolve(newData);
                 }
                 // const data = await db.users.findAll({
                 //     attributes: ['id', 'fullName', 'avatar'],
@@ -271,6 +280,19 @@ class PostServiceSN {
                     );
                     resolve(post?.feel);
                 }
+            } catch (error) {
+                reject(error);
+            }
+        });
+    };
+    sendComment = (postId: string, userId: string, text: string): Promise<any> => {
+        return new Promise(async (resolve, reject) => {
+            try {
+                const res = await NewPost.findByIdAndUpdate(postId, {
+                    $push: { comments: { id_user: userId, content: { text } } },
+                });
+                if (res) resolve(res.comments);
+                resolve(null);
             } catch (error) {
                 reject(error);
             }
