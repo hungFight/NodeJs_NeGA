@@ -42,7 +42,7 @@ export const prisma = new PrismaClient();
 const app = express();
 const port = 3001;
 const httpServer = require('http').createServer(app);
-const io = new Server(httpServer, {
+export const io = new Server(httpServer, {
     path: '/socket.io',
     pingTimeout: 60000, // Set a longer ping timeout in milliseconds
     pingInterval: 25000, // Adjust the ping interval if needed

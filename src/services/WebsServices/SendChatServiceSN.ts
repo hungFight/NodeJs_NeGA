@@ -168,14 +168,6 @@ class SendChatService {
                     { $unwind: '$room' }, // Tách mỗi phần tử trong mảng room thành một document riêng
                     { $sort: { 'room.createdAt': -1 } }, // Sắp xếp theo trường createdAt trong mỗi phần tử room
                     {
-                        $lookup: {
-                            from: 'infoFile',
-                            localField: 'room.imageOrVideos._id',
-                            foreignField: 'id',
-                            as: 'infoFile',
-                        },
-                    },
-                    {
                         $group: {
                             _id: '$_id',
                             createdAt: { $first: '$createdAt' },
@@ -619,14 +611,7 @@ class SendChatService {
             }
         });
     }
-    updateChat(
-        conversationId: string,
-        chatId: string,
-        userId: string,
-        id_other: string,
-        value: string,
-        files: PropsInfoFile[],
-    ) {
+    updateChat(conversationId: string, chatId: string, userId: string, id_other: string, value: string, files: PropsInfoFile[]) {
         // delete both side
         return new Promise(async (resolve, reject) => {
             try {
@@ -680,10 +665,7 @@ class SendChatService {
                             },
                         );
                         if (re.acknowledged) {
-                            const rec: any = await RoomChats.findOne(
-                                { _id: conversationId, 'room._id': chatId },
-                                { 'room.$': 1 },
-                            );
+                            const rec: any = await RoomChats.findOne({ _id: conversationId, 'room._id': chatId }, { 'room.$': 1 });
                             resolve(rec.room[0]);
                         } else {
                             resolve(null);

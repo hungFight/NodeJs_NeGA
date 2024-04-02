@@ -133,12 +133,7 @@ class PostServiceSN {
             }
         });
     };
-    getPosts = (
-        id: string = '84e3f4f6-9e7f-4253-8380-3be1d6112afb',
-        limit: number,
-        offset: number,
-        status: string,
-    ): Promise<PropsDataPosts[]> => {
+    getPosts = (id: string = '84e3f4f6-9e7f-4253-8380-3be1d6112afb', limit: number, offset: number, status: string): Promise<PropsDataPosts[]> => {
         return new Promise(async (resolve, reject) => {
             // is friend (following) -> not friend (following) + interact (max -> min) = view posts
             // whoever - is friend or not friend is status: anyone
@@ -158,11 +153,7 @@ class PostServiceSN {
                                 idIsRequested: true,
                             },
                         })
-                        .then((fr: any[]) =>
-                            fr.map((f) =>
-                                f.idIsRequested !== id ? f.idIsRequested : f.idRequest !== id ? f.idRequest : '',
-                            ),
-                        );
+                        .then((fr: any[]) => fr.map((f) => (f.idIsRequested !== id ? f.idIsRequested : f.idRequest !== id ? f.idRequest : '')));
 
                     // get idfollows
                     const follow_id = await prisma.followers
@@ -293,14 +284,13 @@ class PostServiceSN {
             }
         });
     };
-    sendComment = (postId: string, userId: string, text: string, onAnonymous: boolean): Promise<any> => {
+    sendComment = (postId: string, userId: string, text: string, onAnonymous: boolean): Promise<PropsComments | null> => {
         return new Promise(async (resolve, reject) => {
             try {
                 const _id = primaryKey();
                 if (_id) {
                     const res = await NewPost.findByIdAndUpdate(postId, {
-                        $push: { comments: { _id, id_user: userId, user: null, content: { text } } },
-                        $set: { anonymous: onAnonymous },
+                        $push: { comments: { _id, id_user: userId, anonymous: onAnonymous, user: null, content: { text } } },
                     });
                     const user = await prisma.user.findUnique({
                         where: { id: userId },
@@ -310,14 +300,14 @@ class PostServiceSN {
                         resolve({
                             content: { text, imageOrVideos: [] },
                             createdAt: new Date(),
-                            feel: { onlyEmo: [] },
+                            anonymous: onAnonymous,
+                            feel: { onlyEmo: [], act: 0 },
                             id_user: userId,
                             reply: [],
                             user,
                             _id: _id,
                         });
                 }
-
                 resolve(null);
             } catch (error) {
                 reject(error);
@@ -343,9 +333,7 @@ class PostServiceSN {
                 if (res[0]?.comments.length) {
                     await Promise.all(
                         res[0]?.comments.map(async (c: PropsComments, index: string) => {
-                            const oldData = res[0].comments.filter(
-                                (r: { user: { id: string } }) => r.user?.id === c.id_user,
-                            );
+                            const oldData = res[0].comments.filter((r: { user: { id: string } }) => r.user?.id === c.id_user);
                             if (!oldData?.length) {
                                 const d = await prisma.user.findUnique({
                                     where: { id: c.id_user },

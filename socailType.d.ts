@@ -1,4 +1,13 @@
+interface feel {
+    onlyEmo: {
+        id: number;
+        icon: string;
+        id_user: string[];
+    }[];
+    act: number;
+}
 export interface PropsComments {
+    _id: string;
     id_user: string;
     user: {
         id: string;
@@ -8,20 +17,16 @@ export interface PropsComments {
     };
     content: {
         text: string;
-        imageOrVideos: {
-            file: string[];
-            feel: feel;
-        };
+        imageOrVideos: string[];
     };
     feel: feel;
-    reply: [
-        {
-            id_user: { type: string; maxLength: 50; required: true };
-            content: { text: { type: string; text: string }; imageOrVideos: [String] };
-            anonymous: { type: Boolean; defaultValue: false };
-        },
-    ];
-    createdAt: string;
+    reply: {
+        id_user: string;
+        content: { text: string; imageOrVideos: string[] };
+        anonymous: boolean;
+    }[];
+    anonymous: boolean;
+    createdAt: string | Date;
 }
 export interface PropsDataPosts {
     _id: string;

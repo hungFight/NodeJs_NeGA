@@ -28,13 +28,17 @@ const comments = [
         feel,
         reply: [
             {
-                id_user: { type: String, maxLength: 50, required: true },
-                user: [],
-                content: { text: { type: String, text: String }, imageOrVideos: [String] },
-                feel,
-                anonymous: { type: Boolean, default: false },
+                type: {
+                    id_user: { type: String, maxLength: 50, required: true },
+                    user: [],
+                    content: { text: { type: String, text: String }, imageOrVideos: [String] },
+                    feel,
+                    anonymous: { type: Boolean, default: false },
+                },
+                default: [],
             },
         ],
+        anonymous: { type: Boolean, default: false },
         createdAt: { type: Date, required: true, default: Date.now() },
     },
     { _id: false },

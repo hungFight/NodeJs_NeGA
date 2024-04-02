@@ -1,6 +1,7 @@
 import PostServiceSN from '../../../services/WebsServices/SocialNetwork/PostServiceSN';
 import express from 'express';
 import Validation from '../../../utils/errors/Validation';
+import { io } from '../../..';
 class homeController {
     setPost = async (req: any, res: any, next: express.NextFunction) => {
         try {
@@ -108,6 +109,7 @@ class homeController {
             if (!validate.validUUID(id)) return res.status(404).json('Id of user is invalid!');
             if (!validate.validMongoID(postId)) return res.status(404).json('Id of the post is invalid!');
             const data = await PostServiceSN.sendComment(postId, id, text, onAnonymous);
+            if (data) io.emit(`comment_post_${postId}`, data);
             return res.status(200).json(data);
         } catch (error) {
             next(error);
