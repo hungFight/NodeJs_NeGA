@@ -103,10 +103,25 @@ class homeController {
             const validate = new Validation();
             const id = req.cookies.k_user;
             const postId = req.body.postId;
+            const onAnonymous = req.body.onAc;
             const text = req.body.text;
             if (!validate.validUUID(id)) return res.status(404).json('Id of user is invalid!');
             if (!validate.validMongoID(postId)) return res.status(404).json('Id of the post is invalid!');
-            const data = await PostServiceSN.sendComment(postId, id, text);
+            const data = await PostServiceSN.sendComment(postId, id, text, onAnonymous);
+            return res.status(200).json(data);
+        } catch (error) {
+            next(error);
+        }
+    };
+    getComments = async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+        try {
+            const validate = new Validation();
+            const postId = req.body.postId;
+            const offset = req.body.offset;
+            const userId = req.cookies.k_user;
+            const limit = req.body.limit;
+            if (!validate.validMongoID(postId)) return res.status(404).json('Id of the post is invalid!');
+            const data = await PostServiceSN.getComments(postId, userId, offset, limit);
             return res.status(200).json(data);
         } catch (error) {
             next(error);

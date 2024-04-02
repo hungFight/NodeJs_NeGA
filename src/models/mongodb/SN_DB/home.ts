@@ -6,16 +6,20 @@ const feel = {
 };
 const comments = [
     {
+        _id: { type: String, maxLength: 50, index: true },
         id_user: {
             type: String,
             required: true,
             maxLength: 50,
         },
         user: {
-            id: { type: String, maxLength: 50 },
-            fullName: { type: String, maxLength: 30 },
-            avatar: { type: Buffer },
-            gender: { type: Number, maxLength: 1 },
+            type: {
+                id: { type: String, maxLength: 50 },
+                fullName: { type: String, maxLength: 30 },
+                avatar: { type: String, maxLength: 50 },
+                gender: { type: Number, maxLength: 1 },
+            },
+            default: null,
         },
         content: {
             text: { type: String },
@@ -28,10 +32,12 @@ const comments = [
                 user: [],
                 content: { text: { type: String, text: String }, imageOrVideos: [String] },
                 feel,
-                anonymous: { type: Boolean, defaultValue: false },
+                anonymous: { type: Boolean, default: false },
             },
         ],
+        createdAt: { type: Date, required: true, default: Date.now() },
     },
+    { _id: false },
 ];
 const Posts = new Schema({
     id_user: { type: String, maxLength: 50, required: true, index: true },

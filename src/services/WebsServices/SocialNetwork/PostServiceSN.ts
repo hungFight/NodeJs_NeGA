@@ -1,11 +1,13 @@
+import { v4 as primaryKey } from 'uuid';
 import { file } from 'googleapis/build/src/apis/file';
 import DateTime from '../../../DateTimeCurrent/DateTimeCurrent';
 import { NewPost } from '../../../models/mongodb/SN_DB/home';
 import { prisma } from '../../..';
 import { PropsInfoFile } from '../SendChatServiceSN';
+import { PropsComments, PropsDataPosts } from '../../../../socailType';
 // const Sequelize = require('sequelize');
 // const Op = Sequelize.Op;
-
+const { ObjectId } = require('mongodb');
 // const db = require('../../../models');
 
 class PostServiceSN {
@@ -131,7 +133,12 @@ class PostServiceSN {
             }
         });
     };
-    getPosts = (id: string = '84e3f4f6-9e7f-4253-8380-3be1d6112afb', limit: number, offset: number, status: string) => {
+    getPosts = (
+        id: string = '84e3f4f6-9e7f-4253-8380-3be1d6112afb',
+        limit: number,
+        offset: number,
+        status: string,
+    ): Promise<PropsDataPosts[]> => {
         return new Promise(async (resolve, reject) => {
             // is friend (following) -> not friend (following) + interact (max -> min) = view posts
             // whoever - is friend or not friend is status: anyone
@@ -184,7 +191,8 @@ class PostServiceSN {
                     const dataPost = await NewPost.find({ id_user: { $in: [...friends_id, ...follow_id, id] } })
                         .sort({ createdAt: -1 })
                         .limit(limit)
-                        .skip(offset);
+                        .skip(offset)
+                        .select('-comments');
                     if (dataPost.length) {
                         const newData: any = await new Promise(async (resolve, reject) => {
                             try {
@@ -285,14 +293,73 @@ class PostServiceSN {
             }
         });
     };
-    sendComment = (postId: string, userId: string, text: string): Promise<any> => {
+    sendComment = (postId: string, userId: string, text: string, onAnonymous: boolean): Promise<any> => {
         return new Promise(async (resolve, reject) => {
             try {
-                const res = await NewPost.findByIdAndUpdate(postId, {
-                    $push: { comments: { id_user: userId, content: { text } } },
-                });
-                if (res) resolve(res.comments);
+                const _id = primaryKey();
+                if (_id) {
+                    const res = await NewPost.findByIdAndUpdate(postId, {
+                        $push: { comments: { _id, id_user: userId, user: null, content: { text } } },
+                        $set: { anonymous: onAnonymous },
+                    });
+                    const user = await prisma.user.findUnique({
+                        where: { id: userId },
+                        select: { id: true, fullName: true, avatar: true, gender: true },
+                    });
+                    if (res && user)
+                        resolve({
+                            content: { text, imageOrVideos: [] },
+                            createdAt: new Date(),
+                            feel: { onlyEmo: [] },
+                            id_user: userId,
+                            reply: [],
+                            user,
+                            _id: _id,
+                        });
+                }
+
                 resolve(null);
+            } catch (error) {
+                reject(error);
+            }
+        });
+    };
+    getComments = (postId: string, userId: string, offset: number, limit: number): Promise<PropsComments[] | null> => {
+        return new Promise(async (resolve, reject) => {
+            try {
+                const res: any = await NewPost.aggregate([
+                    { $match: { _id: ObjectId(postId) } },
+                    { $unwind: '$comments' },
+                    { $sort: { 'comments.createdAt': -1 } },
+                    { $skip: offset }, // Skip the specified number of documents
+                    { $limit: limit },
+                    {
+                        $group: {
+                            _id: '$_id',
+                            comments: { $push: '$comments' },
+                        },
+                    },
+                ]);
+                if (res[0]?.comments.length) {
+                    await Promise.all(
+                        res[0]?.comments.map(async (c: PropsComments, index: string) => {
+                            const oldData = res[0].comments.filter(
+                                (r: { user: { id: string } }) => r.user?.id === c.id_user,
+                            );
+                            if (!oldData?.length) {
+                                const d = await prisma.user.findUnique({
+                                    where: { id: c.id_user },
+                                    select: { avatar: true, id: true, fullName: true, gender: true },
+                                });
+                                if (d) res[0].comments[index].user = d;
+                            } else {
+                                res[0].comments[index].user = oldData[0];
+                            }
+                        }),
+                    );
+                    resolve(res[0]?.comments);
+                }
+                resolve([]);
             } catch (error) {
                 reject(error);
             }
