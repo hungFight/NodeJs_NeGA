@@ -81,7 +81,8 @@ class homeController {
             const id_user = req.body.id_user;
             const state = req.body.state;
             const oldIndex = req.body.oldIndex;
-            const data = await PostServiceSN.setEmotion(_id, index, id_user, state, oldIndex);
+            const id_comment = req.body.id_comment;
+            const data = await PostServiceSN.setEmotion({ _id, index, id_user, state, oldIndex, id_comment });
             return res.status(200).json(data);
         } catch (error) {
             next(error);
@@ -105,10 +106,11 @@ class homeController {
             const id = req.cookies.k_user;
             const postId = req.body.postId;
             const onAnonymous = req.body.onAc;
+            const emos = req.body.emos;
             const text = req.body.text;
             if (!validate.validUUID(id)) return res.status(404).json('Id of user is invalid!');
             if (!validate.validMongoID(postId)) return res.status(404).json('Id of the post is invalid!');
-            const data = await PostServiceSN.sendComment(postId, id, text, onAnonymous);
+            const data = await PostServiceSN.sendComment(postId, id, text, onAnonymous, emos);
             if (data) io.emit(`comment_post_${postId}`, data);
             return res.status(200).json(data);
         } catch (error) {

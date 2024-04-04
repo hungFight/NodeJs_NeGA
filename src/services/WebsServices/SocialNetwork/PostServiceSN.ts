@@ -251,10 +251,44 @@ class PostServiceSN {
             }
         });
     };
-    setEmotion = (_id: string, index: number, id_user: string, state: string, oldIndex: number) => {
+    setEmotion = (data: {
+        _id: string;
+        index: number;
+        id_user: string;
+        state: 'add' | 'remove' | 'update';
+        oldIndex?: number;
+        id_comment?: string;
+    }) => {
         return new Promise(async (resolve, reject) => {
+            const { _id, index, id_user, state, oldIndex, id_comment } = data;
             try {
-                if (state === 'remove') {
+                if (id_comment) {
+                    if (state === 'add') {
+                        const post = await NewPost.findByIdAndUpdate(
+                            _id,
+                            { $addToSet: { 'comments.$[comment].feel.onlyEmo.$[elm].id_user': id_user } }, // $addToSet to add a unique value into an array
+                            { arrayFilters: [{ 'comment._id': id_comment }, { 'elm.id': index }], new: true },
+                        );
+                        resolve(post?.comments.filter((r) => r._id === id_comment)[0].feel);
+                    } else if (state === 'remove') {
+                        const post = await NewPost.findByIdAndUpdate(
+                            _id,
+                            { $pull: { 'comments.$[comment].feel.onlyEmo.$[elm].id_user': id_user } }, // $addToSet to add a unique value into an array
+                            { arrayFilters: [{ 'comment._id': id_comment }, { 'elm.id': index }], new: true },
+                        );
+                        resolve(post?.comments.filter((r) => r._id === id_comment)[0].feel);
+                    } else {
+                        const post = await NewPost.findByIdAndUpdate(
+                            _id,
+                            {
+                                $pull: { 'comments.$[comment].feel.onlyEmo.$[old].id_user': id_user },
+                                $addToSet: { 'comments.$[comment].feel.onlyEmo.$[elm].id_user': id_user },
+                            }, // $addToSet to add a unique value into an array
+                            { arrayFilters: [{ 'comment._id': id_comment }, { 'elm.id': index }, { 'old.id': oldIndex }], new: true },
+                        );
+                        resolve(post?.comments.filter((r) => r._id === id_comment)[0].feel);
+                    }
+                } else if (state === 'remove') {
                     const post = await NewPost.findByIdAndUpdate(
                         _id,
                         { $pull: { 'feel.onlyEmo.$[elm].id_user': id_user } },
@@ -284,13 +318,26 @@ class PostServiceSN {
             }
         });
     };
-    sendComment = (postId: string, userId: string, text: string, onAnonymous: boolean): Promise<PropsComments | null> => {
+    sendComment = (
+        postId: string,
+        userId: string,
+        text: string,
+        onAnonymous: boolean,
+        emos: {
+            act: number;
+            onlyEmo: {
+                id: number;
+                icon: string;
+                id_user: string[];
+            }[];
+        },
+    ): Promise<PropsComments | null> => {
         return new Promise(async (resolve, reject) => {
             try {
                 const _id = primaryKey();
                 if (_id) {
                     const res = await NewPost.findByIdAndUpdate(postId, {
-                        $push: { comments: { _id, id_user: userId, anonymous: onAnonymous, user: null, content: { text } } },
+                        $push: { comments: { _id, id_user: userId, anonymous: onAnonymous, user: null, content: { text }, feel: emos } },
                     });
                     const user = await prisma.user.findUnique({
                         where: { id: userId },
@@ -301,7 +348,7 @@ class PostServiceSN {
                             content: { text, imageOrVideos: [] },
                             createdAt: new Date(),
                             anonymous: onAnonymous,
-                            feel: { onlyEmo: [], act: 0 },
+                            feel: emos,
                             id_user: userId,
                             reply: [],
                             user,
