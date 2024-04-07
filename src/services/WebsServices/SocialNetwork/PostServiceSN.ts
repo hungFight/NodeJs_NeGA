@@ -262,56 +262,73 @@ class PostServiceSN {
         return new Promise(async (resolve, reject) => {
             const { _id, index, id_user, state, oldIndex, id_comment } = data;
             try {
-                if (id_comment) {
-                    if (state === 'add') {
-                        const post = await NewPost.findByIdAndUpdate(
-                            _id,
-                            { $addToSet: { 'comments.$[comment].feel.onlyEmo.$[elm].id_user': id_user } }, // $addToSet to add a unique value into an array
-                            { arrayFilters: [{ 'comment._id': id_comment }, { 'elm.id': index }], new: true },
-                        );
-                        resolve(post?.comments.filter((r) => r._id === id_comment)[0].feel);
+                const post = await NewPost.findById(_id);
+                if (post) {
+                    if (id_comment) {
+                        if (state === 'add') {
+                            const commentToUpdate: any = post.comments.find((comment) => comment._id === id_comment);
+                            if (commentToUpdate) {
+                                const { feel } = commentToUpdate;
+                                feel.onlyEmo.map((e: { id_user: string[]; id: number }) => {
+                                    e.id_user = e.id_user.filter((u) => u !== id_user);
+                                    if (String(e.id) === String(index)) e.id_user.push(id_user);
+                                    return e;
+                                });
+                                // Save the updated document
+                                const newPost = await post.save();
+                                resolve(newPost?.comments.filter((r) => r._id === id_comment)[0].feel);
+                            }
+                            resolve(null);
+                        } else if (state === 'remove') {
+                            const post = await NewPost.findByIdAndUpdate(
+                                _id,
+                                { $pull: { 'comments.$[comment].feel.onlyEmo.$[elm].id_user': id_user } }, // $addToSet to add a unique value into an array
+                                { arrayFilters: [{ 'comment._id': id_comment }, { 'elm.id': index }], new: true },
+                            );
+                            resolve(post?.comments.filter((r) => r._id === id_comment)[0].feel);
+                        } else {
+                            const commentToUpdate: any = post.comments.find((comment) => comment._id === id_comment);
+                            if (commentToUpdate) {
+                                commentToUpdate.feel.onlyEmo.map((e: { id_user: string[]; id: number }) => {
+                                    e.id_user = e.id_user.filter((u) => u !== id_user);
+                                    return e;
+                                });
+                                // Save the updated document
+                                const newPost = await post.save();
+                                resolve(newPost?.comments.filter((r) => r._id === id_comment)[0].feel);
+                            }
+                            resolve(null);
+                        }
                     } else if (state === 'remove') {
                         const post = await NewPost.findByIdAndUpdate(
                             _id,
-                            { $pull: { 'comments.$[comment].feel.onlyEmo.$[elm].id_user': id_user } }, // $addToSet to add a unique value into an array
-                            { arrayFilters: [{ 'comment._id': id_comment }, { 'elm.id': index }], new: true },
+                            { $pull: { 'feel.onlyEmo.$[elm].id_user': id_user } },
+                            { arrayFilters: [{ 'elm.id': index }], new: true },
                         );
-                        resolve(post?.comments.filter((r) => r._id === id_comment)[0].feel);
+                        resolve(post?.feel);
+                    } else if (state === 'add') {
+                        if (post.feel) {
+                            post.feel.onlyEmo = post.feel.onlyEmo.map((e) => {
+                                e.id_user = e.id_user.filter((u) => u !== id_user);
+                                if (String(e.id) === String(index)) e.id_user.push(id_user);
+                                return e;
+                            });
+                            const savedPost = await post.save();
+                            resolve(savedPost.feel);
+                        }
+                        resolve(null);
                     } else {
-                        const post = await NewPost.findByIdAndUpdate(
-                            _id,
-                            {
-                                $pull: { 'comments.$[comment].feel.onlyEmo.$[old].id_user': id_user },
-                                $addToSet: { 'comments.$[comment].feel.onlyEmo.$[elm].id_user': id_user },
-                            }, // $addToSet to add a unique value into an array
-                            { arrayFilters: [{ 'comment._id': id_comment }, { 'elm.id': index }, { 'old.id': oldIndex }], new: true },
-                        );
-                        resolve(post?.comments.filter((r) => r._id === id_comment)[0].feel);
+                        if (post.feel) {
+                            post.feel.onlyEmo = post.feel.onlyEmo.map((e) => {
+                                e.id_user = e.id_user.filter((u) => u !== id_user);
+                                if (String(e.id) === String(index)) e.id_user.push(id_user);
+                                return e;
+                            });
+                            const savedPost = await post.save();
+                            resolve(savedPost.feel);
+                        }
+                        resolve(null);
                     }
-                } else if (state === 'remove') {
-                    const post = await NewPost.findByIdAndUpdate(
-                        _id,
-                        { $pull: { 'feel.onlyEmo.$[elm].id_user': id_user } },
-                        { arrayFilters: [{ 'elm.id': index }], new: true },
-                    );
-                    resolve(post?.feel);
-                } else if (state === 'add') {
-                    const post = await NewPost.findByIdAndUpdate(
-                        _id,
-                        { $addToSet: { 'feel.onlyEmo.$[elm].id_user': id_user } },
-                        { arrayFilters: [{ 'elm.id': index }], new: true },
-                    );
-                    resolve(post?.feel);
-                } else {
-                    const post = await NewPost.findByIdAndUpdate(
-                        _id,
-                        {
-                            $pull: { 'feel.onlyEmo.$[old].id_user': id_user }, // remove
-                            $addToSet: { 'feel.onlyEmo.$[elm].id_user': id_user }, // add new
-                        },
-                        { arrayFilters: [{ 'elm.id': index }, { 'old.id': oldIndex }], new: true },
-                    );
-                    resolve(post?.feel);
                 }
             } catch (error) {
                 reject(error);
@@ -336,8 +353,11 @@ class PostServiceSN {
             try {
                 const _id = primaryKey();
                 if (_id) {
+                    const date = new Date();
                     const res = await NewPost.findByIdAndUpdate(postId, {
-                        $push: { comments: { _id, id_user: userId, anonymous: onAnonymous, user: null, content: { text }, feel: emos } },
+                        $push: {
+                            comments: { _id, id_user: userId, anonymous: onAnonymous, user: null, content: { text }, feel: emos, createdAt: date },
+                        },
                     });
                     const user = await prisma.user.findUnique({
                         where: { id: userId },
@@ -346,7 +366,7 @@ class PostServiceSN {
                     if (res && user)
                         resolve({
                             content: { text, imageOrVideos: [] },
-                            createdAt: new Date(),
+                            createdAt: date,
                             anonymous: onAnonymous,
                             feel: emos,
                             id_user: userId,

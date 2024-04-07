@@ -56,28 +56,25 @@ class JWTVERIFY {
                                 try {
                                     jwt.verify(tokenc, code, (err: any, user: any) => {
                                         // user: {id:string;  iat: number; exp: number}
-                                        if (err || user.id !== userId) {
-                                            token.deleteToken(res);
-                                            return res.status(403).json({ status: 0, message: 'Token is not valid' });
+                                        if (err) {
+                                            // when every login session is created we'll use code of refreshToken
+                                            console.log(err);
+
+                                            // token.deleteToken(res);
+                                            // return res.status(403).json({ status: 0, message: 'Token is not valid' });
                                         }
                                         console.log(user, 'user');
                                         jwt.verify(refreshToken, code, (err, data: any) => {
                                             // data: {id:string; iat: number; exp: number}
                                             if (err) {
                                                 token.deleteToken(res);
-                                                return res
-                                                    .status(403)
-                                                    .json({ status: 0, message: 'RefreshToken is not valid' });
+                                                return res.status(403).json({ status: 0, message: 'RefreshToken is not valid' });
                                             }
                                             if (data.id === userId) {
                                                 if (!dataRes.accept) {
-                                                    redisClient.set(
-                                                        userId + 'warning_login_by_an_another_site',
-                                                        warning,
-                                                        (err) => {
-                                                            if (err) throw new ServerError('JWTAuth', err);
-                                                        },
-                                                    );
+                                                    redisClient.set(userId + 'warning_login_by_an_another_site', warning, (err) => {
+                                                        if (err) throw new ServerError('JWTAuth', err);
+                                                    });
                                                     return res.status(401).json({
                                                         status: 8888,
                                                         message: 'Unauthorized!',
@@ -85,9 +82,7 @@ class JWTVERIFY {
                                                     });
                                                 }
                                             } else {
-                                                return res
-                                                    .status(401)
-                                                    .json({ status: 8888, message: 'Unauthorized! 2' });
+                                                return res.status(401).json({ status: 8888, message: 'Unauthorized! 2' });
                                             }
                                             next();
                                         });

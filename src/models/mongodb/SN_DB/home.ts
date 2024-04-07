@@ -1,7 +1,9 @@
 import mongoose from 'mongoose';
 const Schema = mongoose.Schema;
 const feel = {
-    onlyEmo: [{ id: { type: Number, maxLength: 1 }, icon: { type: String, maxLength: 10 }, id_user: [String] }], // display icons will be chosen
+    onlyEmo: [
+        { id: { type: Number, maxLength: 1 }, icon: { type: String, maxLength: 10 }, id_user: { type: [String], maxLength: 50, unique: true } },
+    ], // display icons will be chosen
     act: { type: Number, maxLength: 1, default: 1 },
 };
 const comments = [

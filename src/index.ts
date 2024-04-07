@@ -70,32 +70,26 @@ io.on('connection', (client: any) => {
         client.emit('user connectedd', JSON.stringify(Array.from(connection)));
         client.broadcast.emit('user connectedd', JSON.stringify(Array.from(connection)));
         Array.from(connection).map((id) => {
-            client.on(
-                `user_${id}_in_roomChat_personal_writing`,
-                (res: { roomId: string; id_other: string; value: number }) => {
-                    client.broadcast.emit(`user_${res.id_other}_in_roomChat_${res.roomId}_personal_receive`, {
-                        length: res.value,
-                        id: res.id_other,
-                    });
-                },
-            );
-            client.on(
-                `user_${id}_in_roomChat_personal_receive_and_saw`,
-                async (data: { userIdReceived: string; idSent: string; idChat: string }) => {
-                    await RoomChats.findOneAndUpdate(
-                        {
-                            id_us: { $all: [data.idSent, data.userIdReceived] },
-                            'room._id': data.idChat,
+            client.on(`user_${id}_in_roomChat_personal_writing`, (res: { roomId: string; id_other: string; value: number }) => {
+                client.broadcast.emit(`user_${res.id_other}_in_roomChat_${res.roomId}_personal_receive`, {
+                    length: res.value,
+                    id: res.id_other,
+                });
+            });
+            client.on(`user_${id}_in_roomChat_personal_receive_and_saw`, async (data: { userIdReceived: string; idSent: string; idChat: string }) => {
+                await RoomChats.findOneAndUpdate(
+                    {
+                        id_us: { $all: [data.idSent, data.userIdReceived] },
+                        'room._id': data.idChat,
+                    },
+                    {
+                        $addToSet: {
+                            'room.$[].seenBy': data.userIdReceived, //push all elements in the seenBy document and unique
                         },
-                        {
-                            $addToSet: {
-                                'room.$[].seenBy': data.userIdReceived, //push all elements in the seenBy document and unique
-                            },
-                        },
-                    );
-                    client.broadcast.emit(`user_${data.idSent}_in_roomChat_personal_receive_and_saw_other`, data);
-                },
-            );
+                    },
+                );
+                client.broadcast.emit(`user_${data.idSent}_in_roomChat_personal_receive_and_saw_other`, data);
+            });
         });
     });
     client.on('disconnect', () => {

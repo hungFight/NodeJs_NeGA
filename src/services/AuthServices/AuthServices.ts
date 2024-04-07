@@ -114,25 +114,18 @@ class AuthServices {
                                                 if (!newDa.some((ck: any) => ck.mac === IP_MAC)) {
                                                     newDa.push({
                                                         refreshToken: refreshToken + '@_@' + secret,
-                                                        accept: false,
+                                                        accept: true,
                                                         ip: IP_USER,
                                                         mac: IP_MAC,
                                                         id_user: u.id,
                                                     });
-                                                    redisClient.set(
-                                                        u.id + 'refreshToken',
-                                                        JSON.stringify(newDa),
-                                                        (err: any, res: any) => {
-                                                            if (err) {
-                                                                console.log('Error setting refreshToken', err);
-                                                                resolve(null);
-                                                            }
-                                                            redisClient.expire(
-                                                                u.id + 'refreshToken',
-                                                                15 * 24 * 60 * 60,
-                                                            );
-                                                        },
-                                                    );
+                                                    redisClient.set(u.id + 'refreshToken', JSON.stringify(newDa), (err: any, res: any) => {
+                                                        if (err) {
+                                                            console.log('Error setting refreshToken', err);
+                                                            resolve(null);
+                                                        }
+                                                        redisClient.expire(u.id + 'refreshToken', 15 * 24 * 60 * 60);
+                                                    });
                                                 }
                                             } else {
                                                 redisClient.set(
@@ -202,8 +195,7 @@ class AuthServices {
                 if (isNaN(data.phoneMail)) {
                     if (!validate.validEmail(data.phoneMail)) resolve({ check: 5, message: 'Email invalid' });
                 } else {
-                    if (!validate.validLength(data.phoneMail, 9, 11))
-                        resolve({ check: 5, message: 'Phone Number must 9 - 11 characters' });
+                    if (!validate.validLength(data.phoneMail, 9, 11)) resolve({ check: 5, message: 'Phone Number must 9 - 11 characters' });
                 }
                 if (!validate.validLength(data.password, 6, 100))
                     resolve({ check: 5, message: 'Password must be greater than 6 characters and less than 100' });

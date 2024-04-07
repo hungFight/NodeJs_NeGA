@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken';
 import token from './Token';
 import express from 'express';
 import ServerError from '../../utils/errors/ServerError';
-import { ip, ipv6, mac } from 'address';
+import getMAC, { isMAC } from 'getmac';
 import { Redis } from 'ioredis';
 class RefreshTokenCookie {
     refreshToken = async (req: express.Request, res: any, next: express.NextFunction) => {
@@ -11,6 +11,7 @@ class RefreshTokenCookie {
             const userId = req.cookies.k_user;
             const accessToken = req.cookies.tks;
             const redisClient: Redis = res.redisClient;
+            const IP_MAC = getMAC();
             const IP_USER = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
             const warning = JSON.stringify({
                 id: 0,
@@ -29,7 +30,7 @@ class RefreshTokenCookie {
                         id_user: string;
                     }[] = JSON.parse(data);
                     console.log(newData, 'newDataD');
-                    const newDataFiltered = newData.filter((g) => g.id_user === userId && g.ip === IP_USER);
+                    const newDataFiltered = newData.filter((g) => g.id_user === userId && g.mac === IP_MAC);
                     if (newDataFiltered.length) {
                         console.log(newData, 'newData - newData');
                         const de = newDataFiltered[0];
@@ -41,12 +42,7 @@ class RefreshTokenCookie {
                         }
                         jwt.verify(refreshToken, code, (err: any, user: any) => {
                             // {id:string; iat: number; exp: number}
-                            if (
-                                err ||
-                                userId !== user.id ||
-                                user.iss !== process.env.REACT_URL ||
-                                user.aud !== process.env.REACT_URL
-                            ) {
+                            if (err || userId !== user.id || user.iss !== process.env.REACT_URL || user.aud !== process.env.REACT_URL) {
                                 token.deleteToken(res);
                                 return res.status(401).json({ status: 8888, message: 'Unauthorized' });
                             }
@@ -57,11 +53,7 @@ class RefreshTokenCookie {
                                 userId + 'refreshToken',
                                 JSON.stringify(
                                     newData.map((re) => {
-                                        if (
-                                            re.refreshToken === refreshToken + '@_@' + code &&
-                                            re.id_user === user.id &&
-                                            re.ip === IP_USER
-                                        ) {
+                                        if (re.refreshToken === refreshToken + '@_@' + code && re.id_user === user.id && re.ip === IP_USER) {
                                             re.refreshToken = newRefreshToken + '@_@' + code;
                                         }
                                         return re;
