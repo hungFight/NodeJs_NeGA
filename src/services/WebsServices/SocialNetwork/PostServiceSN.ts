@@ -291,6 +291,8 @@ class PostServiceSN {
                             if (commentToUpdate) {
                                 commentToUpdate.feel.onlyEmo.map((e: { id_user: string[]; id: number }) => {
                                     e.id_user = e.id_user.filter((u) => u !== id_user);
+                                    if (String(e.id) === String(index)) e.id_user.push(id_user);
+
                                     return e;
                                 });
                                 // Save the updated document
