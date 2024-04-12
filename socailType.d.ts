@@ -37,56 +37,55 @@ export interface PropsDataPosts {
     feel: feel;
     comments: PropsComments[];
     amountComments: number;
+    postId: string;
     content: {
         text: string;
         fontFamily: string;
-        options: {
-            default: {
-                comments: {
-                    id_user: string;
-                    content: {
-                        text: string;
-                        file: string[];
-                    };
-                    feel: feel;
-                    reply: [
-                        {
-                            id_user: string;
-                            content: {
-                                text: string;
-                                file: string[];
-                            };
-                            feel: feel;
-                        },
-                    ];
-                };
-                file: { id_sort: number; link: string; type: string };
-                love: { id_user: string[] };
-                title: string;
-                _id: string;
-            }[];
-            swiper: {
-                id: number;
-                name: string;
-                data: {
-                    file: string[];
-                    data?: {
-                        file: string[];
-                        centered: {
-                            id: number;
-                            column: number;
-                            data: string[];
-                        };
-                    };
-                };
-            };
-            grid: {
-                file: string[];
-                BgColor: string;
-                column: number;
-            };
-            onlyImage: string[];
-        };
+        data: { file: { id_sort: number; link: string; type: string }; love: { id_user: string[] }; title: string; _id: string }[];
+        // options: {
+        //     default: {
+        //         comments: {
+        //             id_user: string;
+        //             content: {
+        //                 text: string;
+        //                 file: string[];
+        //             };
+        //             feel: feel;
+        //             reply: [
+        //                 {
+        //                     id_user: string;
+        //                     content: {
+        //                         text: string;
+        //                         file: string[];
+        //                     };
+        //                     feel: feel;
+        //                 },
+        //             ];
+        //         };
+
+        //     }[];
+        //     swiper: {
+        //         id: number;
+        //         name: string;
+        //         data: {
+        //             file: string[];
+        //             data?: {
+        //                 file: string[];
+        //                 centered: {
+        //                     id: number;
+        //                     column: number;
+        //                     data: string[];
+        //                 };
+        //             };
+        //         };
+        //     };
+        //     grid: {
+        //         file: string[];
+        //         BgColor: string;
+        //         column: number;
+        //     };
+        //     onlyImage: string[];
+        // };
     };
     whoCanSeePost: { id: string; name: string };
     anonymous: boolean;

@@ -1,5 +1,5 @@
 import moment from 'moment';
-import { prisma } from '../..';
+import { esClient, prisma } from '../..';
 import xPrismaF from '../../models/prisma/extension/xPrismaF';
 export interface PropsParams {
     fullName?: boolean;
@@ -30,6 +30,52 @@ interface PropsParamsMores {
     followingAmount?: boolean;
     relationship?: boolean;
     language?: boolean;
+}
+async function searchUsersInElasticsearchName(query: string) {
+    try {
+        const data = await esClient.search({
+            index: 'users', // Elasticsearch index name
+            body: {
+                query: {
+                    match: {
+                        fullName: query, // Search by user's full name
+                    },
+                },
+            },
+        });
+        console.log('users are found ', data);
+
+        // const users = body.hits.hits.map((hit) => hit._source);
+        // return users;
+    } catch (error) {
+        console.error('Error searching users in Elasticsearch:', error);
+        return [];
+    }
+}
+async function indexUserInElasticsearch(userId: string) {
+    try {
+        const user = await prisma.user.findUnique({
+            where: { id: userId },
+        });
+
+        if (!user) {
+            throw new Error(`User with id ${userId} not found`);
+        }
+
+        // Index user data in Elasticsearch
+        await esClient.index({
+            index: 'users', // Elasticsearch index name
+            id: user.id,
+            body: {
+                fullName: user.fullName,
+                // Add more fields as needed
+            },
+        });
+
+        console.log(`User ${userId} indexed in Elasticsearch`);
+    } catch (error) {
+        console.error('Error indexing user in Elasticsearch:', error);
+    }
 }
 class UserService {
     getById(id: string, id_reqs: string[], params: PropsParams, mores: PropsParamsMores, first?: string) {
@@ -111,65 +157,53 @@ class UserService {
                                         if (id !== us.id) {
                                             params.address =
                                                 privates.address === 'everyone' ||
-                                                ((us.userRequest[0]?.level === 2 ||
-                                                    us.userIsRequested[0]?.level === 2) &&
+                                                ((us.userRequest[0]?.level === 2 || us.userIsRequested[0]?.level === 2) &&
                                                     privates.address !== 'only')
                                                     ? true
                                                     : false;
                                             params.birthday =
                                                 privates.birthday === 'everyone' ||
-                                                ((us.userRequest[0]?.level === 2 ||
-                                                    us.userIsRequested[0]?.level === 2) &&
+                                                ((us.userRequest[0]?.level === 2 || us.userIsRequested[0]?.level === 2) &&
                                                     privates.birthday !== 'only')
                                                     ? true
                                                     : false;
                                             params.occupation =
                                                 privates.occupation === 'everyone' ||
-                                                ((us.userRequest[0]?.level === 2 ||
-                                                    us.userIsRequested[0]?.level === 2) &&
+                                                ((us.userRequest[0]?.level === 2 || us.userIsRequested[0]?.level === 2) &&
                                                     privates.occupation !== 'only')
                                                     ? true
                                                     : false;
                                             params.hobby =
                                                 privates.hobby === 'everyone' ||
-                                                ((us.userRequest[0]?.level === 2 ||
-                                                    us.userIsRequested[0]?.level === 2) &&
-                                                    privates.hobby !== 'only')
+                                                ((us.userRequest[0]?.level === 2 || us.userIsRequested[0]?.level === 2) && privates.hobby !== 'only')
                                                     ? true
                                                     : false;
                                             params.skill =
                                                 privates.skill === 'everyone' ||
-                                                ((us.userRequest[0]?.level === 2 ||
-                                                    us.userIsRequested[0]?.level === 2) &&
-                                                    privates.skill !== 'only')
+                                                ((us.userRequest[0]?.level === 2 || us.userIsRequested[0]?.level === 2) && privates.skill !== 'only')
                                                     ? true
                                                     : false;
                                             params.schoolName =
                                                 privates.schoolName === 'everyone' ||
-                                                ((us.userRequest[0]?.level === 2 ||
-                                                    us.userIsRequested[0]?.level === 2) &&
+                                                ((us.userRequest[0]?.level === 2 || us.userIsRequested[0]?.level === 2) &&
                                                     privates.schoolName !== 'only')
                                                     ? true
                                                     : false;
                                             params.gender =
                                                 privates.gender === 'everyone' ||
-                                                ((us.userRequest[0]?.level === 2 ||
-                                                    us.userIsRequested[0]?.level === 2) &&
-                                                    privates.gender !== 'only')
+                                                ((us.userRequest[0]?.level === 2 || us.userIsRequested[0]?.level === 2) && privates.gender !== 'only')
                                                     ? true
                                                     : false;
                                             if (mores) {
                                                 mores.language =
                                                     privates.language === 'everyone' ||
-                                                    ((us.userRequest[0]?.level === 2 ||
-                                                        us.userIsRequested[0]?.level === 2) &&
+                                                    ((us.userRequest[0]?.level === 2 || us.userIsRequested[0]?.level === 2) &&
                                                         privates.position !== 'only')
                                                         ? true
                                                         : false;
                                                 mores.position =
                                                     privates.position === 'everyone' ||
-                                                    ((us.userRequest[0]?.level === 2 ||
-                                                        us.userIsRequested[0]?.level === 2) &&
+                                                    ((us.userRequest[0]?.level === 2 || us.userIsRequested[0]?.level === 2) &&
                                                         privates.position !== 'only')
                                                         ? true
                                                         : false;
@@ -354,54 +388,53 @@ class UserService {
         });
     }
     getByName(id: string, name: string, cateMore: string, searchMore: string, params: PropsParams) {
-        return new Promise(
-            async (resolve: (arg0: { status: number; data?: any }) => void, reject: (arg0: unknown) => void) => {
-                try {
-                    console.log({ [`${cateMore}`]: searchMore });
-                    if (cateMore && searchMore) {
-                        const data = await prisma.user.findMany({
-                            where: {
-                                id: { notIn: [id] },
-                                AND: [
-                                    {
-                                        fullName: {
-                                            contains: name,
-                                        },
-                                    },
-                                    {
-                                        [`${cateMore}`]: {
-                                            // other fields
-                                            contains: searchMore,
-                                        },
-                                    },
-                                ],
-                            },
-                            select: {
-                                ...params,
-                            },
-                        });
-                        if (data) resolve({ status: 1, data });
-                    } else {
-                        const data = await prisma.user.findMany({
-                            where: {
-                                id: { notIn: [id] },
-                                fullName: {
-                                    contains: name,
-                                },
-                            },
-                            select: {
-                                ...params,
-                            },
-                        });
-                        if (data) resolve({ status: 1, data });
-                    }
+        return new Promise(async (resolve: (arg0: { status: number; data?: any }) => void, reject: (arg0: unknown) => void) => {
+            try {
+                console.log({ [`${cateMore}`]: searchMore });
+                searchUsersInElasticsearchName(name);
+                // if (cateMore && searchMore) {
+                //     const data = await prisma.user.findMany({
+                //         where: {
+                //             id: { notIn: [id] },
+                //             AND: [
+                //                 {
+                //                     fullName: {
+                //                         contains: name,
+                //                     },
+                //                 },
+                //                 {
+                //                     [`${cateMore}`]: {
+                //                         // other fields
+                //                         contains: searchMore,
+                //                     },
+                //                 },
+                //             ],
+                //         },
+                //         select: {
+                //             ...params,
+                //         },
+                //     });
+                //     if (data) resolve({ status: 1, data });
+                // } else {
+                //     const data = await prisma.user.findMany({
+                //         where: {
+                //             id: { notIn: [id] },
+                //             fullName: {
+                //                 contains: name,
+                //             },
+                //         },
+                //         select: {
+                //             ...params,
+                //         },
+                //     });
+                //     if (data) resolve({ status: 1, data });
+                // }
 
-                    resolve({ status: 0 });
-                } catch (error) {
-                    reject(error);
-                }
-            },
-        );
+                resolve({ status: 0 });
+            } catch (error) {
+                reject(error);
+            }
+        });
     }
     setLg(id: string, lg: string) {
         return new Promise(async (resolve: (arg0: any) => void, reject: (arg0: unknown) => void) => {
@@ -503,7 +536,7 @@ class UserService {
                 const akg = params.background;
                 const name = params.fullName;
                 const more = params.mores;
-
+                indexUserInElasticsearch(id);
                 if (more) {
                     const lv = await prisma.lovers.findFirst({
                         where: {
@@ -583,27 +616,22 @@ class UserService {
             subAccount: string;
         },
     ) {
-        return new Promise(
-            async (
-                resolve: (arg0: { countUser: number; countMores: number }) => void,
-                reject: (arg0: unknown) => void,
-            ) => {
-                try {
-                    const dataUser = await prisma.user.updateMany({
-                        where: { id: id },
-                        data: { ...params },
-                    });
-                    const dataMores = await prisma.mores.updateMany({
-                        where: { id: id },
-                        data: { ...mores, privacy: privacy },
-                    });
-                    console.log(params, 'value', dataMores, dataUser);
-                    resolve({ countUser: dataUser.count, countMores: dataMores.count });
-                } catch (error) {
-                    reject(error);
-                }
-            },
-        );
+        return new Promise(async (resolve: (arg0: { countUser: number; countMores: number }) => void, reject: (arg0: unknown) => void) => {
+            try {
+                const dataUser = await prisma.user.updateMany({
+                    where: { id: id },
+                    data: { ...params },
+                });
+                const dataMores = await prisma.mores.updateMany({
+                    where: { id: id },
+                    data: { ...mores, privacy: privacy },
+                });
+                console.log(params, 'value', dataMores, dataUser);
+                resolve({ countUser: dataUser.count, countMores: dataMores.count });
+            } catch (error) {
+                reject(error);
+            }
+        });
     }
     follow(id: string, id_fl: string, follow?: string) {
         return new Promise(async (resolve: any, reject: any) => {

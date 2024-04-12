@@ -108,9 +108,14 @@ class homeController {
             const onAnonymous = req.body.onAc;
             const emos = req.body.emos;
             const text = req.body.text;
+            const commentId = req.body.commentId;
+            const repliedId = req.body.repliedId;
+
             if (!validate.validUUID(id)) return res.status(404).json('Id of user is invalid!');
-            if (!validate.validMongoID(postId)) return res.status(404).json('Id of the post is invalid!');
-            const data = await PostServiceSN.sendComment(postId, id, text, onAnonymous, emos);
+            if (!validate.validMongoID(postId)) return res.status(404).json('postId of the post is invalid!');
+            if (!validate.validUUID(commentId)) return res.status(404).json('commentId of the post is invalid!');
+            //  postId: dataPost._id, text: reply_com.text, anonymousC: onAc, emos, commentId: reply_com.id, repliesId: reply_com.id_user
+            const data = await PostServiceSN.sendComment(postId, id, text, onAnonymous, emos, commentId, repliedId);
             if (data) io.emit(`comment_post_${postId}`, data);
             return res.status(200).json(data);
         } catch (error) {

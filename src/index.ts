@@ -1,6 +1,7 @@
 import express from 'express';
 import connectDatabase from './connectDatabase/connectDatabase';
-import { PrismaClient } from '@prisma/client';
+import { Client } from '@elastic/elasticsearch';
+import { Prisma, PrismaClient } from '@prisma/client';
 import Redis from 'ioredis';
 import compression from 'compression';
 import bytes from 'bytes';
@@ -24,6 +25,7 @@ import { Server } from 'socket.io';
 import { RoomChats } from './models/mongodb/chats';
 const connection = new Set();
 export const prisma = new PrismaClient();
+// Listen to Prisma 'user' post event and index user in Elasticsearch
 
 // if (cluster.isPrimary) { create child process
 //     for (let i = 0; i < os.cpus().length - 1; i++) {
@@ -58,6 +60,10 @@ const redisClient = new Redis({
     port: Number(process.env.REDIS_PORT),
     password: process.env.REDIS_PASSWORD,
 });
+export const esClient = new Client({
+    node: 'http://localhost:9200', // Elasticsearch server URL,
+});
+
 io.on('connection', (client: any) => {
     console.log('conn');
 

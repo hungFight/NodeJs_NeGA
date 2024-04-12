@@ -1,7 +1,7 @@
 import { v4 as primaryKey } from 'uuid';
 import { file } from 'googleapis/build/src/apis/file';
 import DateTime from '../../../DateTimeCurrent/DateTimeCurrent';
-import { NewPost } from '../../../models/mongodb/SN_DB/home';
+import { NewPost, ThemeDefault } from '../../../models/mongodb/SN_DB/home';
 import { prisma } from '../../..';
 import { PropsInfoFile } from '../SendChatServiceSN';
 import { PropsComments, PropsDataPosts } from '../../../../socailType';
@@ -50,19 +50,35 @@ class PostServiceSN {
             try {
                 const id_c = data_file?.map((f) => f.id);
                 let options = {};
+                const id_cate_post = primaryKey();
                 const imageOrVideosD = data_file?.map((f) => f.id);
+                const res: any = await NewPost.create({
+                    id_user: id,
+                    category,
+                    hashTag: hashTags.map((h) => ({ value: h.value })),
+                    background: bg_default,
+                    postId: id_cate_post,
+                    feel: {
+                        onlyEmo: imotions,
+                        act: act,
+                    },
+                    private: privates,
+                    whoCanSeePost,
+                    createdAt: DateTime(),
+                });
                 switch (category) {
                     case 0:
                         const imageOrVideos = data_file?.map((f) => {
                             return {
+                                id_sort: f.id_sort,
                                 file: { link: f.id, type: f.type },
                                 title: f.title,
                             };
                         });
-                        options = {
-                            default: imageOrVideos,
-                        };
-                        console.log(options, '0');
+                        const resDf = await ThemeDefault.create({ _id: id_cate_post, data: imageOrVideos, text: value, fontFamily: fontFamily });
+                        if (resDf) {
+                            resolve({ data: { ...res._doc, content: resDf }, id_c });
+                        }
                         break;
                     case 1:
                         let data = {};
@@ -108,24 +124,7 @@ class PostServiceSN {
                     category,
                     hashTags.map((h) => h.value),
                 );
-                const res = await NewPost.create({
-                    id_user: id,
-                    category,
-                    hashTag: hashTags.map((h) => ({ value: h.value })),
-                    background: bg_default,
-                    content: {
-                        text: value,
-                        fontFamily: fontFamily,
-                        options,
-                    },
-                    feel: {
-                        onlyEmo: imotions,
-                        act: act,
-                    },
-                    private: privates,
-                    whoCanSeePost,
-                    createdAt: DateTime(),
-                });
+
                 console.log(res, 'res no expire');
                 resolve({ data: res, id_c });
             } catch (err) {
@@ -189,6 +188,10 @@ class PostServiceSN {
                             try {
                                 await Promise.all(
                                     dataPost.map(async (p, index: number) => {
+                                        if (p?.postId) {
+                                            const post_res: any = await ThemeDefault.findById(p.postId);
+                                            dataPost[index].content = post_res;
+                                        }
                                         if (p.id_user === id) {
                                             dataPost[index].user = [
                                                 {
@@ -261,80 +264,80 @@ class PostServiceSN {
     }) => {
         return new Promise(async (resolve, reject) => {
             const { _id, index, id_user, state, oldIndex, id_comment } = data;
-            try {
-                const post = await NewPost.findById(_id);
-                if (post) {
-                    if (id_comment) {
-                        if (state === 'add') {
-                            const commentToUpdate: any = post.comments.find((comment) => comment._id === id_comment);
-                            if (commentToUpdate) {
-                                const { feel } = commentToUpdate;
-                                feel.onlyEmo.map((e: { id_user: string[]; id: number }) => {
-                                    e.id_user = e.id_user.filter((u) => u !== id_user);
-                                    if (String(e.id) === String(index)) e.id_user.push(id_user);
-                                    return e;
-                                });
-                                // Save the updated document
-                                const newPost = await post.save();
-                                resolve(newPost?.comments.filter((r) => r._id === id_comment)[0].feel);
-                            }
-                            resolve(null);
-                        } else if (state === 'remove') {
-                            const post = await NewPost.findByIdAndUpdate(
-                                _id,
-                                { $pull: { 'comments.$[comment].feel.onlyEmo.$[elm].id_user': id_user } }, // $addToSet to add a unique value into an array
-                                { arrayFilters: [{ 'comment._id': id_comment }, { 'elm.id': index }], new: true },
-                            );
-                            resolve(post?.comments.filter((r) => r._id === id_comment)[0].feel);
-                        } else {
-                            const commentToUpdate: any = post.comments.find((comment) => comment._id === id_comment);
-                            if (commentToUpdate) {
-                                commentToUpdate.feel.onlyEmo.map((e: { id_user: string[]; id: number }) => {
-                                    e.id_user = e.id_user.filter((u) => u !== id_user);
-                                    if (String(e.id) === String(index)) e.id_user.push(id_user);
+            // try {
+            //     const post = await NewPost.findById(_id);
+            //     if (post) {
+            //         if (id_comment) {
+            //             if (state === 'add') {
+            //                 const commentToUpdate: any = post.comments.find((comment) => comment._id === id_comment);
+            //                 if (commentToUpdate) {
+            //                     const { feel } = commentToUpdate;
+            //                     feel.onlyEmo.map((e: { id_user: string[]; id: number }) => {
+            //                         e.id_user = e.id_user.filter((u) => u !== id_user);
+            //                         if (String(e.id) === String(index)) e.id_user.push(id_user);
+            //                         return e;
+            //                     });
+            //                     // Save the updated document
+            //                     const newPost = await post.save();
+            //                     resolve(newPost?.comments.filter((r) => r._id === id_comment)[0].feel);
+            //                 }
+            //                 resolve(null);
+            //             } else if (state === 'remove') {
+            //                 const post = await NewPost.findByIdAndUpdate(
+            //                     _id,
+            //                     { $pull: { 'comments.$[comment].feel.onlyEmo.$[elm].id_user': id_user } }, // $addToSet to add a unique value into an array
+            //                     { arrayFilters: [{ 'comment._id': id_comment }, { 'elm.id': index }], new: true },
+            //                 );
+            //                 resolve(post?.comments.filter((r) => r._id === id_comment)[0].feel);
+            //             } else {
+            //                 const commentToUpdate: any = post.comments.find((comment) => comment._id === id_comment);
+            //                 if (commentToUpdate) {
+            //                     commentToUpdate.feel.onlyEmo.map((e: { id_user: string[]; id: number }) => {
+            //                         e.id_user = e.id_user.filter((u) => u !== id_user);
+            //                         if (String(e.id) === String(index)) e.id_user.push(id_user);
 
-                                    return e;
-                                });
-                                // Save the updated document
-                                const newPost = await post.save();
-                                resolve(newPost?.comments.filter((r) => r._id === id_comment)[0].feel);
-                            }
-                            resolve(null);
-                        }
-                    } else if (state === 'remove') {
-                        const post = await NewPost.findByIdAndUpdate(
-                            _id,
-                            { $pull: { 'feel.onlyEmo.$[elm].id_user': id_user } },
-                            { arrayFilters: [{ 'elm.id': index }], new: true },
-                        );
-                        resolve(post?.feel);
-                    } else if (state === 'add') {
-                        if (post.feel) {
-                            post.feel.onlyEmo = post.feel.onlyEmo.map((e) => {
-                                e.id_user = e.id_user.filter((u) => u !== id_user);
-                                if (String(e.id) === String(index)) e.id_user.push(id_user);
-                                return e;
-                            });
-                            const savedPost = await post.save();
-                            resolve(savedPost.feel);
-                        }
-                        resolve(null);
-                    } else {
-                        if (post.feel) {
-                            post.feel.onlyEmo = post.feel.onlyEmo.map((e) => {
-                                e.id_user = e.id_user.filter((u) => u !== id_user);
-                                if (String(e.id) === String(index)) e.id_user.push(id_user);
-                                return e;
-                            });
-                            const savedPost = await post.save();
-                            resolve(savedPost.feel);
-                        }
-                        resolve(null);
-                    }
-                }
-            } catch (error) {
-                reject(error);
-            }
+            //                         return e;
+            //                     });
+            //                     // Save the updated document
+            //                     const newPost = await post.save();
+            //                     resolve(newPost?.comments.filter((r) => r._id === id_comment)[0].feel);
+            //                 }
+            //                 resolve(null);
+            //             }
+            //         } else if (state === 'remove') {
+            //             const post = await NewPost.findByIdAndUpdate(
+            //                 _id,
+            //                 { $pull: { 'feel.onlyEmo.$[elm].id_user': id_user } },
+            //                 { arrayFilters: [{ 'elm.id': index }], new: true },
+            //             );
+            //             resolve(post?.feel);
+            //         } else if (state === 'add') {
+            //             if (post.feel) {
+            //                 post.feel.onlyEmo = post.feel.onlyEmo.map((e) => {
+            //                     e.id_user = e.id_user.filter((u) => u !== id_user);
+            //                     if (String(e.id) === String(index)) e.id_user.push(id_user);
+            //                     return e;
+            //                 });
+            //                 const savedPost = await post.save();
+            //                 resolve(savedPost.feel);
+            //             }
+            //             resolve(null);
+            //         } else {
+            //             if (post.feel) {
+            //                 post.feel.onlyEmo = post.feel.onlyEmo.map((e) => {
+            //                     e.id_user = e.id_user.filter((u) => u !== id_user);
+            //                     if (String(e.id) === String(index)) e.id_user.push(id_user);
+            //                     return e;
+            //                 });
+            //                 const savedPost = await post.save();
+            //                 resolve(savedPost.feel);
+            //             }
+            //             resolve(null);
+            //         }
+            //     }
+            // } catch (error) {
+            //     reject(error);
+            // }
         });
     };
     sendComment = (
@@ -350,32 +353,62 @@ class PostServiceSN {
                 id_user: string[];
             }[];
         },
+        commentId?: string,
+        repliedId?: string,
     ): Promise<PropsComments | null> => {
         return new Promise(async (resolve, reject) => {
             try {
                 const _id = primaryKey();
                 if (_id) {
                     const date = new Date();
-                    const res = await NewPost.findByIdAndUpdate(postId, {
-                        $push: {
-                            comments: { _id, id_user: userId, anonymous: onAnonymous, user: null, content: { text }, feel: emos, createdAt: date },
-                        },
-                    });
-                    const user = await prisma.user.findUnique({
-                        where: { id: userId },
-                        select: { id: true, fullName: true, avatar: true, gender: true },
-                    });
-                    if (res && user)
-                        resolve({
-                            content: { text, imageOrVideos: [] },
-                            createdAt: date,
-                            anonymous: onAnonymous,
-                            feel: emos,
-                            id_user: userId,
-                            reply: [],
-                            user,
-                            _id: _id,
+                    if (commentId && repliedId) {
+                        const res = await NewPost.findByIdAndUpdate(
+                            postId,
+                            {
+                                $push: {
+                                    'comments.$[elm].reply': {
+                                        _id,
+                                        id_user: userId,
+                                        anonymous: onAnonymous,
+                                        user: null,
+                                        content: { text },
+                                        feel: emos,
+                                        createdAt: date,
+                                    },
+                                },
+                            },
+                            { arrayFilters: [{ 'elm._id': commentId }] },
+                        );
+                    } else {
+                        const res = await NewPost.findByIdAndUpdate(postId, {
+                            $push: {
+                                comments: {
+                                    _id,
+                                    id_user: userId,
+                                    anonymous: onAnonymous,
+                                    user: null,
+                                    content: { text },
+                                    feel: emos,
+                                    createdAt: date,
+                                },
+                            },
                         });
+                        const user = await prisma.user.findUnique({
+                            where: { id: userId },
+                            select: { id: true, fullName: true, avatar: true, gender: true },
+                        });
+                        if (res && user)
+                            resolve({
+                                content: { text, imageOrVideos: [] },
+                                createdAt: date,
+                                anonymous: onAnonymous,
+                                feel: emos,
+                                id_user: userId,
+                                reply: [],
+                                user,
+                                _id: _id,
+                            });
+                    }
                 }
                 resolve(null);
             } catch (error) {

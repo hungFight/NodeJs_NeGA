@@ -11,6 +11,7 @@ export interface PropsInfoFile {
     tail: string;
     name: string;
     title?: string;
+    id_sort?: number;
 }
 
 export interface PropsRoomChat {
