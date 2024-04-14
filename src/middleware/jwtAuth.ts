@@ -19,6 +19,7 @@ class JWTVERIFY {
             const userAgent = req.headers['user-agent'];
             const dateTime = moment().format('HH:mm:ss DD-MM-YYYY');
             console.log('User Agent:', userAgent, IP_MAC);
+            if (!IP_MAC || !isMAC(IP_MAC)) return res.status(403).json({ status: 0, message: "You're IP_m is empty!" });
             const warning = JSON.stringify({
                 id: 0,
                 device: userAgent,
@@ -47,8 +48,8 @@ class JWTVERIFY {
                         const dataRes = newDataFiltered[0];
                         const my = dataRes.refreshToken.split('@_@');
                         const [refreshToken, code] = my;
-                        console.log(newDataD, 'newDataD', newDataFiltered.length, dataRes);
-                        if (authHeader && userId && refreshToken) {
+                        console.log(refreshToken, code, 'newDataD', newDataFiltered.length, dataRes);
+                        if (authHeader && userId && refreshToken && code) {
                             const tokenc = authHeader && authHeader.split(' ')[1];
                             if (!tokenc) {
                                 return res.status(401).json({ status: 8888, message: 'Unauthorized! 1' });
@@ -59,12 +60,13 @@ class JWTVERIFY {
                                         if (err) {
                                             // when every login session is created we'll use code of refreshToken
                                             console.log(err);
-
-                                            // token.deleteToken(res);
-                                            // return res.status(403).json({ status: 0, message: 'Token is not valid' });
+                                            token.deleteToken(res);
+                                            return res.status(403).json({ status: 0, message: 'Token is not valid' });
                                         }
                                         console.log(user, 'user');
                                         jwt.verify(refreshToken, code, (err, data: any) => {
+                                            console.log(data, 'yyyy');
+
                                             // data: {id:string; iat: number; exp: number}
                                             if (err) {
                                                 token.deleteToken(res);

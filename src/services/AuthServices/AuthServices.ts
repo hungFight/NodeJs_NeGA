@@ -28,8 +28,9 @@ class AuthServices {
                 const userData: any = {};
                 const isExist = await UserSecurity.checkUserEmail(phoneNumberEmail, subAccount, id_other, id);
                 const { status, user } = isExist;
-                const code = primaryKey();
-                const secret: any = await Security.hash(code);
+                const secret = await Security.hash(primaryKey());
+                const jwtid = await Security.hash(primaryKey());
+                if (!secret || !jwtid) resolve(null);
                 if (status === 200 && user && user.length) {
                     await Promise.all(
                         user.map(async (u: any) => {
@@ -85,8 +86,8 @@ class AuthServices {
                                         }
                                     } else {
                                         // in process login both
-                                        const accessToken = Token.accessTokenF({ id: u.id }, secret);
-                                        const refreshToken = Token.refreshTokenF({ id: u.id }, secret);
+                                        const accessToken = Token.accessTokenF({ id: u.id }, secret, jwtid);
+                                        const refreshToken = Token.refreshTokenF({ id: u.id }, secret, jwtid);
                                         delete u.phoneNumberEmail;
                                         delete u.password;
                                         Object.freeze(u);
@@ -122,7 +123,7 @@ class AuthServices {
                                                     redisClient.set(u.id + 'refreshToken', JSON.stringify(newDa), (err: any, res: any) => {
                                                         if (err) {
                                                             console.log('Error setting refreshToken', err);
-                                                            resolve(null);
+                                                            reject(err);
                                                         }
                                                         redisClient.expire(u.id + 'refreshToken', 15 * 24 * 60 * 60);
                                                     });
@@ -215,9 +216,14 @@ class AuthServices {
                 } else {
                     try {
                         const password = await Security.hash(data.password);
+                        const _id = primaryKey();
+                        if (!_id) {
+                            resolve({ result: 'Id is empty!', check: 2, acc: checkPhoneNumberEmail.length });
+                            return;
+                        }
                         const res = await prisma.user.create({
                             data: {
-                                id: primaryKey(),
+                                id: _id,
                                 fullName: data.name,
                                 password: password,
                                 phoneNumberEmail: data.phoneMail,

@@ -2,23 +2,25 @@ import express from 'express';
 import jwt from 'jsonwebtoken';
 import UserIT from '../interface/inTerFaceUser';
 class Token {
-    accessTokenF = (data: { id: string }, secret: string) => {
+    accessTokenF = (data: { id: string }, secret: string, jwtId: string) => {
         try {
             return jwt.sign(data, secret, {
-                expiresIn: '10m',
+                expiresIn: '8m',
                 algorithm: 'HS256',
                 issuer: process.env.REACT_URL,
+                jwtid: jwtId,
                 audience: process.env.REACT_URL,
             });
         } catch (err) {
             console.log(err, 'generate accessToken');
         }
     };
-    refreshTokenF = (payload: { id: string }, secret: string) => {
+    refreshTokenF = (payload: { id: string }, secret: string, jwtId: string) => {
         try {
             return jwt.sign(payload, secret, {
                 algorithm: 'HS256',
                 issuer: process.env.REACT_URL,
+                jwtid: jwtId,
                 audience: process.env.REACT_URL,
             });
         } catch (error) {

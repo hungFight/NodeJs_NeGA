@@ -1,7 +1,7 @@
 import { v4 as primaryKey } from 'uuid';
 import { file } from 'googleapis/build/src/apis/file';
 import DateTime from '../../../DateTimeCurrent/DateTimeCurrent';
-import { NewPost, ThemeDefault } from '../../../models/mongodb/SN_DB/home';
+import { Comments, NewPost } from '../../../models/mongodb/SN_DB/home';
 import { prisma } from '../../..';
 import { PropsInfoFile } from '../SendChatServiceSN';
 import { PropsComments, PropsDataPosts } from '../../../../socailType';
@@ -49,36 +49,21 @@ class PostServiceSN {
         return new Promise(async (resolve, reject) => {
             try {
                 const id_c = data_file?.map((f) => f.id);
-                let options = {};
-                const id_cate_post = primaryKey();
+                let content = {};
                 const imageOrVideosD = data_file?.map((f) => f.id);
-                const res: any = await NewPost.create({
-                    id_user: id,
-                    category,
-                    hashTag: hashTags.map((h) => ({ value: h.value })),
-                    background: bg_default,
-                    postId: id_cate_post,
-                    feel: {
-                        onlyEmo: imotions,
-                        act: act,
-                    },
-                    private: privates,
-                    whoCanSeePost,
-                    createdAt: DateTime(),
-                });
                 switch (category) {
                     case 0:
                         const imageOrVideos = data_file?.map((f) => {
                             return {
                                 id_sort: f.id_sort,
-                                file: { link: f.id, type: f.type },
-                                title: f.title,
+                                file: { link: f.id, type: f.type, title: f.title, width: f.width, height: f.height },
                             };
                         });
-                        const resDf = await ThemeDefault.create({ _id: id_cate_post, data: imageOrVideos, text: value, fontFamily: fontFamily });
-                        if (resDf) {
-                            resolve({ data: { ...res._doc, content: resDf }, id_c });
-                        }
+                        content = {
+                            text: value,
+                            fontFamily,
+                            default: imageOrVideos,
+                        };
                         break;
                     case 1:
                         let data = {};
@@ -95,7 +80,7 @@ class PostServiceSN {
                                 file: imageOrVideosD,
                             };
                         }
-                        options = {
+                        content = {
                             swiper: {
                                 id: categoryOfSwiper.id,
                                 name: categoryOfSwiper.name,
@@ -104,7 +89,7 @@ class PostServiceSN {
                         };
                         break;
                     case 2:
-                        options = {
+                        content = {
                             grid: {
                                 file: imageOrVideosD,
                                 BgColor,
@@ -113,20 +98,28 @@ class PostServiceSN {
                         };
                         break;
                     case 3:
-                        options = {
+                        content = {
                             onlyImage: imageOrVideosD,
                         };
                         break;
                 }
-                console.log(
-                    options,
-                    'options',
+                const res: any = await NewPost.create({
+                    id_user: id,
                     category,
-                    hashTags.map((h) => h.value),
-                );
-
+                    hashTag: hashTags.map((h) => ({ value: h.value })),
+                    background: bg_default,
+                    content,
+                    feel: {
+                        onlyEmo: imotions,
+                        act: act,
+                    },
+                    private: privates,
+                    whoCanSeePost,
+                    createdAt: DateTime(),
+                });
+                await Comments.create({ postId: res._id, count: 0, data: [] });
                 console.log(res, 'res no expire');
-                resolve({ data: res, id_c });
+                resolve(res);
             } catch (err) {
                 reject(err);
             }
@@ -178,50 +171,43 @@ class PostServiceSN {
                     //         },
                     //     },
                     // ]);
-                    const dataPost = await NewPost.find({ id_user: { $in: [...friends_id, ...follow_id, id] } })
+                    const dataPost: any = await NewPost.find({ id_user: { $in: [...friends_id, ...follow_id, id] } })
                         .sort({ createdAt: -1 })
                         .limit(limit)
                         .skip(offset)
                         .select('-comments');
                     if (dataPost.length) {
-                        const newData: any = await new Promise(async (resolve, reject) => {
-                            try {
-                                await Promise.all(
-                                    dataPost.map(async (p, index: number) => {
-                                        if (p?.postId) {
-                                            const post_res: any = await ThemeDefault.findById(p.postId);
-                                            dataPost[index].content = post_res;
-                                        }
-                                        if (p.id_user === id) {
-                                            dataPost[index].user = [
-                                                {
-                                                    id: "It's me",
-                                                    fullName: "It's me",
-                                                    avatar: undefined,
-                                                    gender: 0,
-                                                },
-                                            ];
-                                        } else {
-                                            const user: any = await prisma.user.findUnique({
-                                                where: {
-                                                    id: p.id_user,
-                                                },
-                                                select: { id: true, avatar: true, fullName: true, gender: true },
-                                            });
-                                            console.log(user, 'user');
-                                            if (user) {
-                                                dataPost[index].user = [user];
-                                            }
-                                        }
-                                    }),
-                                );
-                                resolve(dataPost);
-                            } catch (error) {
-                                console.log('Error: get post', error);
-                            }
-                        });
+                        const newData = await Promise.all(
+                            dataPost.map(async (p: any, index: number) => {
+                                if (p.id_user === id) {
+                                    p.user = [
+                                        {
+                                            id: "It's me",
+                                            fullName: "It's me",
+                                            avatar: undefined,
+                                            gender: 0,
+                                        },
+                                    ];
+                                } else {
+                                    const user: any = await prisma.user.findUnique({
+                                        where: {
+                                            id: p.id_user,
+                                        },
+                                        select: { id: true, avatar: true, fullName: true, gender: true },
+                                    });
+                                    if (user) {
+                                        p.user = [user];
+                                    }
+                                }
+                            }),
+                        );
+                        try {
+                            resolve(dataPost);
+                        } catch (error) {
+                            console.log('Error: get post', error);
+                        }
+
                         console.log(newData[0].user, 'newData');
-                        resolve(newData);
                     }
                     resolve([]);
 
@@ -362,6 +348,7 @@ class PostServiceSN {
                 if (_id) {
                     const date = new Date();
                     if (commentId && repliedId) {
+                        // const re = await Comments.find({pos})
                         const res = await NewPost.findByIdAndUpdate(
                             postId,
                             {
@@ -397,17 +384,17 @@ class PostServiceSN {
                             where: { id: userId },
                             select: { id: true, fullName: true, avatar: true, gender: true },
                         });
-                        if (res && user)
-                            resolve({
-                                content: { text, imageOrVideos: [] },
-                                createdAt: date,
-                                anonymous: onAnonymous,
-                                feel: emos,
-                                id_user: userId,
-                                reply: [],
-                                user,
-                                _id: _id,
-                            });
+                        // if (res && user)
+                        //     resolve({
+                        //         content: { text, imageOrVideos: [] },
+                        //         createdAt: date,
+                        //         anonymous: onAnonymous,
+                        //         feel: emos,
+                        //         id_user: userId,
+                        //         reply: [],
+                        //         user,
+                        //         _id: _id,
+                        //     });
                     }
                 }
                 resolve(null);
@@ -419,36 +406,38 @@ class PostServiceSN {
     getComments = (postId: string, userId: string, offset: number, limit: number): Promise<PropsComments[] | null> => {
         return new Promise(async (resolve, reject) => {
             try {
-                const res: any = await NewPost.aggregate([
-                    { $match: { _id: ObjectId(postId) } },
-                    { $unwind: '$comments' },
-                    { $sort: { 'comments.createdAt': -1 } },
+                const res: any = await Comments.aggregate([
+                    { $match: { _id: { $in: postId } } },
+                    { $unwind: '$data' },
+                    { $sort: { 'data.createdAt': -1 } },
                     { $skip: offset }, // Skip the specified number of documents
                     { $limit: limit },
                     {
                         $group: {
                             _id: '$_id',
-                            comments: { $push: '$comments' },
+                            data: { $push: '$data' },
                         },
                     },
                 ]);
-                if (res[0]?.comments.length) {
-                    await Promise.all(
-                        res[0]?.comments.map(async (c: PropsComments, index: string) => {
-                            const oldData = res[0].comments.filter((r: { user: { id: string } }) => r.user?.id === c.id_user);
-                            if (!oldData?.length) {
-                                const d = await prisma.user.findUnique({
-                                    where: { id: c.id_user },
-                                    select: { avatar: true, id: true, fullName: true, gender: true },
-                                });
-                                if (d) res[0].comments[index].user = d;
-                            } else {
-                                res[0].comments[index].user = oldData[0];
-                            }
-                        }),
-                    );
-                    resolve(res[0]?.comments);
-                }
+                console.log(res, 'comment');
+
+                // if (res?.length) {
+                //     await Promise.all(
+                //         res.map(async (c: PropsComments, index: string) => {
+                //             const oldData = res[0].comments.filter((r: { user: { id: string } }) => r.user?.id === c.id_user);
+                //             if (!oldData?.length) {
+                //                 const d = await prisma.user.findUnique({
+                //                     where: { id: c.id_user },
+                //                     select: { avatar: true, id: true, fullName: true, gender: true },
+                //                 });
+                //                 if (d) res[0].comments[index].user = d;
+                //             } else {
+                //                 res[0].comments[index].user = oldData[0];
+                //             }
+                //         }),
+                //     );
+                //     resolve(res[0]?.comments);
+                // }
                 resolve([]);
             } catch (error) {
                 reject(error);

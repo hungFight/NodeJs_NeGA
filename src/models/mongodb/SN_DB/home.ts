@@ -6,82 +6,70 @@ const feel = {
     ], // display icons will be chosen
     act: { type: Number, maxLength: 1, default: 1 },
 };
-
-const Comments = new Schema(
-    {
-        _id: { type: String, maxLength: 50, index: true },
-        id_user: {
-            type: String,
-            required: true,
-            maxLength: 50,
-        },
-        user: {
-            type: {
-                id: { type: String, maxLength: 50 },
-                fullName: { type: String, maxLength: 30 },
-                avatar: { type: String, maxLength: 50 },
-                gender: { type: Number, maxLength: 1 },
+const propComment = {
+    postId: { type: String, maxLength: 50 },
+    count: { type: Number, maxLength: 8, default: 0 },
+    data: [
+        {
+            id: { type: String, maxLength: 50 },
+            id_user: {
+                type: String,
+                required: true,
+                maxLength: 50,
             },
-            default: null,
-        },
-        content: {
-            text: { type: String },
-            imageOrVideos: [{ id: { type: String, maxLength: 50 } }],
-        },
-        feel,
-        reply: [
-            {
+            user: {
                 type: {
-                    _id: { type: String, maxLength: 50, index: true },
-                    id_user: {
-                        type: String,
-                        required: true,
-                        maxLength: 50,
-                    },
-                    user: {
-                        type: {
-                            id: { type: String, maxLength: 50 },
-                            fullName: { type: String, maxLength: 30 },
-                            avatar: { type: String, maxLength: 50 },
-                            gender: { type: Number, maxLength: 1 },
-                        },
-                        default: null,
-                    },
-                    content: {
-                        text: { type: String },
-                        imageOrVideos: [{ id: { type: String, maxLength: 50 } }],
-                    },
-                    feel,
-                    anonymous: { type: Boolean, default: false },
-                    createdAt: { type: Date, required: true, default: Date.now() },
+                    id: { type: String, maxLength: 50 },
+                    fullName: { type: String, maxLength: 30 },
+                    avatar: { type: String, maxLength: 50 },
+                    gender: { type: Number, maxLength: 1 },
                 },
-                default: [],
+                default: null,
             },
-            { _id: false },
-        ],
-        anonymous: { type: Boolean, default: false },
-        createdAt: { type: Date, required: true, default: Date.now() },
-    },
-    { _id: false },
-);
-const themeDefault = new Schema(
-    {
-        _id: { type: String, maxLength: 50 },
-        text: { type: String, text: String },
-        fontFamily: { type: String, maxLength: 20 },
-        data: [
-            {
-                id_sort: { type: Number, maxLength: 2 },
-                file: { link: { type: String, maxLength: 50 }, type: { type: String, maxLength: 15 } },
-                title: { type: String, maxLength: 100 },
-                love: { act: { type: Number, maxLength: 11, defaultValue: 0 }, id_user: [String] },
-                required: false,
+            content: {
+                text: { type: String },
+                imageOrVideos: [{ id: { type: String, maxLength: 50 } }],
             },
-        ],
-    },
-    { _id: false },
-);
-export const ThemeDefault = mongoose.model('ThemeDefault', themeDefault);
+            feel,
+            reply: [
+                {
+                    type: {
+                        _id: { type: String, maxLength: 50, index: true },
+                        id_user: {
+                            type: String,
+                            required: true,
+                            maxLength: 50,
+                        },
+                        user: {
+                            type: {
+                                id: { type: String, maxLength: 50 },
+                                fullName: { type: String, maxLength: 30 },
+                                avatar: { type: String, maxLength: 50 },
+                                gender: { type: Number, maxLength: 1 },
+                            },
+                            default: null,
+                        },
+                        content: {
+                            text: { type: String },
+                            imageOrVideos: [{ id: { type: String, maxLength: 50 } }],
+                        },
+                        feel,
+                        anonymous: { type: Boolean, default: false },
+                        createdAt: { type: Date, required: true, default: Date.now() },
+                    },
+                    default: [],
+                },
+                { _id: false },
+            ],
+            anonymous: { type: Boolean, default: false },
+            createdAt: { type: Date, required: true, default: Date.now() },
+        },
+    ],
+};
+const comments = new Schema({
+    ...propComment,
+});
+export const Comments = mongoose.model('Comments', comments);
 const Posts = new Schema({
     id_user: { type: String, maxLength: 50, required: true, index: true },
     user: [
@@ -96,20 +84,28 @@ const Posts = new Schema({
     hashTag: [{ value: String }, { _id: true }],
     background: { type: String, maxLength: 20 },
     Tags: [{ id_user: { type: String, maxLength: 50 } }],
-    postId: { type: String, maxLength: 50, unique: true },
+    comments: propComment,
     content: {
-        _id: { type: String, maxLength: 50 },
-        text: { type: String, text: String },
-        fontFamily: { type: String, maxLength: 20 },
-        data: [
-            {
-                id_sort: { type: Number, maxLength: 2 },
-                file: { link: { type: String, maxLength: 50 }, type: { type: String, maxLength: 15 } },
-                title: { type: String, maxLength: 100 },
-                love: { act: { type: Number, maxLength: 11, defaultValue: 0 }, id_user: [String] },
-                required: false,
-            },
-        ],
+        type: {
+            text: { type: String, text: String },
+            fontFamily: { type: String, maxLength: 20 },
+            default: [
+                {
+                    type: {
+                        id_sort: { type: Number, max: 2 },
+                        file: {
+                            link: { type: String, maxLength: 50 },
+                            type: { type: String, maxLength: 15 },
+                            width: { type: String, maxLength: 5 },
+                            height: { type: String, maxLength: 5 },
+                        },
+                        title: { type: String, maxLength: 100 },
+                        love: { act: { type: Number, maxLength: 11, default: 0 }, id_user: [String] },
+                    },
+                    default: null,
+                },
+            ],
+        },
     },
     // content: {
     //     // default: [
@@ -143,12 +139,11 @@ const Posts = new Schema({
     //     // onlyImage: [{ type: String, maxLength: 50 }], //3
     // },
     feel,
-    amountComments: { type: Number, maxLength: 11, default: 0 },
     whoCanSeePost: {
         id: { type: String, maxLength: 50 },
         name: { type: String, maxLength: 20 },
     },
-    anonymous: { type: Boolean, defaultValue: false }, // comments
+    anonymous: { type: Boolean, default: false }, // comments
     private: [{ id: { type: String, maxLength: 50 }, name: { type: String, maxLength: 20 } }],
     createdAt: { type: Date, required: true, default: Date.now() },
     deletedAt: { type: Date, default: null },
