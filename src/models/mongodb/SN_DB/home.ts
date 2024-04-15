@@ -1,17 +1,26 @@
 import mongoose from 'mongoose';
 const Schema = mongoose.Schema;
 const feel = {
-    onlyEmo: [
-        { id: { type: Number, maxLength: 1 }, icon: { type: String, maxLength: 10 }, id_user: { type: [String], maxLength: 50, unique: true } },
-    ], // display icons will be chosen
-    act: { type: Number, maxLength: 1, default: 1 },
+    type: {
+        onlyEmo: [
+            {
+                id: { type: Number, maxLength: 1, require: true },
+                icon: { require: true, type: String, maxLength: 10 },
+                id_user: { type: [String], maxLength: 50, unique: true },
+            },
+        ], // display icons will be chosen
+        act: { type: Number, maxLength: 1, default: 1 },
+        createdAt: { type: Date, required: true, default: Date.now() },
+    },
+    require: true,
 };
 const propComment = {
-    postId: { type: String, maxLength: 50 },
+    postId: { type: String, maxLength: 50, require: true },
     count: { type: Number, maxLength: 8, default: 0 },
+    full: { type: Boolean, default: false },
     data: [
         {
-            id: { type: String, maxLength: 50 },
+            _id: { type: String, maxLength: 50 },
             id_user: {
                 type: String,
                 required: true,
@@ -64,6 +73,7 @@ const propComment = {
             anonymous: { type: Boolean, default: false },
             createdAt: { type: Date, required: true, default: Date.now() },
         },
+        { _id: false },
     ],
 };
 const comments = new Schema({

@@ -4,34 +4,37 @@ interface feel {
         icon: string;
         id_user: string[];
     }[];
+    createdAt: string | Date;
     act: number;
 }
 export interface PropsComments {
-    _id: string;
+    _id: string | any;
     postId: string;
     count: number;
-    data: {
-        _id: string;
+    full: boolean;
+    data: PropsCommentsIn[];
+}
+export interface PropsCommentsIn {
+    _id: string;
+    id_user: string;
+    user: {
+        id: string;
+        fullName: string;
+        avatar: string | null;
+        gender: number;
+    };
+    content: {
+        text: string;
+        imageOrVideos: string[];
+    };
+    feel: feel;
+    reply: {
         id_user: string;
-        user: {
-            id: string;
-            fullName: string;
-            avatar: string | null;
-            gender: number;
-        };
-        content: {
-            text: string;
-            imageOrVideos: string[];
-        };
-        feel: feel;
-        reply: {
-            id_user: string;
-            content: { text: string; imageOrVideos: string[] };
-            anonymous: boolean;
-        }[];
+        content: { text: string; imageOrVideos: string[] };
         anonymous: boolean;
-        createdAt: string | Date;
     }[];
+    anonymous: boolean;
+    createdAt: string | Date;
 }
 export interface PropsDataPosts {
     _id: string;

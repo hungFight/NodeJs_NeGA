@@ -4,7 +4,7 @@ import DateTime from '../../../DateTimeCurrent/DateTimeCurrent';
 import { Comments, NewPost } from '../../../models/mongodb/SN_DB/home';
 import { prisma } from '../../..';
 import { PropsInfoFile } from '../SendChatServiceSN';
-import { PropsComments, PropsDataPosts } from '../../../../socailType';
+import { PropsComments, PropsCommentsIn, PropsDataPosts, feel } from '../../../../socailType';
 // const Sequelize = require('sequelize');
 // const Op = Sequelize.Op;
 const { ObjectId } = require('mongodb');
@@ -247,83 +247,47 @@ class PostServiceSN {
         state: 'add' | 'remove' | 'update';
         oldIndex?: number;
         id_comment?: string;
-    }) => {
+        groupCommentId?: string;
+    }): Promise<feel | null> => {
         return new Promise(async (resolve, reject) => {
-            const { _id, index, id_user, state, oldIndex, id_comment } = data;
-            // try {
-            //     const post = await NewPost.findById(_id);
-            //     if (post) {
-            //         if (id_comment) {
-            //             if (state === 'add') {
-            //                 const commentToUpdate: any = post.comments.find((comment) => comment._id === id_comment);
-            //                 if (commentToUpdate) {
-            //                     const { feel } = commentToUpdate;
-            //                     feel.onlyEmo.map((e: { id_user: string[]; id: number }) => {
-            //                         e.id_user = e.id_user.filter((u) => u !== id_user);
-            //                         if (String(e.id) === String(index)) e.id_user.push(id_user);
-            //                         return e;
-            //                     });
-            //                     // Save the updated document
-            //                     const newPost = await post.save();
-            //                     resolve(newPost?.comments.filter((r) => r._id === id_comment)[0].feel);
-            //                 }
-            //                 resolve(null);
-            //             } else if (state === 'remove') {
-            //                 const post = await NewPost.findByIdAndUpdate(
-            //                     _id,
-            //                     { $pull: { 'comments.$[comment].feel.onlyEmo.$[elm].id_user': id_user } }, // $addToSet to add a unique value into an array
-            //                     { arrayFilters: [{ 'comment._id': id_comment }, { 'elm.id': index }], new: true },
-            //                 );
-            //                 resolve(post?.comments.filter((r) => r._id === id_comment)[0].feel);
-            //             } else {
-            //                 const commentToUpdate: any = post.comments.find((comment) => comment._id === id_comment);
-            //                 if (commentToUpdate) {
-            //                     commentToUpdate.feel.onlyEmo.map((e: { id_user: string[]; id: number }) => {
-            //                         e.id_user = e.id_user.filter((u) => u !== id_user);
-            //                         if (String(e.id) === String(index)) e.id_user.push(id_user);
-
-            //                         return e;
-            //                     });
-            //                     // Save the updated document
-            //                     const newPost = await post.save();
-            //                     resolve(newPost?.comments.filter((r) => r._id === id_comment)[0].feel);
-            //                 }
-            //                 resolve(null);
-            //             }
-            //         } else if (state === 'remove') {
-            //             const post = await NewPost.findByIdAndUpdate(
-            //                 _id,
-            //                 { $pull: { 'feel.onlyEmo.$[elm].id_user': id_user } },
-            //                 { arrayFilters: [{ 'elm.id': index }], new: true },
-            //             );
-            //             resolve(post?.feel);
-            //         } else if (state === 'add') {
-            //             if (post.feel) {
-            //                 post.feel.onlyEmo = post.feel.onlyEmo.map((e) => {
-            //                     e.id_user = e.id_user.filter((u) => u !== id_user);
-            //                     if (String(e.id) === String(index)) e.id_user.push(id_user);
-            //                     return e;
-            //                 });
-            //                 const savedPost = await post.save();
-            //                 resolve(savedPost.feel);
-            //             }
-            //             resolve(null);
-            //         } else {
-            //             if (post.feel) {
-            //                 post.feel.onlyEmo = post.feel.onlyEmo.map((e) => {
-            //                     e.id_user = e.id_user.filter((u) => u !== id_user);
-            //                     if (String(e.id) === String(index)) e.id_user.push(id_user);
-            //                     return e;
-            //                 });
-            //                 const savedPost = await post.save();
-            //                 resolve(savedPost.feel);
-            //             }
-            //             resolve(null);
-            //         }
-            //     }
-            // } catch (error) {
-            //     reject(error);
-            // }
+            const { _id, index, id_user, state, oldIndex, id_comment, groupCommentId } = data;
+            try {
+                const date = new Date();
+                if (id_comment && groupCommentId) {
+                    //comment
+                    const commentToUpdate: any = await Comments.findById(groupCommentId);
+                    let loadToClient: feel | null = null;
+                    commentToUpdate.data.map((c: PropsCommentsIn) => {
+                        if (c._id === id_comment && c.feel) {
+                            c.feel.onlyEmo.map((e: { id_user: string[]; id: number }) => {
+                                e.id_user = e.id_user.filter((u) => u !== id_user);
+                                if ((state === 'add' || state === 'update') && String(e.id) === String(index)) e.id_user.push(id_user);
+                                return e;
+                            });
+                            c.feel.createdAt = date;
+                            loadToClient = c.feel;
+                        }
+                        return c;
+                    });
+                    await commentToUpdate.save();
+                    resolve(loadToClient);
+                } else {
+                    // post
+                    const post: any = await NewPost.findById(_id);
+                    if (post && post?.feel) {
+                        post.feel.onlyEmo = post.feel.onlyEmo.map((e: { id_user: string[]; id: any }) => {
+                            e.id_user = e.id_user.filter((u: string) => u !== id_user);
+                            if ((state === 'add' || state === 'update') && String(e.id) === String(index)) e.id_user.push(id_user);
+                            return e;
+                        });
+                        await post.save();
+                        resolve(post.feel);
+                    }
+                }
+                resolve(null);
+            } catch (error) {
+                reject(error);
+            }
         });
     };
     sendComment = (
@@ -338,6 +302,7 @@ class PostServiceSN {
                 icon: string;
                 id_user: string[];
             }[];
+            createdAt: string | Date;
         },
         commentId?: string,
         repliedId?: string,
@@ -348,12 +313,11 @@ class PostServiceSN {
                 if (_id) {
                     const date = new Date();
                     if (commentId && repliedId) {
-                        // const re = await Comments.find({pos})
-                        const res = await NewPost.findByIdAndUpdate(
-                            postId,
+                        const re = await Comments.findOneAndUpdate(
+                            { postId },
                             {
                                 $push: {
-                                    'comments.$[elm].reply': {
+                                    data: {
                                         _id,
                                         id_user: userId,
                                         anonymous: onAnonymous,
@@ -363,38 +327,67 @@ class PostServiceSN {
                                         createdAt: date,
                                     },
                                 },
-                            },
-                            { arrayFilters: [{ 'elm._id': commentId }] },
-                        );
-                    } else {
-                        const res = await NewPost.findByIdAndUpdate(postId, {
-                            $push: {
-                                comments: {
-                                    _id,
-                                    id_user: userId,
-                                    anonymous: onAnonymous,
-                                    user: null,
-                                    content: { text },
-                                    feel: emos,
-                                    createdAt: date,
+                                $inc: {
+                                    count: 1,
                                 },
                             },
-                        });
+                            { new: true },
+                        );
+                        // const res = await NewPost.findByIdAndUpdate(
+                        //     postId,
+                        //     {
+                        //         $push: {
+                        //             'comments.$[elm].reply':
+                        //         },
+                        //     },
+                        //     { arrayFilters: [{ 'elm._id': commentId }] },
+                        // );
+                    } else {
+                        emos.createdAt = new Date();
+                        const res = await Comments.findOneAndUpdate(
+                            { postId, full: false },
+                            {
+                                $push: {
+                                    data: {
+                                        _id,
+                                        id_user: userId,
+                                        anonymous: onAnonymous,
+                                        user: null,
+                                        content: { text },
+                                        feel: emos,
+                                        createdAt: date,
+                                    },
+                                },
+                                $inc: {
+                                    count: 1,
+                                },
+                            },
+                            { new: true },
+                        );
+
                         const user = await prisma.user.findUnique({
                             where: { id: userId },
                             select: { id: true, fullName: true, avatar: true, gender: true },
                         });
-                        // if (res && user)
-                        //     resolve({
-                        //         content: { text, imageOrVideos: [] },
-                        //         createdAt: date,
-                        //         anonymous: onAnonymous,
-                        //         feel: emos,
-                        //         id_user: userId,
-                        //         reply: [],
-                        //         user,
-                        //         _id: _id,
-                        //     });
+                        if (res && user)
+                            resolve({
+                                _id: res._id,
+                                postId,
+                                count: res.count,
+                                full: res.full,
+                                data: [
+                                    {
+                                        content: { text, imageOrVideos: [] },
+                                        createdAt: date,
+                                        anonymous: onAnonymous,
+                                        feel: emos,
+                                        id_user: userId,
+                                        reply: [],
+                                        user,
+                                        _id: _id,
+                                    },
+                                ],
+                            });
                     }
                 }
                 resolve(null);
@@ -406,8 +399,8 @@ class PostServiceSN {
     getComments = (postId: string, userId: string, offset: number, limit: number): Promise<PropsComments[] | null> => {
         return new Promise(async (resolve, reject) => {
             try {
-                const res: any = await Comments.aggregate([
-                    { $match: { _id: { $in: postId } } },
+                const res: PropsComments[] = await Comments.aggregate([
+                    { $match: { postId } },
                     { $unwind: '$data' },
                     { $sort: { 'data.createdAt': -1 } },
                     { $skip: offset }, // Skip the specified number of documents
@@ -415,29 +408,44 @@ class PostServiceSN {
                     {
                         $group: {
                             _id: '$_id',
+                            count: { $first: '$count' },
+                            full: { $first: '$full' },
+                            postId: { $first: '$first' },
                             data: { $push: '$data' },
                         },
                     },
                 ]);
                 console.log(res, 'comment');
-
-                // if (res?.length) {
-                //     await Promise.all(
-                //         res.map(async (c: PropsComments, index: string) => {
-                //             const oldData = res[0].comments.filter((r: { user: { id: string } }) => r.user?.id === c.id_user);
-                //             if (!oldData?.length) {
-                //                 const d = await prisma.user.findUnique({
-                //                     where: { id: c.id_user },
-                //                     select: { avatar: true, id: true, fullName: true, gender: true },
-                //                 });
-                //                 if (d) res[0].comments[index].user = d;
-                //             } else {
-                //                 res[0].comments[index].user = oldData[0];
-                //             }
-                //         }),
-                //     );
-                //     resolve(res[0]?.comments);
-                // }
+                if (res?.length) {
+                    const newCom = await Promise.all(
+                        res.map(async (d, indexD: number) => {
+                            // Map over 'd.data' asynchronously to fetch additional user data
+                            const newData = await Promise.all(
+                                d.data.map(async (c, index: number) => {
+                                    try {
+                                        const userData = await prisma.user.findUnique({
+                                            where: { id: c.id_user },
+                                            select: { avatar: true, id: true, fullName: true, gender: true },
+                                        });
+                                        if (userData) {
+                                            c.user = userData;
+                                        }
+                                        return c;
+                                    } catch (error) {
+                                        // Handle errors if user data fetching fails
+                                        console.error(`Error fetching user data for id_user ${c.id_user}:`, error);
+                                        // You can choose to return the original 'c' object or handle errors differently
+                                        return c;
+                                    }
+                                }),
+                            );
+                            // Replace 'd.data' with the updated 'newData' that includes user information
+                            d.data = newData;
+                            return d;
+                        }),
+                    );
+                    resolve(newCom);
+                }
                 resolve([]);
             } catch (error) {
                 reject(error);

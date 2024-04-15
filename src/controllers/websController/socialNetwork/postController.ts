@@ -76,13 +76,16 @@ class homeController {
     search = () => {};
     setEmotion = async (req: any, res: any, next: express.NextFunction) => {
         try {
+            const Validator = new Validation();
             const _id = req.body._id;
+            if (!Validator.validMongoID(_id)) return res.status(404).json('Invalid Mongodb Id');
             const index = req.body.index;
             const id_user = req.body.id_user;
             const state = req.body.state;
             const oldIndex = req.body.oldIndex;
             const id_comment = req.body.id_comment;
-            const data = await PostServiceSN.setEmotion({ _id, index, id_user, state, oldIndex, id_comment });
+            const groupCommentId = req.body.groupCommentId;
+            const data = await PostServiceSN.setEmotion({ _id, index, id_user, state, oldIndex, id_comment, groupCommentId });
             return res.status(200).json(data);
         } catch (error) {
             next(error);
@@ -113,7 +116,6 @@ class homeController {
 
             if (!validate.validUUID(id)) return res.status(404).json('Id of user is invalid!');
             if (!validate.validMongoID(postId)) return res.status(404).json('postId of the post is invalid!');
-            if (!validate.validUUID(commentId)) return res.status(404).json('commentId of the post is invalid!');
             //  postId: dataPost._id, text: reply_com.text, anonymousC: onAc, emos, commentId: reply_com.id, repliesId: reply_com.id_user
             const data = await PostServiceSN.sendComment(postId, id, text, onAnonymous, emos, commentId, repliedId);
             if (data) io.emit(`comment_post_${postId}`, data);
