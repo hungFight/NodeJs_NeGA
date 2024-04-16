@@ -12,6 +12,7 @@ const chats = new Schema(
             gender: { type: Number, maxLength: 1 },
         },
         deleted: [
+            // who has deleted
             {
                 id: { type: String, maxLength: 50 },
                 createdAt: {

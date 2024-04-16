@@ -1,6 +1,7 @@
 import moment from 'moment';
 import { esClient, prisma } from '../..';
 import xPrismaF from '../../models/prisma/extension/xPrismaF';
+import { convertToURL } from '../../utils/convertURL';
 export interface PropsParams {
     fullName?: boolean;
     active?: boolean;
@@ -518,7 +519,7 @@ class UserService {
     changesOne(
         id: string,
         id_req: string,
-        value: any, //string or buffer
+        value: any, //string | { id_file: string; type: string; name: string }
         params: {
             avatar?: string;
             background?: string;
@@ -529,14 +530,28 @@ class UserService {
             name?: string;
             title?: string;
         },
-    ) {
+    ): Promise<
+        | {
+              loverData:
+                  | {
+                        id: number;
+                        userId: string;
+                        idIsLoved: string;
+                        createdAt: Date;
+                        updatedAt: Date;
+                    }
+                  | undefined;
+              count_loves: number;
+          }
+        | string
+    > {
         return new Promise(async (resolve: any, reject: (arg0: unknown) => void) => {
             try {
                 const av = params.avatar;
                 const akg = params.background;
                 const name = params.fullName;
                 const more = params.mores;
-                indexUserInElasticsearch(id);
+                // indexUserInElasticsearch(id);
                 if (more) {
                     const lv = await prisma.lovers.findFirst({
                         where: {
@@ -575,10 +590,10 @@ class UserService {
                     if (name) if (value.length > 30) resolve(0);
                     const data: any = await prisma.user.update({
                         where: { id: id },
-                        data: { [`${av || akg || name}`]: av || akg ? value.id_file : value },
+                        data: { [`${av || akg || name}`]: av || akg ? convertToURL(value.id_file, value.type) : value },
                     });
                     if (name) resolve(data[`${name}`]);
-                    if (akg || av) resolve(true);
+                    if (akg || av) resolve(convertToURL(value.id_file, value.type));
                 }
             } catch (error) {
                 reject(error);

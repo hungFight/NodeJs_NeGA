@@ -12,7 +12,7 @@ model User {
     fullName         String         @db.VarChar(30)
     phoneNumberEmail String         @db.VarChar(50)
     password         String         @db.VarChar(100)
-    avatar           String?        @db.VarChar(50)
+    avatar           String?        @db.VarChar(200)
     active           Boolean        @default(true)
     biography        String?        @db.VarChar(50)
     gender           Int

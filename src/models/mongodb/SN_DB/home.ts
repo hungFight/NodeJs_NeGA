@@ -6,7 +6,7 @@ const feel = {
             {
                 id: { type: Number, maxLength: 1, require: true },
                 icon: { require: true, type: String, maxLength: 10 },
-                id_user: { type: [String], maxLength: 50, unique: true },
+                id_user: { type: [String], maxLength: 50 },
             },
         ], // display icons will be chosen
         act: { type: Number, maxLength: 1, default: 1 },
@@ -81,7 +81,7 @@ const comments = new Schema({
 });
 export const Comments = mongoose.model('Comments', comments);
 const Posts = new Schema({
-    id_user: { type: String, maxLength: 50, required: true, index: true },
+    id_user: { type: String, maxLength: 50, required: true },
     user: [
         {
             id: { type: String, maxLength: 50, required: true },

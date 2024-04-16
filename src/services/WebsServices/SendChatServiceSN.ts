@@ -167,7 +167,7 @@ class SendChatService {
         return new Promise<PropsRoomChat[]>(async (resolve, reject) => {
             try {
                 const roomChat = await RoomChats.aggregate([
-                    { $match: { id_us: id, 'deleted.show': { $ne: true } } }, // Lọc theo điều kiện tương ứng với _id của document
+                    { $match: { id_us: id } }, // Lọc theo điều kiện tương ứng với _id của document
                     { $unwind: '$room' }, // Tách mỗi phần tử trong mảng room thành một document riêng
                     { $sort: { 'room.createdAt': -1 } }, // Sắp xếp theo trường createdAt trong mỗi phần tử room
                     {
@@ -781,14 +781,14 @@ class SendChatService {
             }
         });
     }
-    setBackground(conversationId: string, file: any, latestChatId: string, userId: string) {
+    setBackground(conversationId: string, id_file: { id: string; type: string }, latestChatId: string, userId: string) {
         // delete both side
         return new Promise(async (resolve, reject) => {
             try {
                 const ids_file = {
-                    type: file[0].mimetype,
-                    v: file[0].metadata.id_file,
-                    id: file[0].metadata.id_file,
+                    type: id_file.type,
+                    v: id_file.id,
+                    id: id_file.id,
                     userId,
                     latestChatId,
                 };

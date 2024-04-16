@@ -5,6 +5,7 @@ import { Comments, NewPost } from '../../../models/mongodb/SN_DB/home';
 import { prisma } from '../../..';
 import { PropsInfoFile } from '../SendChatServiceSN';
 import { PropsComments, PropsCommentsIn, PropsDataPosts, feel } from '../../../../socailType';
+import { convertToURL } from '../../../utils/convertURL';
 // const Sequelize = require('sequelize');
 // const Op = Sequelize.Op;
 const { ObjectId } = require('mongodb');
@@ -56,7 +57,7 @@ class PostServiceSN {
                         const imageOrVideos = data_file?.map((f) => {
                             return {
                                 id_sort: f.id_sort,
-                                file: { link: f.id, type: f.type, title: f.title, width: f.width, height: f.height },
+                                file: { link: convertToURL(f.id, f.type), type: f.type, title: f.title, width: f.width, height: f.height },
                             };
                         });
                         content = {

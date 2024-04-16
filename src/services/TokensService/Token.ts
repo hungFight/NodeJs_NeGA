@@ -5,7 +5,7 @@ class Token {
     accessTokenF = (data: { id: string }, secret: string, jwtId: string) => {
         try {
             return jwt.sign(data, secret, {
-                expiresIn: '8m',
+                expiresIn: '10m',
                 algorithm: 'HS256',
                 issuer: process.env.REACT_URL,
                 jwtid: jwtId,

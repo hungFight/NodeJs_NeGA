@@ -107,14 +107,7 @@ class SendChat {
             const moreChat: string = req.query.moreChat;
 
             if (id_other) {
-                const data: any = await SendChatServiceSN.getChat(
-                    id_room,
-                    id,
-                    id_other,
-                    Number(limit),
-                    Number(offset),
-                    moreChat,
-                );
+                const data: any = await SendChatServiceSN.getChat(id_room, id, id_other, Number(limit), Number(offset), moreChat);
 
                 if (data) {
                     if (Number(offset) === 0) {
@@ -171,8 +164,7 @@ class SendChat {
             const userIdCur = req.cookies.k_user;
             console.log(conversationId, chatId, userId);
             const io: Server<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any> = res.io;
-            if (!conversationId || !chatId || !userId)
-                throw new NotFound('delChatAll', 'conversationId, userId or chatId or userId not provided');
+            if (!conversationId || !chatId || !userId) throw new NotFound('delChatAll', 'conversationId, userId or chatId or userId not provided');
             if (userId === userIdCur) {
                 const data = await SendChatServiceSN.delChatAll(conversationId, chatId, userId);
                 if (data) {
@@ -192,8 +184,7 @@ class SendChat {
             const userId = req.body.userId;
             console.log(conversationId, chatId, userId);
 
-            if (!conversationId || !chatId || !userId)
-                throw new NotFound('delChatAll', 'conversationId, userId or chatId or userId not provided');
+            if (!conversationId || !chatId || !userId) throw new NotFound('delChatAll', 'conversationId, userId or chatId or userId not provided');
             const data = await SendChatServiceSN.delChatSelf(conversationId, chatId, userId);
             return res.status(200).json(data);
         } catch (error) {
@@ -211,10 +202,7 @@ class SendChat {
             const files = req.body.ids;
             const io: Server<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any> = res.io;
             if (!conversationId || !chatId || !id_other)
-                throw new NotFound(
-                    'updateChat UP',
-                    'conversationId, userId, id_other or chatId or userId not provided',
-                );
+                throw new NotFound('updateChat UP', 'conversationId, userId, id_other or chatId or userId not provided');
             if (userId === userIdCur) {
                 const data = await SendChatServiceSN.updateChat(conversationId, chatId, userId, id_other, value, files);
                 if (data) {
@@ -236,10 +224,7 @@ class SendChat {
             const latestChatId: string = req.body.latestChatId;
 
             if (!conversationId || !chatId || !userId || !latestChatId)
-                throw new NotFound(
-                    'Pin chat',
-                    'conversationId, userId, chatId, latestChatId or chatId or userId not provided',
-                );
+                throw new NotFound('Pin chat', 'conversationId, userId, chatId, latestChatId or chatId or userId not provided');
             const data = await SendChatServiceSN.pin(conversationId, chatId, userId, latestChatId);
             if (data) {
                 io.emit(`conversation_pins_room_${conversationId}`, data);
@@ -254,8 +239,7 @@ class SendChat {
             const conversationId = req.query.conversationId;
             const pins = req.query.pins;
             const io: Server<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any> = res.io;
-            if (!conversationId || !pins?.length)
-                throw new NotFound('getPin chat', 'conversationId, pins  not provided');
+            if (!conversationId || !pins?.length) throw new NotFound('getPin chat', 'conversationId, pins  not provided');
             const data = await SendChatServiceSN.getPins(conversationId, pins);
             return res.status(200).json(data);
         } catch (error) {
@@ -268,8 +252,7 @@ class SendChat {
             const pinId = req.query.pinId;
             const roomId = req.query.roomId;
             const io: Server<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any> = res.io;
-            if (!conversationId || !pinId || !roomId)
-                throw new NotFound('deletePin chat', 'conversationId, pinId, roomId  not provided');
+            if (!conversationId || !pinId || !roomId) throw new NotFound('deletePin chat', 'conversationId, pinId, roomId  not provided');
             const data = await SendChatServiceSN.deletePin(conversationId, pinId);
             if (data) {
                 io.emit(`conversation_deletedPin_room_${conversationId}`, { pinId, roomId });
@@ -283,14 +266,13 @@ class SendChat {
         try {
             const conversationId = req.body.conversationId;
             const latestChatId = req.body.latestChatId;
-            const userId = req.body.userId;
-            const files = req.files;
+            const userId = req.cookies.k_user;
+            const id_file = req.body.id_file;
             const io: Server<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any> = res.io;
-            console.log(files, 'files');
 
-            if (!conversationId || !files || !latestChatId || !userId)
+            if (!conversationId || !id_file || !latestChatId || !userId)
                 throw new NotFound('setBackground chat', 'conversationId, files, latestChatId, userId not provided');
-            const data = await SendChatServiceSN.setBackground(conversationId, files, latestChatId, userId);
+            const data = await SendChatServiceSN.setBackground(conversationId, id_file, latestChatId, userId);
             if (data) {
                 io.emit(`conversation_changeBG_room_${conversationId}`, data);
             }
@@ -303,6 +285,8 @@ class SendChat {
         try {
             const conversationId = req.body.conversationId;
             const io: Server<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any> = res.io;
+            console.log('delBackground');
+
             if (!conversationId) throw new NotFound('delBackground chat', 'conversationId not provided');
             const data = await SendChatServiceSN.delBackground(conversationId);
             if (data) {
@@ -347,10 +331,7 @@ class SendChat {
                 const data = await SendChatServiceSN.getConversationBalloon(conversationId, userId);
                 console.log('mysql b');
 
-                redisClient.set(
-                    `managerFactory_balloon_${userId}`,
-                    JSON.stringify({ state: conversationId, newRes: data }),
-                );
+                redisClient.set(`managerFactory_balloon_${userId}`, JSON.stringify({ state: conversationId, newRes: data }));
                 return res.status(200).json(data);
             });
         } catch (error) {

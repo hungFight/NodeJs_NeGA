@@ -83,8 +83,7 @@ class userController {
             const redisClient: Redis = res.redisClient;
             redisClient.get(`${id} message`, (err, rs) => {
                 if (err) console.log(err);
-                if (rs && JSON.parse(rs).quantity > 0)
-                    redisClient.set(`${id} message`, JSON.stringify({ quantity: 0 }));
+                if (rs && JSON.parse(rs).quantity > 0) redisClient.set(`${id} message`, JSON.stringify({ quantity: 0 }));
             });
             return res.status(200).json({ ok: true });
         } catch (error) {
@@ -128,8 +127,8 @@ class userController {
                     }
                 });
             } else {
-                const data: any = await UserServiceSN.changesOne(id, id_req, value, params);
-                return res.status(200).json('data');
+                const data = await UserServiceSN.changesOne(id, id_req, value, params);
+                return res.status(200).json(data);
             }
         } catch (error) {
             next(error);
