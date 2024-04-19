@@ -36,30 +36,30 @@ class SendChat {
                 );
                 const key_redis = id_other + '-' + 'AmountMessageIsNotSeen' + '-' + data._id;
 
-                if (data) {
-                    // const newD = await new Promise<PropsRoomChat>((resolve, reject) => {
-                    //     try {
-                    //         redisClient.get(key_redis, (err, result) => {
-                    //             if (err) throw new ServerError('Error getting data from redis at CTL SendChat', err);
-                    //             redisClient.set(key_redis, result ? JSON.parse(result) + 1 : 1);
-                    //             data.miss = result ? JSON.parse(result) + 1 : 0;
-                    //             resolve(data);
-                    //         });
-                    //     } catch (error) {
-                    //         reject(error);
-                    //     }
-                    // });
-                    data._id = data._id.toString();
-                    console.log(data.room, 'data');
-                    io.emit(`${id_other}roomChat`, JSON.stringify(data)); // It's in App.tsx
-                    if (data.room?.secondary) {
-                        io.emit(`${id + '-' + id_other}phrase_chatRoom`, JSON.stringify({ id, data: data })); // It's in Messenger
-                    } else {
-                        io.emit(`${data._id + '-' + id}phrase_chatRoom`, JSON.stringify({ id, data: data })); // It's in Messenger
-                    }
+                // if (data) {
+                //     const newD = await new Promise<PropsRoomChat>((resolve, reject) => {
+                //         try {
+                //             redisClient.get(key_redis, (err, result) => {
+                //                 if (err) throw new ServerError('Error getting data from redis at CTL SendChat', err);
+                //                 redisClient.set(key_redis, result ? JSON.parse(result) + 1 : 1);
+                //                 data.miss = result ? JSON.parse(result) + 1 : 0;
+                //                 resolve(data);
+                //             });
+                //         } catch (error) {
+                //             reject(error);
+                //         }
+                //     });
+                //     data._id = data._id.toString();
+                //     console.log(data.room, 'data');
+                //     io.emit(`${id_other}roomChat`, JSON.stringify(data)); // It's in App.tsx
+                //     if (data.room?.secondary) {
+                //         io.emit(`${id + '-' + id_other}phrase_chatRoom`, JSON.stringify({ id, data: data })); // It's in Messenger
+                //     } else {
+                //         io.emit(`${data._id + '-' + id}phrase_chatRoom`, JSON.stringify({ id, data: data })); // It's in Messenger
+                //     }
 
-                    return res.status(200).json({ ...data, miss: 0 });
-                }
+                //     return res.status(200).json({ ...data, miss: 0 });
+                // }
                 return res.status(404).json('Send message failed!');
             }
             throw new NotFound('Send', 'id_other or id_room not found');
@@ -102,25 +102,26 @@ class SendChat {
             const id_room = req.query.id_room;
             const id_other = req.query.id_other;
             const limit = req.query.limit;
+            const indexRef = req.query.indexRef;
             const io: Server<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any> = res.io;
             const offset: number = req.query.offset;
             const moreChat: string = req.query.moreChat;
 
             if (id_other) {
-                const data: any = await SendChatServiceSN.getChat(id_room, id, id_other, Number(limit), Number(offset), moreChat);
+                const data: any = await SendChatServiceSN.getChat(id_room, id, id_other, Number(limit), Number(offset), Number(indexRef), moreChat);
 
                 if (data) {
-                    if (Number(offset) === 0) {
-                        // get and send seenBy to other
-                        if (moreChat === 'false') {
-                            for (let i = 0; i < data.room.length; i++) {
-                                if (data.room[i].id === id_other) {
-                                    io.emit(`phrase_chatRoom_response_${data._id}_${data.user.id}`, data?.room[i]._id);
-                                    break;
-                                }
-                            }
-                        }
-                    }
+                    // if (Number(offset) === 0) {
+                    //     // get and send seenBy to other
+                    //     if (moreChat === 'false') {
+                    //         for (let i = 0; i < data.room.length; i++) {
+                    //             if (data.room[i].id === id_other) {
+                    //                 io.emit(`phrase_chatRoom_response_${data._id}_${data.user.id}`, data?.room[i]._id);
+                    //                 break;
+                    //             }
+                    //         }
+                    //     }
+                    // }
                     return res.status(200).json(data);
                 }
                 throw new NotFound('GetChat', 'Conversation is Not Found ');
