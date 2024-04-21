@@ -22,7 +22,7 @@ import routeSN from './routes/websRoutes';
 import moment from 'moment';
 
 import { Server } from 'socket.io';
-import { RoomChats } from './models/mongodb/chats';
+import { ConversationRooms } from './models/mongodb/chats';
 const connection = new Set();
 export const prisma = new PrismaClient();
 // Listen to Prisma 'user' post event and index user in Elasticsearch
@@ -83,17 +83,26 @@ io.on('connection', (client: any) => {
                 });
             });
             client.on(`user_${id}_in_roomChat_personal_receive_and_saw`, async (data: { userIdReceived: string; idSent: string; idChat: string }) => {
-                await RoomChats.findOneAndUpdate(
-                    {
-                        id_us: { $all: [data.idSent, data.userIdReceived] },
-                        'room._id': data.idChat,
-                    },
-                    {
-                        $addToSet: {
-                            'room.$[].seenBy': data.userIdReceived, //push all elements in the seenBy document and unique
-                        },
-                    },
-                );
+                //    const seenBy = await Rooms.findOneAndUpdate(
+                //                 { chatId: conversationId, index: indexRef },
+                //                 {
+                //                     $addToSet: {
+                //                         'filter.$[fil].data.$[oth].seenBy': id, //push all elements in the seenBy document and uniqueroom: { id: id_other }
+                //                     },
+                //                 },
+                //                 { arrayFilters: [{ 'fil.index': offset }, { 'oth.id': id_other }] },
+                //             );
+                //         await ConversationRooms.findOneAndUpdate(
+                //             {
+                //                 id_us: { $all: [data.idSent, data.userIdReceived] },
+                //                 'room._id': data.idChat,
+                //             },
+                //             {
+                //                 $addToSet: {
+                //                     'room.$[].seenBy': data.userIdReceived, //push all elements in the seenBy document and unique
+                //                 },
+                //             },
+                //         );
                 client.broadcast.emit(`user_${data.idSent}_in_roomChat_personal_receive_and_saw_other`, data);
             });
         });

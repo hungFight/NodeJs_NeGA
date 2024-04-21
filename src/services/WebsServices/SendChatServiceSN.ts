@@ -1,7 +1,6 @@
-import { RoomChats, Rooms } from '../../models/mongodb/chats';
+import { ConversationRooms, Rooms } from '../../models/mongodb/chats';
 import DateTime from '../../DateTimeCurrent/DateTimeCurrent';
 import { prisma } from '../..';
-import XOAuth2 from 'nodemailer/lib/xoauth2';
 import { v4 as primaryKey } from 'uuid';
 import { Types } from 'mongoose';
 const { ObjectId } = require('mongodb');
@@ -66,6 +65,7 @@ class SendChatService {
         value: string,
         valueInfoFile: PropsInfoFile[],
         _id_room: string,
+        indexRoom: number,
         id_sOrReply?:
             | string
             | {
@@ -94,15 +94,18 @@ class SendChatService {
                 }),
                     console.log(imageOrVideos, 'imagesOrVideos');
                 const res: any = conversationId
-                    ? await RoomChats.findOne({
+                    ? await ConversationRooms.findOne({
                           _id: conversationId,
                           id_us: { $all: [id, id_other] },
                       })
-                    : await RoomChats.findOne({
+                    : await ConversationRooms.findOne({
                           // set any to set createdAt below
                           $and: [{ id_us: { $all: [id, id_other] } }, { id_us: { $size: 2 } }],
                       }).select('-room');
-
+                const user = await prisma.user.findUnique({
+                    where: { id: id },
+                    select: { id: true, avatar: true, fullName: true, gender: true },
+                });
                 if (!res) {
                     // create if it doesn't exist
                     const friend = await prisma.friends.findFirst({
@@ -114,7 +117,7 @@ class SendChatService {
                         },
                     });
 
-                    const roomChat: any = await RoomChats.create({
+                    const roomChat: any = await ConversationRooms.create({
                         id_us: [id, id_other],
                         status: friend ? 'isFriend' : 'isNotFriend',
                         pin: [],
@@ -122,10 +125,13 @@ class SendChatService {
                         createdAt: DateTime(),
                     });
                     if (roomChat) {
+                        console.log('777', roomChat);
+
                         const room = await Rooms.create({
                             chatId: roomChat._id,
                             count: 1,
                             full: false,
+                            index: 1,
                             filter: [
                                 {
                                     index: 1,
@@ -146,11 +152,8 @@ class SendChatService {
                                 },
                             ],
                         });
-                        const user = await prisma.user.findUnique({
-                            where: { id: id },
-                            select: { id: true, avatar: true, fullName: true, gender: true },
-                        });
-                        resolve({ ...roomChat._doc, user: user, room: room.filter[0], miss: 0 });
+
+                        resolve({ ...roomChat._doc, user: user, rooms: room, miss: 0 });
                     }
                 } else {
                     //update it still exist
@@ -172,6 +175,7 @@ class SendChatService {
                         full: false,
                         count: { $lt: 10 },
                     });
+                    console.log('888');
                     if (roomUpdate) {
                         roomUpdate.filter.map((f) => {
                             if (f.count >= f.index * 2 && !f.full) {
@@ -190,38 +194,52 @@ class SendChatService {
                             }
                             return f;
                         });
+                        if (roomUpdate.count === 10) roomUpdate.full = true;
                         console.log('yesss');
                         await roomUpdate.save();
-                        const user = await prisma.user.findUnique({
-                            where: { id: id },
-                            select: { id: true, avatar: true, fullName: true, gender: true },
+                        const filter = roomUpdate.filter[roomUpdate.filter.length - 1];
+
+                        resolve({
+                            ...res._doc,
+                            user: user,
+                            rooms: { ...roomUpdate, filter: [{ ...filter, data: [chat] }] },
+                            miss: 0,
                         });
-                        resolve({ ...res._doc, user: user, room: chat, miss: 0 });
                     } else {
-                        // const room = await Rooms.create({
-                        //     chatId: roomChat._id,
-                        //     count: 1,
-                        //     full: false,
-                        //     filter: [
-                        //         {
-                        //             index: 1,
-                        //             full: false,
-                        //             count: 1,
-                        //             data: [
-                        //                 {
-                        //                     userId: id,
-                        //                     _id: _id_room,
-                        //                     text: {
-                        //                         t: value,
-                        //                     },
-                        //                     imageOrVideos,
-                        //                     createdAt: DateTime(),
-                        //                     secondary: typeof id_sOrReply === 'string' ? id_sOrReply : '',
-                        //                 },
-                        //             ],
-                        //         },
-                        //     ],
-                        // });
+                        console.log('999', conversationId);
+
+                        const room = await Rooms.create({
+                            chatId: conversationId,
+                            count: 1,
+                            index: indexRoom + 1,
+                            full: false,
+                            filter: [
+                                {
+                                    index: 1,
+                                    full: false,
+                                    count: 1,
+                                    data: [
+                                        {
+                                            userId: id,
+                                            _id: _id_room,
+                                            text: {
+                                                t: value,
+                                            },
+                                            imageOrVideos,
+                                            createdAt: DateTime(),
+                                            secondary: typeof id_sOrReply === 'string' ? id_sOrReply : '',
+                                        },
+                                    ],
+                                },
+                            ],
+                        });
+
+                        resolve({
+                            ...res._doc,
+                            user: user,
+                            rooms: room,
+                            miss: 0,
+                        });
                     }
                 }
             } catch (error) {
@@ -232,7 +250,7 @@ class SendChatService {
     getRoom(id: string, limit: number, offset: number) {
         return new Promise<PropsRoomChat[]>(async (resolve, reject) => {
             try {
-                const roomChat = await RoomChats.find(
+                const roomChat = await ConversationRooms.find(
                     { id_us: id }, // Lọc theo điều kiện tương ứng với _id của document
                 );
                 const newD: any = await Promise.all(
@@ -265,7 +283,7 @@ class SendChatService {
                         return d;
                     }),
                 );
-                console.log(newD[0], newD[0].rooms, newD[0].rooms[0].filter[0], 'roomChat');
+                console.log(newD, 'roomChat');
                 resolve(newD);
                 //     try {
                 //         await Promise.all(
@@ -338,7 +356,7 @@ class SendChatService {
                         { arrayFilters: [{ 'fil.index': offset }, { 'oth.id': id_other }] },
                     );
                 } else {
-                    const seenBy = await RoomChats.findOneAndUpdate(
+                    const seenBy = await ConversationRooms.findOneAndUpdate(
                         {
                             id_us: { $all: [id, id_other] },
                         },
@@ -364,7 +382,7 @@ class SendChatService {
                     },
                 });
                 if (conversationId) {
-                    const roomCh: any = await RoomChats.findOne({ _id: conversationId });
+                    const roomCh: any = await ConversationRooms.findOne({ _id: conversationId });
                     let check = false;
                     let createdAt = '';
                     roomCh?.deleted.forEach((d: { id: string; createdAt: string }) => {
@@ -394,7 +412,7 @@ class SendChatService {
                                 },
                             },
                         ]);
-                        // const roomChat = await RoomChats.aggregate([
+                        // const roomChat = await ConversationRooms.aggregate([
                         //     { $match: { _id: conversationId } }, // Match the document with the specified roomId
                         //     { $unwind: '$room' }, // Unwind the room array
                         //     { $match: { 'room.createdAt': { $gt: createdAt } } }, // get data by date
@@ -419,28 +437,17 @@ class SendChatService {
                     } else {
                         console.log(ObjectId(roomCh._id), ' ObjectId(roomCh._id)');
 
-                        const rooms = await Rooms.aggregate([
+                        const rooms = await Rooms.findOne(
                             {
-                                $match: {
-                                    chatId: ObjectId(roomCh._id),
-                                    index: indexRef,
-                                },
+                                chatId: ObjectId(roomCh._id),
                             },
                             {
-                                $project: {
-                                    filter: {
-                                        $filter: {
-                                            input: '$filter',
-                                            as: 'item',
-                                            cond: { $eq: ['$$item.index', offset] },
-                                        },
-                                    },
-                                },
+                                filter: { $slice: -offset },
                             },
-                        ]);
+                        ).sort({ _id: -1 });
 
-                        if (rooms.length) {
-                            roomCh.rooms = rooms;
+                        if (rooms) {
+                            roomCh.rooms = [rooms];
                             roomCh.user = user;
                             if (!offset) {
                                 resolve(roomCh);
@@ -455,7 +462,7 @@ class SendChatService {
                     let check = false;
                     let createdAt: Date | string = '';
                     if (!id_other) resolve(false);
-                    const id_roomChat = await RoomChats.findOne({
+                    const id_roomChat = await ConversationRooms.findOne({
                         // set any to set createdAt below
                         $and: [{ id_us: { $all: [id, id_other] } }, { id_us: { $size: 2 } }],
                     });
@@ -469,7 +476,7 @@ class SendChatService {
                     });
                     if (check && createdAt) {
                         if (id_roomChat) {
-                            // const roomChat = await RoomChats.aggregate([
+                            // const roomChat = await ConversationRooms.aggregate([
                             //     { $match: { _id: id_roomChat?._id } }, // Match the document with the specified roomId
                             //     { $unwind: '$room' }, // Unwind the room array
                             //     { $match: { 'room.createdAt': { $gt: createdAt } } },
@@ -527,7 +534,7 @@ class SendChatService {
                         }
                     } else {
                         if (id_roomChat) {
-                            // const roomChat = await RoomChats.aggregate([
+                            // const roomChat = await ConversationRooms.aggregate([
                             //     { $match: { _id: id_roomChat._id } }, // Match the document with the specified roomId
                             //     { $unwind: '$room' }, // Unwind the room array
                             //     { $sort: { 'room.createdAt': -1 } }, // Sort by createdAt field in descending order
@@ -590,11 +597,11 @@ class SendChatService {
     delete(id_room: string, id: string) {
         return new Promise(async (resolve, reject) => {
             try {
-                const chats: any = await RoomChats.findOne({
+                const chats: any = await ConversationRooms.findOne({
                     _id: id_room,
                 });
                 if (chats?.deleted.some((c: { id: string }) => c.id === id)) {
-                    const res = await RoomChats.findOneAndUpdate(
+                    const res = await ConversationRooms.findOneAndUpdate(
                         {
                             _id: id_room,
                             'deleted.id': id,
@@ -605,7 +612,7 @@ class SendChatService {
                     ).select('deleted');
                     resolve(res);
                 } else {
-                    const res = await RoomChats.findOneAndUpdate(
+                    const res = await ConversationRooms.findOneAndUpdate(
                         {
                             _id: id_room,
                         },
@@ -624,7 +631,7 @@ class SendChatService {
     undo(id_room: string, id: string) {
         return new Promise(async (resolve, reject) => {
             try {
-                const res = await RoomChats.findOneAndUpdate(
+                const res = await ConversationRooms.findOneAndUpdate(
                     {
                         _id: id_room,
                     },
@@ -634,7 +641,7 @@ class SendChatService {
                     { new: true },
                 ).select('-room');
                 // if (res) {
-                //     const roomChat = await RoomChats.aggregate([
+                //     const roomChat = await ConversationRooms.aggregate([
                 //         { $match: { _id: res._id } }, // Match the document with the specified roomId
                 //         { $unwind: '$room' }, // Unwind the room array
                 //         { $sort: { 'room.createdAt': -1 } }, // Sort by createdAt field in descending order
@@ -674,7 +681,7 @@ class SendChatService {
         return new Promise(async (resolve, reject) => {
             try {
                 const date = new Date();
-                const res = await RoomChats.updateOne(
+                const res = await ConversationRooms.updateOne(
                     { _id: conversationId, 'room._id': chatId, 'room.id': userId },
                     {
                         $set: {
@@ -709,7 +716,7 @@ class SendChatService {
         return new Promise(async (resolve, reject) => {
             try {
                 const date = new Date();
-                const res = await RoomChats.updateOne(
+                const res = await ConversationRooms.updateOne(
                     { _id: conversationId, 'room._id': chatId },
                     {
                         $set: {
@@ -730,7 +737,7 @@ class SendChatService {
                     resolve(date);
                 }
                 resolve(null);
-                // const res = await RoomChats.updateOne(
+                // const res = await ConversationRooms.updateOne(
                 //     { _id: conversationId },
                 //     { $pull: { room: { _id: chatId, id: userId } } },
                 // );
@@ -752,7 +759,7 @@ class SendChatService {
                 files.forEach((f) => {
                     imageOrVideos.push({ _id: f.id, icon: '', tail: f.tail, type: f.type });
                 });
-                const res: any = await RoomChats.findOne({ _id: conversationId, 'room._id': chatId }, { 'room.$': 1 }); // it's an array
+                const res: any = await ConversationRooms.findOne({ _id: conversationId, 'room._id': chatId }, { 'room.$': 1 }); // it's an array
                 if (res?.room.length) {
                     if (imageOrVideos.length || value) {
                         const seenBy: string[] = res.room[0].seenBy ?? [];
@@ -779,7 +786,7 @@ class SendChatService {
                                 'room.$[roomId].updatedAt': new Date(),
                             };
                         }
-                        const re = await RoomChats.updateOne(
+                        const re = await ConversationRooms.updateOne(
                             { _id: conversationId, 'room._id': chatId, 'room.id': userId },
                             { $set },
                             {
@@ -793,7 +800,7 @@ class SendChatService {
                             },
                         );
                         if (re.acknowledged) {
-                            const rec: any = await RoomChats.findOne({ _id: conversationId, 'room._id': chatId }, { 'room.$': 1 });
+                            const rec: any = await ConversationRooms.findOne({ _id: conversationId, 'room._id': chatId }, { 'room.$': 1 });
                             resolve(rec.room[0]);
                         } else {
                             resolve(null);
@@ -811,7 +818,7 @@ class SendChatService {
             try {
                 const date = new Date();
                 const _id = primaryKey();
-                const res = await RoomChats.updateOne(
+                const res = await ConversationRooms.updateOne(
                     { _id: conversationId, 'pins.chatId': { $ne: chatId } }, // $ne check chatId in pins, did it exist? if yes it won't be updated
                     {
                         $addToSet: { pins: { chatId, userId, createdAt: date, latestChatId, _id } }, // push an element into pins
@@ -834,7 +841,7 @@ class SendChatService {
         // delete both side
         return new Promise(async (resolve, reject) => {
             try {
-                const res = await RoomChats.aggregate([
+                const res = await ConversationRooms.aggregate([
                     // Match documents with the specified conversationId
                     {
                         $match: {
@@ -872,7 +879,7 @@ class SendChatService {
         // delete both side
         return new Promise(async (resolve, reject) => {
             try {
-                const res = await RoomChats.updateOne(
+                const res = await ConversationRooms.updateOne(
                     {
                         _id: conversationId,
                     },
@@ -889,7 +896,7 @@ class SendChatService {
         // delete both side
         return new Promise(async (resolve, reject) => {
             try {
-                const res = await RoomChats.updateOne(
+                const res = await ConversationRooms.updateOne(
                     {
                         _id: conversationId,
                     },
@@ -917,7 +924,7 @@ class SendChatService {
                     userId,
                     latestChatId,
                 };
-                const res = await RoomChats.updateOne(
+                const res = await ConversationRooms.updateOne(
                     {
                         _id: conversationId,
                     },
@@ -941,7 +948,7 @@ class SendChatService {
         // delete both side
         return new Promise(async (resolve, reject) => {
             try {
-                const res = await RoomChats.find({
+                const res = await ConversationRooms.find({
                     _id: { $in: conversationId },
                 }).select('id_us user');
                 const newRes: {

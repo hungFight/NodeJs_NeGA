@@ -3,7 +3,6 @@ import SendChatServiceSN, { PropsRoomChat } from '../../services/WebsServices/Se
 import ServerError from '../../utils/errors/ServerError';
 import NotFound from '../../utils/errors/NotFound';
 import Forbidden from '../../utils/errors/Forbidden';
-import { RoomChats } from '../../models/mongodb/chats';
 import { Types } from 'mongoose';
 import { Redis } from 'ioredis';
 import { DefaultEventsMap } from 'socket.io/dist/typed-events';
@@ -21,6 +20,7 @@ class SendChat {
             const io: Server<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any> = res.io;
             const reply = req.body.reply;
             const conversationId = req.body.conversationId;
+            const indexRoom = req.body.indexRoom;
 
             if (id_other && id_room) {
                 console.log(id_other, 'id_others');
@@ -32,34 +32,35 @@ class SendChat {
                     value,
                     valueInfoFile,
                     id_room,
+                    indexRoom,
                     reply ? JSON.parse(reply) : id_s,
                 );
                 const key_redis = id_other + '-' + 'AmountMessageIsNotSeen' + '-' + data._id;
 
-                // if (data) {
-                //     const newD = await new Promise<PropsRoomChat>((resolve, reject) => {
-                //         try {
-                //             redisClient.get(key_redis, (err, result) => {
-                //                 if (err) throw new ServerError('Error getting data from redis at CTL SendChat', err);
-                //                 redisClient.set(key_redis, result ? JSON.parse(result) + 1 : 1);
-                //                 data.miss = result ? JSON.parse(result) + 1 : 0;
-                //                 resolve(data);
-                //             });
-                //         } catch (error) {
-                //             reject(error);
-                //         }
-                //     });
-                //     data._id = data._id.toString();
-                //     console.log(data.room, 'data');
-                //     io.emit(`${id_other}roomChat`, JSON.stringify(data)); // It's in App.tsx
-                //     if (data.room?.secondary) {
-                //         io.emit(`${id + '-' + id_other}phrase_chatRoom`, JSON.stringify({ id, data: data })); // It's in Messenger
-                //     } else {
-                //         io.emit(`${data._id + '-' + id}phrase_chatRoom`, JSON.stringify({ id, data: data })); // It's in Messenger
-                //     }
+                if (data) {
+                    // const newD = await new Promise<PropsRoomChat>((resolve, reject) => {
+                    //     try {
+                    //         redisClient.get(key_redis, (err, result) => {
+                    //             if (err) throw new ServerError('Error getting data from redis at CTL SendChat', err);
+                    //             redisClient.set(key_redis, result ? JSON.parse(result) + 1 : 1);
+                    //             data.miss = result ? JSON.parse(result) + 1 : 0;
+                    //             resolve(data);
+                    //         });
+                    //     } catch (error) {
+                    //         reject(error);
+                    //     }
+                    // });
+                    data._id = data._id.toString();
+                    console.log(data.rooms, 'data');
+                    io.emit(`${id_other}roomChat`, JSON.stringify(data)); // It's in App.tsx
+                    if (data.rooms?.filter[0].data[0].secondary) {
+                        io.emit(`${id + '-' + id_other}phrase_chatRoom`, JSON.stringify({ id, data: data })); // It's in Messenger
+                    } else {
+                        io.emit(`${data._id + '-' + id}phrase_chatRoom`, JSON.stringify({ id, data: data })); // It's in Messenger
+                    }
 
-                //     return res.status(200).json({ ...data, miss: 0 });
-                // }
+                    return res.status(200).json({ ...data, miss: 0 });
+                }
                 return res.status(404).json('Send message failed!');
             }
             throw new NotFound('Send', 'id_other or id_room not found');
