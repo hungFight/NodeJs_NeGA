@@ -3,7 +3,7 @@ import DateTime from '../../DateTimeCurrent/DateTimeCurrent';
 import { prisma } from '../..';
 import { v4 as primaryKey } from 'uuid';
 import { Types } from 'mongoose';
-const { ObjectId } = require('mongodb');
+const { ObjectId } = Types;
 export interface PropsInfoFile {
     id: string;
     type: string;
@@ -132,11 +132,14 @@ class SendChatService {
                             count: 1,
                             full: false,
                             index: 1,
+                            createdAt: new Date(),
                             filter: [
                                 {
                                     index: 1,
                                     full: false,
                                     count: 1,
+                                    indexQuery: 10,
+                                    createdAt: new Date(),
                                     data: [
                                         {
                                             userId: id,
@@ -173,18 +176,29 @@ class SendChatService {
                     const roomUpdate = await Rooms.findOne({
                         chatId: res._id,
                         full: false,
-                        count: { $lt: 10 },
+                        count: { $lt: 50 },
+                    });
+
+                    let check = false;
+                    let createdAt: string | Date = '';
+                    res?.deleted.forEach((d: { id: string; createdAt: string | Date }) => {
+                        if (d.id === id) {
+                            check = true;
+                            createdAt = d.createdAt;
+                        }
                     });
                     console.log('888');
                     if (roomUpdate) {
                         roomUpdate.filter.map((f) => {
-                            if (f.count >= f.index * 2 && !f.full) {
+                            if ((f.count >= f.index * 10 && !f.full) || (check && createdAt)) {
                                 f.full = true;
                                 roomUpdate.filter.push({
+                                    indexQuery: f.indexQuery - 1,
                                     count: f.count + 1,
                                     full: false,
                                     index: f.index + 1,
                                     data: [chat],
+                                    createdAt: new Date(),
                                 });
                                 roomUpdate.count += 1;
                             } else if (!f.full) {
@@ -194,7 +208,7 @@ class SendChatService {
                             }
                             return f;
                         });
-                        if (roomUpdate.count === 10) roomUpdate.full = true;
+                        if (roomUpdate.count === 50) roomUpdate.full = true;
                         console.log('yesss');
                         await roomUpdate.save();
                         const filter = roomUpdate.filter[roomUpdate.filter.length - 1];
@@ -207,16 +221,18 @@ class SendChatService {
                         });
                     } else {
                         console.log('999', conversationId);
-
                         const room = await Rooms.create({
                             chatId: conversationId,
                             count: 1,
                             index: indexRoom + 1,
+                            createdAt: new Date(),
                             full: false,
                             filter: [
                                 {
                                     index: 1,
                                     full: false,
+                                    createdAt: new Date(),
+                                    indexQuery: 10,
                                     count: 1,
                                     data: [
                                         {
@@ -331,8 +347,54 @@ class SendChatService {
             }
         });
     }
-    getChat(conversationId: string, id: string, id_other: string, limit: number, offset: number, indexRef: number, moreChat: string) {
+    getChat(
+        conversationId: string,
+        id: string,
+        id_other: string,
+        limit: number,
+        offset: number,
+        indexRef: number,
+        moreChat: 'false' | 'true',
+        id_room?: string,
+    ) {
         return new Promise(async (resolve, reject) => {
+            async function getNextFilter(id_roomChat_: Types.ObjectId, indexRef_: number, offset_: number) {
+                const rooms = await Rooms.aggregate([
+                    {
+                        $match: {
+                            chatId: id_roomChat_,
+                            index: indexRef_,
+                        },
+                    },
+                    {
+                        $project: {
+                            count: 1,
+                            index: 1,
+                            indexQuery: 1,
+                            createdAt: 1,
+                            filter: {
+                                $filter: {
+                                    input: '$filter',
+                                    as: 'item',
+                                    cond: { $eq: ['$$item.indexQuery', offset_ + 1] },
+                                },
+                            },
+                        },
+                    },
+                ]);
+                return rooms;
+            }
+            async function getFirstFilter(id_roomChat_: Types.ObjectId) {
+                const rooms = await Rooms.findOne(
+                    {
+                        chatId: id_roomChat_,
+                    },
+                    {
+                        filter: { $slice: -1 },
+                    },
+                ).sort({ _id: -1 });
+                return rooms;
+            }
             try {
                 console.log(conversationId, id, id_other, limit, offset, ' get  chats');
                 const data = {
@@ -382,82 +444,108 @@ class SendChatService {
                     },
                 });
                 if (conversationId) {
-                    const roomCh: any = await ConversationRooms.findOne({ _id: conversationId });
+                    const roomCh = await ConversationRooms.findOne({ _id: conversationId });
                     let check = false;
-                    let createdAt = '';
-                    roomCh?.deleted.forEach((d: { id: string; createdAt: string }) => {
+                    let createdAt: string | Date = '';
+                    roomCh?.deleted.forEach((d) => {
                         if (d.id === id) {
                             check = true;
                             createdAt = d.createdAt;
                         }
                     });
-
-                    if (check && createdAt) {
-                        const rooms = await Rooms.aggregate([
-                            {
-                                $match: {
+                    if (roomCh)
+                        if (check && createdAt) {
+                            const rooms = await Rooms.findOne(
+                                {
                                     chatId: roomCh._id,
-                                    index: indexRef,
+                                    'filter.createdAt': { $gt: createdAt },
                                 },
-                            },
-                            {
-                                $project: {
-                                    filter: {
-                                        $filter: {
-                                            input: '$filter',
-                                            as: 'item',
-                                            cond: { $eq: ['$$item.index', offset] },
-                                        },
-                                    },
+                                {
+                                    filter: { $slice: -offset },
                                 },
-                            },
-                        ]);
-                        // const roomChat = await ConversationRooms.aggregate([
-                        //     { $match: { _id: conversationId } }, // Match the document with the specified roomId
-                        //     { $unwind: '$room' }, // Unwind the room array
-                        //     { $match: { 'room.createdAt': { $gt: createdAt } } }, // get data by date
-                        //     { $sort: { 'room.createdAt': -1 } }, // Sort by createdAt field in descending order
-                        //     { $skip: offset }, // Skip the specified number of documents
-                        //     { $limit: limit }, // Limit the number of documents to retrieve
-                        //     {
-                        //         $group: Group,
-                        //     }, // Group the documents and reconstruct the room array
-                        // ]);
-
-                        if (rooms.length) {
-                            if (!offset) {
-                                roomCh.user = user;
-                                roomCh.rooms = rooms;
-                            }
-                            resolve(roomCh);
-                        }
-                        roomCh.user = user;
-                        roomCh.room = [];
-                        resolve(roomCh);
-                    } else {
-                        console.log(ObjectId(roomCh._id), ' ObjectId(roomCh._id)');
-
-                        const rooms = await Rooms.findOne(
-                            {
-                                chatId: ObjectId(roomCh._id),
-                            },
-                            {
-                                filter: { $slice: -offset },
-                            },
-                        ).sort({ _id: -1 });
-
-                        if (rooms) {
-                            roomCh.rooms = [rooms];
-                            roomCh.user = user;
-                            if (!offset) {
+                            ).sort({ _id: -1 });
+                            if (rooms) {
+                                if (!offset) {
+                                    roomCh.user = user;
+                                    roomCh.rooms = [rooms];
+                                }
                                 resolve(roomCh);
                             }
+                            roomCh.user = user;
+                            roomCh.rooms = [];
                             resolve(roomCh);
+                        } else {
+                            console.log(new ObjectId(roomCh._id), ' ObjectId(roomCh._id)');
+                            if (moreChat === 'false') {
+                                getFirstFilter(roomCh._id).then((data_) => {
+                                    if (data_) {
+                                        if (data_?.filter[0] && data_?.filter[0].data.length <= 5) {
+                                            roomCh.user = user;
+                                            getNextFilter(roomCh._id, data_?.filter[0].index, data_?.filter[0].indexQuery).then(async (da_) => {
+                                                if (!da_[0]?.filter[0]?.data.length) {
+                                                    if (da_.length) {
+                                                        da_[0].filter = [...data_?.filter, ...da_[0]?.filter];
+                                                        roomCh.rooms = da_;
+                                                        resolve(roomCh);
+                                                    }
+                                                    const olderRooms = await Rooms.find(
+                                                        { _id: { $lt: data_._id } },
+                                                        {
+                                                            filter: { $slice: -1 },
+                                                        },
+                                                    )
+                                                        .sort({ _id: -1 })
+                                                        .limit(1);
+                                                    if (olderRooms.length) {
+                                                        olderRooms[0].filter[0].data = [...data_?.filter[0].data, ...olderRooms[0].filter[0].data];
+                                                        roomCh.rooms = olderRooms;
+                                                        resolve(roomCh);
+                                                    }
+                                                    roomCh.rooms = data_ ? [data_] : [];
+                                                    resolve(roomCh);
+                                                }
+                                                console.log(da_, 'da_da_da_', data_?.filter);
+                                                roomCh.rooms = [];
+                                                resolve(roomCh);
+                                            });
+                                        } else {
+                                            roomCh.user = user;
+                                            roomCh.rooms = data_ ? [data_] : [];
+                                            resolve(roomCh);
+                                        }
+                                    }
+                                });
+                            } else {
+                                getNextFilter(roomCh._id, indexRef, offset + 1).then(async (data_) => {
+                                    if (data_) {
+                                        if (data_[0]?.filter[0]?.data.length) {
+                                            roomCh.user = user;
+                                            roomCh.rooms = data_;
+                                            resolve(roomCh);
+                                        } else {
+                                            const olderRooms = await Rooms.find(
+                                                { _id: { $lt: id_room } },
+                                                {
+                                                    filter: { $slice: -1 },
+                                                },
+                                            )
+                                                .sort({ _id: -1 })
+                                                .limit(1);
+                                            console.log(olderRooms, 'olderRooms');
+
+                                            roomCh.user = user;
+                                            if (olderRooms.length) {
+                                                roomCh.rooms = olderRooms;
+                                                resolve(roomCh);
+                                            } else {
+                                                roomCh.rooms = [];
+                                                resolve(roomCh);
+                                            }
+                                        }
+                                    }
+                                });
+                            }
                         }
-                        roomCh.user = user;
-                        roomCh.room = [];
-                        resolve(roomCh);
-                    }
                 } else {
                     let check = false;
                     let createdAt: Date | string = '';
@@ -552,35 +640,131 @@ class SendChatService {
                             //         $group: Group,
                             //     }, // Group the documents and reconstruct the room array
                             // ]);
-                            const rooms = await Rooms.aggregate([
-                                {
-                                    $match: {
-                                        chatId: id_roomChat._id,
-                                        index: indexRef,
-                                    },
-                                },
-                                {
-                                    $project: {
-                                        filter: {
-                                            $filter: {
-                                                input: '$filter',
-                                                as: 'item',
-                                                cond: { $eq: ['$$item.index', offset] },
-                                            },
-                                        },
-                                    },
-                                },
-                            ]);
-                            console.log(rooms, 'roomChat6s');
+                            // const rooms = await Rooms.aggregate([
+                            //     {
+                            //         $match: {
+                            //             chatId: id_roomChat._id,
+                            //             index: indexRef,
+                            //         },
+                            //     },
+                            //     {
+                            //         $project: {
+                            //             filter: {
+                            //                 $filter: {
+                            //                     input: '$filter',
+                            //                     as: 'item',
+                            //                     cond: { $eq: ['$$item.index', offset] },
+                            //                 },
+                            //             },
+                            //         },
+                            //     },
+                            // ]);
+                            //    const olderRooms = await Room.find({ _id: { $lt: lastRoom._id } })
+                            //     .sort({ _id: -1 })
+                            //     .limit(1);
+                            if (moreChat === 'true') {
+                                // const rooms = await Rooms.aggregate([
+                                //     {
+                                //         $match: {
+                                //             chatId: id_roomChat._id,
+                                //             index: indexRef,
+                                //         },
+                                //     },
+                                //     {
+                                //         $project: {
+                                //             count: 1,
+                                //             index: 1,
+                                //             indexQuery: 1,
+                                //             createdAt: 1,
+                                //             filter: {
+                                //                 $filter: {
+                                //                     input: '$filter',
+                                //                     as: 'item',
+                                //                     cond: { $eq: ['$$item.indexQuery', offset + 1] },
+                                //                 },
+                                //             },
+                                //         },
+                                //     },
+                                // ]);
+                                getNextFilter(id_roomChat._id, indexRef, offset + 1).then(async (data_) => {
+                                    if (data_) {
+                                        if (data_[0]?.filter[0]?.data.length) {
+                                            id_roomChat.user = user;
+                                            id_roomChat.rooms = data_;
+                                            resolve(id_roomChat);
+                                        } else {
+                                            const olderRooms = await Rooms.find(
+                                                { _id: { $lt: id_room } },
+                                                {
+                                                    filter: { $slice: -1 },
+                                                },
+                                            )
+                                                .sort({ _id: -1 })
+                                                .limit(1);
+                                            console.log(olderRooms, 'olderRooms');
 
-                            if (id_roomChat) {
-                                id_roomChat.user = user;
-                                id_roomChat.rooms = rooms;
-                                resolve(id_roomChat);
+                                            id_roomChat.user = user;
+                                            if (olderRooms.length) {
+                                                id_roomChat.rooms = olderRooms;
+                                                resolve(id_roomChat);
+                                            } else {
+                                                id_roomChat.rooms = [];
+                                                resolve(id_roomChat);
+                                            }
+                                        }
+                                    }
+                                });
+                                // const rooms = await Rooms.findOne(
+                                //     {
+                                //         chatId: ObjectId(id_roomChat._id),
+                                //     },
+                                //     {
+                                //         `filter.index`: 5
+                                //     },
+                                // ).sort({ _id: -1 });
                             } else {
-                                data.rooms = [];
-                                data.user = user;
-                                resolve(data);
+                                if (id_roomChat) {
+                                    getFirstFilter(id_roomChat._id).then((data_) => {
+                                        if (data_) {
+                                            if (data_?.filter[0] && data_?.filter[0].data.length <= 5) {
+                                                id_roomChat.user = user;
+                                                getNextFilter(id_roomChat._id, data_?.index, data_?.filter[0].indexQuery).then(async (da_) => {
+                                                    if (da_.length) {
+                                                        da_[0].filter = [...data_?.filter, ...da_[0]?.filter];
+                                                        id_roomChat.rooms = da_;
+                                                        resolve(id_roomChat);
+                                                    }
+                                                    if (!da_.length && !da_[0]?.filter[0]?.data.length) {
+                                                        const olderRooms = await Rooms.find(
+                                                            { _id: { $lt: data_._id } },
+                                                            {
+                                                                filter: { $slice: -1 },
+                                                            },
+                                                        )
+                                                            .sort({ _id: -1 })
+                                                            .limit(1);
+                                                        if (olderRooms.length) {
+                                                            id_roomChat.rooms = [data_, ...olderRooms];
+                                                            resolve(id_roomChat);
+                                                        }
+                                                        id_roomChat.rooms = data_ ? [data_] : [];
+                                                        resolve(id_roomChat);
+                                                    }
+                                                    console.log(da_, 'da_da_da_', data_?.filter);
+                                                    resolve(id_roomChat);
+                                                });
+                                            } else {
+                                                id_roomChat.user = user;
+                                                id_roomChat.rooms = data_ ? [data_] : [];
+                                                resolve(id_roomChat);
+                                            }
+                                        }
+                                    });
+                                } else {
+                                    data.rooms = [];
+                                    data.user = user;
+                                    resolve(data);
+                                }
                             }
                         } else {
                             data.rooms = [];
@@ -845,7 +1029,7 @@ class SendChatService {
                     // Match documents with the specified conversationId
                     {
                         $match: {
-                            _id: ObjectId(conversationId), // Convert to ObjectId if not already
+                            _id: conversationId, // Convert to ObjectId if not already
                         },
                     },
                     // Unwind the 'room' array to work with its elements

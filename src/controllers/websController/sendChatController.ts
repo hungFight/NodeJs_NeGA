@@ -101,15 +101,25 @@ class SendChat {
         try {
             const id = req.cookies.k_user;
             const id_room = req.query.id_room;
+            const conversationId = req.query.conversationId;
             const id_other = req.query.id_other;
             const limit = req.query.limit;
             const indexRef = req.query.indexRef;
             const io: Server<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any> = res.io;
             const offset: number = req.query.offset;
-            const moreChat: string = req.query.moreChat;
+            const moreChat = req.query.moreChat;
 
             if (id_other) {
-                const data: any = await SendChatServiceSN.getChat(id_room, id, id_other, Number(limit), Number(offset), Number(indexRef), moreChat);
+                const data: any = await SendChatServiceSN.getChat(
+                    conversationId,
+                    id,
+                    id_other,
+                    Number(limit),
+                    Number(offset),
+                    Number(indexRef),
+                    moreChat,
+                    id_room,
+                );
 
                 if (data) {
                     // if (Number(offset) === 0) {

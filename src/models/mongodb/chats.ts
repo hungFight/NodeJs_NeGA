@@ -2,15 +2,19 @@ import mongoose from 'mongoose';
 const Schema = mongoose.Schema;
 const rooms = new Schema({
     chatId: { type: mongoose.SchemaTypes.ObjectId, unique: false },
-    count: { type: Number, default: 0, maxLength: 6 }, // 2000 records for each room
+    count: { type: Number, default: 0, maxLength: 6 },
     full: { type: Boolean, default: false },
     index: { type: Number, required: true, default: 0 },
     filter: [
+        // 1000 records for each room
         {
+            createdAt: { type: Date, default: Date.now() },
             count: { type: Number, default: 0, maxLength: 6 },
             full: { type: Boolean, default: false },
             index: { type: Number, required: true, default: 0 },
+            indexQuery: { type: Number, required: true, default: 1000 },
             data: [
+                // 30 records for each filter
                 {
                     _id: { type: String, required: true, maxLength: 50 },
                     userId: { type: String, required: true, maxLength: 50 },
@@ -59,6 +63,7 @@ const rooms = new Schema({
             ],
         },
     ],
+    createdAt: { type: Date, default: Date.now() },
 });
 
 export const Rooms = mongoose.model('Rooms', rooms);
