@@ -171,16 +171,19 @@ class SendChat {
     delChatAll = async (req: express.Request, res: any, next: express.NextFunction) => {
         try {
             const conversationId = req.body.conversationId;
-            const chatId = req.body.chatId;
+            const roomId = req.body.roomId;
+            const dataId = req.body.dataId;
+            const filterId = req.body.filterId;
             const userId = req.body.userId;
             const userIdCur = req.cookies.k_user;
-            console.log(conversationId, chatId, userId);
+            console.log(conversationId, dataId, userId);
             const io: Server<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any> = res.io;
-            if (!conversationId || !chatId || !userId) throw new NotFound('delChatAll', 'conversationId, userId or chatId or userId not provided');
+            if (!conversationId || !dataId || !userId || !roomId || !filterId)
+                throw new NotFound('delChatAll', 'conversationId, userId or chatId or userId not provided');
             if (userId === userIdCur) {
-                const data = await SendChatServiceSN.delChatAll(conversationId, chatId, userId);
+                const data = await SendChatServiceSN.delChatAll(roomId, filterId, dataId, userId);
                 if (data) {
-                    io.emit(`Conversation_chat_deleteAll_${conversationId}`, { userId, updatedAt: data, chatId });
+                    io.emit(`Conversation_chat_deleteAll_${conversationId}`, { userId, updatedAt: data, roomId, filterId, dataId });
                 }
                 return res.status(200).json(data);
             }
@@ -192,12 +195,13 @@ class SendChat {
     delChatSelf = async (req: express.Request, res: express.Response, next: express.NextFunction) => {
         try {
             const conversationId = req.body.conversationId;
-            const chatId = req.body.chatId;
-            const userId = req.body.userId;
-            console.log(conversationId, chatId, userId);
-
-            if (!conversationId || !chatId || !userId) throw new NotFound('delChatAll', 'conversationId, userId or chatId or userId not provided');
-            const data = await SendChatServiceSN.delChatSelf(conversationId, chatId, userId);
+            const roomId = req.body.roomId;
+            const dataId = req.body.dataId;
+            const filterId = req.body.filterId;
+            const userIdCur = req.cookies.k_user;
+            if (!conversationId || !filterId || !dataId || !userIdCur || !roomId)
+                throw new NotFound('delChatAll', 'conversationId, filterId, userIdCur, roomId or dataId or userId not provided');
+            const data = await SendChatServiceSN.delChatSelf(roomId, filterId, dataId, userIdCur);
             return res.status(200).json(data);
         } catch (error) {
             next(error);
@@ -206,21 +210,23 @@ class SendChat {
     updateChat = async (req: express.Request, res: any, next: express.NextFunction) => {
         try {
             const conversationId: string = req.body.conversationId;
-            const chatId: string = req.body.id_chat;
+            const roomId: string = req.body.roomId;
+            const filterId: string = req.body.filterId;
+            const dataId: string = req.body.dataId;
             const value: string = req.body.value;
             const userIdCur = req.cookies.k_user;
             const userId: string = req.body.userId;
             const id_other: string = req.body.id_other;
-            const files = req.body.ids;
+            const files = req.body.filesId;
             const io: Server<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any> = res.io;
-            if (!conversationId || !chatId || !id_other)
-                throw new NotFound('updateChat UP', 'conversationId, userId, id_other or chatId or userId not provided');
+            if (!conversationId || !dataId || !id_other || !filterId || !roomId)
+                throw new NotFound('updateChat UP', 'conversationId, filterId, roomId, userId, id_other or dataId or userId not provided');
             if (userId === userIdCur) {
-                const data = await SendChatServiceSN.updateChat(conversationId, chatId, userId, id_other, value, files);
-                if (data) {
-                    io.emit(`Conversation_chat_update_${conversationId}`, { data, chatId, userId });
-                }
-                return res.status(200).json(data);
+                const data = await SendChatServiceSN.updateChat(roomId, filterId, dataId, userId, id_other, value, files);
+                // if (data) {
+                //     io.emit(`Conversation_chat_update_${conversationId}`, { data, dataId, userId });
+                // }
+                // return res.status(200).json(data);
             }
             throw new Forbidden('updateChat Down', 'You are no allowed!');
         } catch (error) {
