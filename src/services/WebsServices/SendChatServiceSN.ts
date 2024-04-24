@@ -93,19 +93,22 @@ class SendChatService {
                     imageOrVideos.push({ _id: f.id, icon: '', tail: f.tail, type: f.type });
                 }),
                     console.log(imageOrVideos, 'imagesOrVideos');
-                const res: any = conversationId
-                    ? await ConversationRooms.findOne({
-                          _id: conversationId,
-                          id_us: { $all: [id, id_other] },
-                      })
-                    : await ConversationRooms.findOne({
-                          // set any to set createdAt below
-                          $and: [{ id_us: { $all: [id, id_other] } }, { id_us: { $size: 2 } }],
-                      }).select('-room');
-                const user = await prisma.user.findUnique({
-                    where: { id: id },
-                    select: { id: true, avatar: true, fullName: true, gender: true },
-                });
+                const [user, res]: any = await Promise.all([
+                    prisma.user.findUnique({
+                        where: { id: id },
+                        select: { id: true, avatar: true, fullName: true, gender: true },
+                    }),
+                    conversationId
+                        ? ConversationRooms.findOne({
+                              _id: conversationId,
+                              id_us: { $all: [id, id_other] },
+                          })
+                        : ConversationRooms.findOne({
+                              // set any to set createdAt below
+                              $and: [{ id_us: { $all: [id, id_other] } }, { id_us: { $size: 2 } }],
+                          }),
+                ]);
+
                 if (!res) {
                     // create if it doesn't exist
                     const friend = await prisma.friends.findFirst({
@@ -155,7 +158,6 @@ class SendChatService {
                                 },
                             ],
                         });
-
                         resolve({ ...roomChat._doc, user: user, rooms: room, miss: 0 });
                     }
                 } else {
@@ -172,13 +174,11 @@ class SendChatService {
                         createdAt: DateTime(),
                         reply: id_sOrReply,
                     };
-
                     const roomUpdate = await Rooms.findOne({
                         chatId: res._id,
                         full: false,
                         count: { $lt: 50 },
                     });
-
                     let check = false;
                     let createdAt: string | Date = '';
                     res?.deleted.forEach((d: { id: string; createdAt: string | Date }) => {
@@ -437,35 +437,35 @@ class SendChatService {
                 }
             }
             async function getNextFilter(id_roomChat_: Types.ObjectId, indexRef_: number, offset_: number) {
-                // const rooms = await Rooms.findOne(
-                //     { chatId: id_roomChat_, index: indexRef_ },
-                //     { count: 1, index: 1, createdAt: 1, chatId: 1, full: 1, filter: { $elemMatch: { indexQuery: offset_ + 1 } } },
-                // );
-                // return rooms;
-                const rooms = await Rooms.aggregate([
-                    {
-                        $match: {
-                            chatId: id_roomChat_,
-                            index: indexRef_,
-                        },
-                    },
-                    {
-                        $project: {
-                            count: 1,
-                            index: 1,
-                            indexQuery: 1,
-                            createdAt: 1,
-                            filter: {
-                                $filter: {
-                                    input: '$filter',
-                                    as: 'item',
-                                    cond: { $eq: ['$$item.indexQuery', offset_ + 1] },
-                                },
-                            },
-                        },
-                    },
-                ]);
-                return rooms[0];
+                const rooms = await Rooms.findOne(
+                    { chatId: id_roomChat_, index: indexRef_ },
+                    { count: 1, index: 1, createdAt: 1, chatId: 1, full: 1, filter: { $elemMatch: { indexQuery: offset_ + 1 } } },
+                );
+                return rooms;
+                // const rooms = await Rooms.aggregate([
+                //     {
+                //         $match: {
+                //             chatId: id_roomChat_,
+                //             index: indexRef_,
+                //         },
+                //     },
+                //     {
+                //         $project: {
+                //             count: 1,
+                //             index: 1,
+                //             indexQuery: 1,
+                //             createdAt: 1,
+                //             filter: {
+                //                 $filter: {
+                //                     input: '$filter',
+                //                     as: 'item',
+                //                     cond: { $eq: ['$$item.indexQuery', offset_ + 1] },
+                //                 },
+                //             },
+                //         },
+                //     },
+                // ]);
+                // return rooms[0];
             }
             async function getFirstFilter(id_roomChat_: Types.ObjectId) {
                 const rooms = await Rooms.findOne(
@@ -490,44 +490,59 @@ class SendChatService {
                     deleted: [],
                     createdAt: '',
                 };
-                if (conversationId && id_other) {
-                    const seenBy = await Rooms.findOneAndUpdate(
-                        { chatId: conversationId, index: indexRef },
-                        {
-                            $addToSet: {
-                                'filter.$[fil].data.$[oth].seenBy': id, //push all elements in the seenBy document and uniqueroom: { id: id_other }
-                            },
-                        },
-                        { arrayFilters: [{ 'fil.index': offset }, { 'oth.id': id_other }] },
-                    );
-                } else {
-                    const seenBy = await ConversationRooms.findOneAndUpdate(
-                        {
-                            id_us: { $all: [id, id_other] },
-                        },
-                        {
-                            $addToSet: {
-                                'filter.$[fil].data.$[oth].seenBy': id, //push all elements in the seenBy document and uniqueroom: { id: id_other }
-                            },
-                        },
-                        { arrayFilters: [{ 'fil.index': offset }, { 'oth.id': id_other }] },
-                    );
-                    console.log(seenBy, 'seenBy');
-                }
+                console.time('TIME-PROCESS');
 
-                const user: any = await prisma.user.findUnique({
-                    where: {
-                        id: id_other,
-                    },
-                    select: {
-                        id: true,
-                        avatar: true,
-                        fullName: true,
-                        gender: true,
-                    },
+                const proSeenBy = new Promise(async (resolve, reject) => {
+                    if (conversationId && id_other) {
+                        resolve(
+                            Rooms.findOneAndUpdate(
+                                { chatId: conversationId, index: indexRef },
+                                {
+                                    $addToSet: {
+                                        'filter.$[fil].data.$[oth].seenBy': id, //push all elements in the seenBy document and uniqueroom: { id: id_other }
+                                    },
+                                },
+                                { arrayFilters: [{ 'fil.index': offset }, { 'oth.id': id_other }] },
+                            ),
+                        );
+                    } else {
+                        const seenBy = ConversationRooms.findOneAndUpdate(
+                            {
+                                id_us: { $all: [id, id_other] },
+                            },
+                            {
+                                $addToSet: {
+                                    'filter.$[fil].data.$[oth].seenBy': id, //push all elements in the seenBy document and uniqueroom: { id: id_other }
+                                },
+                            },
+                            { arrayFilters: [{ 'fil.index': offset }, { 'oth.id': id_other }] },
+                        );
+                        resolve(seenBy);
+                    }
                 });
-                if (conversationId) {
-                    const id_roomChat = await ConversationRooms.findOne({ _id: conversationId });
+                const [_, user, id_roomChat] = await Promise.all([
+                    proSeenBy,
+                    prisma.user.findUnique({
+                        where: {
+                            id: id_other,
+                        },
+                        select: {
+                            id: true,
+                            avatar: true,
+                            fullName: true,
+                            gender: true,
+                        },
+                    }),
+                    conversationId
+                        ? ConversationRooms.findOne({ _id: conversationId })
+                        : ConversationRooms.findOne({
+                              // set any to set createdAt below
+                              $and: [{ id_us: { $all: [id, id_other] } }, { id_us: { $size: 2 } }],
+                          }),
+                ]);
+                console.timeEnd('TIME-PROCESS');
+                console.log(_, 'seenBy', user);
+                if (id_roomChat) {
                     let check = false;
                     let createdAt: string | Date = '';
                     id_roomChat?.deleted.forEach((d) => {
@@ -558,68 +573,6 @@ class SendChatService {
                             //         $group: Group,
                             //     }, // Group the documents and reconstruct the room array
                             // ]);
-                            const rooms = await Rooms.aggregate([
-                                {
-                                    $match: {
-                                        chatId: id_roomChat._id,
-                                        index: indexRef,
-                                    },
-                                },
-                                {
-                                    $project: {
-                                        filter: {
-                                            $filter: {
-                                                input: '$filter',
-                                                as: 'item',
-                                                cond: { $eq: ['$$item.index', offset] },
-                                            },
-                                        },
-                                    },
-                                },
-                            ]);
-                            console.log(rooms, rooms[0].filter, 'roomChat0 rr');
-                            console.log(id_roomChat, 'roomChat2s', moreChat);
-                            if (id_roomChat) {
-                                id_roomChat.user = user;
-                                id_roomChat.rooms = rooms;
-                                resolve(id_roomChat);
-                            }
-                            if (moreChat === 'false') {
-                                // if rooms is empty
-                                id_roomChat.user = user;
-                                id_roomChat.rooms = [];
-                                resolve(id_roomChat);
-                            } else {
-                                resolve(null);
-                            }
-                        } else {
-                            resolve({ ...data, user });
-                        }
-                    } else {
-                        if (!id_roomChat) {
-                            data.rooms = [];
-                            resolve({ ...data, user });
-                        }
-                        getLimitRoom(id_roomChat, user);
-                    }
-                } else {
-                    let check = false;
-                    let createdAt: Date | string = '';
-                    if (!id_other) resolve(false);
-                    const id_roomChat = await ConversationRooms.findOne({
-                        // set any to set createdAt below
-                        $and: [{ id_us: { $all: [id, id_other] } }, { id_us: { $size: 2 } }],
-                    });
-
-                    id_roomChat?.deleted.forEach((d) => {
-                        // check deleted watch who deleted that room, another area is the same
-                        if (d.id === id) {
-                            check = true;
-                            createdAt = d.createdAt;
-                        }
-                    });
-                    if (check && createdAt) {
-                        if (id_roomChat) {
                             const rooms = await Rooms.aggregate([
                                 {
                                     $match: {
