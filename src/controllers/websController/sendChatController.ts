@@ -223,10 +223,10 @@ class SendChat {
                 throw new NotFound('updateChat UP', 'conversationId, filterId, roomId, userId, id_other or dataId or userId not provided');
             if (userId === userIdCur) {
                 const data = await SendChatServiceSN.updateChat(roomId, filterId, dataId, userId, id_other, value, files);
-                // if (data) {
-                //     io.emit(`Conversation_chat_update_${conversationId}`, { data, dataId, userId });
-                // }
-                // return res.status(200).json(data);
+                if (data) {
+                    io.emit(`Conversation_chat_update_${conversationId}`, { data, dataId, userId, roomId, filterId });
+                }
+                return res.status(200).json(data);
             }
             throw new Forbidden('updateChat Down', 'You are no allowed!');
         } catch (error) {

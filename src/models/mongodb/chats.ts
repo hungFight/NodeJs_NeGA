@@ -4,7 +4,7 @@ const rooms = new Schema({
     chatId: { type: mongoose.SchemaTypes.ObjectId, unique: false },
     count: { type: Number, default: 0, maxLength: 6 },
     full: { type: Boolean, default: false },
-    index: { type: Number, required: true, default: 0 },
+    index: { type: Number, required: true, default: 0, index: true },
     filter: [
         // 1000 records for each room
         {
@@ -12,11 +12,11 @@ const rooms = new Schema({
             count: { type: Number, default: 0, maxLength: 6 },
             full: { type: Boolean, default: false },
             index: { type: Number, required: true, default: 0 },
-            indexQuery: { type: Number, required: true, default: 1000 },
+            indexQuery: { type: Number, required: true, default: 1000, index: true },
             data: [
                 // 30 records for each filter
                 {
-                    _id: { type: String, required: true, maxLength: 50 },
+                    _id: { type: String, required: true, maxLength: 50, unique: true, index: true },
                     userId: { type: String, required: true, maxLength: 50 },
                     text: {
                         t: { type: String, text: String },
@@ -24,7 +24,7 @@ const rooms = new Schema({
                     },
                     imageOrVideos: [
                         {
-                            _id: { type: String, maxLength: 200, index: true },
+                            _id: { type: String, maxLength: 200 },
                             type: { type: String, maxLength: 15 },
                             tail: { type: String, maxLength: 15 },
                             createdAt: { type: Date, default: Date.now() },
@@ -46,7 +46,7 @@ const rooms = new Schema({
                             text: { type: String, maxLength: 50 },
                             imageOrVideos: [
                                 {
-                                    _id: { type: String, maxLength: 200, index: true },
+                                    _id: { type: String, maxLength: 200 },
                                     type: { type: String, maxLength: 15 },
                                     tail: { type: String, maxLength: 15 },
                                     createdAt: { type: Date, default: Date.now() },
@@ -72,6 +72,7 @@ const chats = new Schema(
         id_us: { type: [String] },
         users: { type: [mongoose.Schema.Types.Mixed], require: false },
         user: mongoose.Schema.Types.Mixed,
+        lastElement: { roomId: mongoose.Schema.Types.ObjectId, filterId: mongoose.Schema.Types.ObjectId },
         deleted: [
             // who has deleted
             {
