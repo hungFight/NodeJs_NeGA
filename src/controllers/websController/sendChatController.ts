@@ -1,5 +1,5 @@
 import express from 'express';
-import SendChatServiceSN, { PropsRoomChat } from '../../services/WebsServices/SendChatServiceSN';
+import SendChatServiceSN, { PropsRoomChat, PropsRooms } from '../../services/WebsServices/SendChatServiceSN';
 import ServerError from '../../utils/errors/ServerError';
 import NotFound from '../../utils/errors/NotFound';
 import Forbidden from '../../utils/errors/Forbidden';
@@ -14,7 +14,7 @@ class SendChat {
             const id = req.cookies.k_user;
             const value = req.body.value;
             const id_other = req.body.id_others;
-            const id_room = req.body.id_room;
+            const id_data = req.body.id_data;
             const id_s = req.body.id_s;
             const valueInfoFile = req.body.valueInfoFile;
             const io: Server<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any> = res.io;
@@ -22,7 +22,7 @@ class SendChat {
             const conversationId = req.body.conversationId;
             const indexRoom = req.body.indexRoom;
 
-            if (id_other && id_room) {
+            if (id_other && id_data) {
                 console.log(id_other, 'id_others');
 
                 const data = await SendChatServiceSN.send(
@@ -31,7 +31,7 @@ class SendChat {
                     id_other,
                     value,
                     valueInfoFile,
-                    id_room,
+                    id_data,
                     indexRoom,
                     reply ? JSON.parse(reply) : id_s,
                 );
@@ -54,9 +54,9 @@ class SendChat {
                     console.log(data.rooms, 'data');
                     io.emit(`${id_other}roomChat`, JSON.stringify(data)); // It's in App.tsx
                     if (data.rooms?.filter[0].data[0].secondary) {
-                        io.emit(`${id + '-' + id_other}phrase_chatRoom`, JSON.stringify({ id, data: data })); // It's in Messenger
+                        io.emit(`${id + '-' + id_other}phrase_chatRoom`, { userId: id, data: data }); // It's in Messenger
                     } else {
-                        io.emit(`${data._id + '-' + id}phrase_chatRoom`, JSON.stringify({ id, data: data })); // It's in Messenger
+                        io.emit(`${data._id}phrase_chatRoom`, { userId: id, data: data }); // It's in Messenger
                     }
 
                     return res.status(200).json({ ...data, miss: 0 });
@@ -100,25 +100,21 @@ class SendChat {
     getChat = async (req: any, res: any, next: express.NextFunction) => {
         try {
             const id = req.cookies.k_user;
-            const id_room = req.query.id_room;
             const conversationId = req.query.conversationId;
             const id_other = req.query.id_other;
-            const limit = req.query.limit;
             const indexRef = req.query.indexRef;
             const io: Server<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any> = res.io;
-            const offset: number = req.query.offset;
+            const indexQuery: number = req.query.indexQuery;
             const moreChat = req.query.moreChat;
 
             if (id_other) {
-                const data: any = await SendChatServiceSN.getChat(
+                const data: PropsRoomChat & PropsRooms = await SendChatServiceSN.getChat(
                     conversationId,
                     id,
                     id_other,
-                    Number(limit),
-                    Number(offset),
+                    Number(indexQuery),
                     Number(indexRef),
                     moreChat,
-                    id_room,
                 );
 
                 if (data) {

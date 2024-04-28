@@ -146,6 +146,7 @@ io.on('connection', (client: any) => {
 
     // user connected
 });
+io.of('/online');
 app.use(
     compression({
         //compression response is returned
