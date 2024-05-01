@@ -7,6 +7,7 @@ import { Types } from 'mongoose';
 import { Redis } from 'ioredis';
 import { DefaultEventsMap } from 'socket.io/dist/typed-events';
 import { Server } from 'socket.io';
+import Validation from '../../utils/errors/Validation';
 
 class SendChat {
     sendChat = async (req: any, res: any, next: express.NextFunction) => {
@@ -15,13 +16,15 @@ class SendChat {
             const value = req.body.value;
             const id_other = req.body.id_others;
             const id_data = req.body.id_data;
-            const id_s = req.body.id_s;
+            const id_secondary = req.body.id_secondary;
             const valueInfoFile = req.body.valueInfoFile;
             const io: Server<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any> = res.io;
             const reply = req.body.reply;
             const conversationId = req.body.conversationId;
             const indexRoom = req.body.indexRoom;
-
+            const valid = new Validation();
+            if (!valid.validUUID([id_data, id, id_other]) || !valid.validMongoID(conversationId))
+                throw new NotFound('SendChatController', 'Invalid regex');
             if (id_other && id_data) {
                 console.log(id_other, 'id_others');
 
@@ -33,7 +36,7 @@ class SendChat {
                     valueInfoFile,
                     id_data,
                     indexRoom,
-                    reply ? JSON.parse(reply) : id_s,
+                    reply ? JSON.parse(reply) : id_secondary,
                 );
                 const key_redis = id_other + '-' + 'AmountMessageIsNotSeen' + '-' + data._id;
 

@@ -26,10 +26,17 @@ class Validation extends Error {
         if (typeof value === 'number') return true;
         return false;
     }
-    validUUID(value: string): boolean {
+    validUUID(value: string | string[]): boolean {
         const uuidPattern: RegExp = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
-        if (uuidPattern.test(value)) return true;
-        return false;
+        if (typeof value === 'string') {
+            return uuidPattern.test(value);
+        } else {
+            let check = true;
+            value.map((v) => {
+                if (!uuidPattern.test(v)) check = false;
+            });
+            return check;
+        }
     }
     validMongoID(value: string): boolean {
         const mongooseIdPattern: RegExp = /^[0-9a-fA-F]{24}$/;
