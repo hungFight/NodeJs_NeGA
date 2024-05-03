@@ -8,6 +8,7 @@ const rooms = new Schema({
     filter: [
         // 1000 records for each room
         {
+            _id: mongoose.Schema.Types.ObjectId,
             createdAt: { type: Date, default: Date.now() },
             count: { type: Number, default: 0, maxLength: 6 },
             full: { type: Boolean, default: false },
@@ -72,7 +73,7 @@ const chats = new Schema(
         id_us: { type: [String] },
         users: { type: [mongoose.Schema.Types.Mixed], require: false },
         user: mongoose.Schema.Types.Mixed,
-        lastElement: { roomId: mongoose.Schema.Types.ObjectId, filterId: mongoose.Schema.Types.ObjectId },
+        lastElement: { roomId: mongoose.Schema.Types.ObjectId },
         deleted: [
             // who has deleted
             {
@@ -85,8 +86,7 @@ const chats = new Schema(
                 show: { type: Boolean, maxLength: 5, default: true },
             },
         ],
-        status: { type: String, maxLength: 11 },
-        first: { id: { type: String, maxLength: 50 } },
+        status: { type: String, maxLength: 11 }, // relationship
         rooms: [mongoose.Schema.Types.Mixed],
         background: {
             v: { type: String, maxLength: 50 },

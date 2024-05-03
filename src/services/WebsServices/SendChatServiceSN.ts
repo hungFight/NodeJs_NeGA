@@ -249,18 +249,9 @@ class SendChatService {
                         updateRoom(roomUpdate);
                         if (roomUpdate.count === 50) roomUpdate.full = true;
                         console.log('yesss');
-                        await roomUpdate
-                            .save()
-                            .then(async (result: any) => {
-                                if (result._id)
-                                    await ConversationRooms.updateOne(
-                                        { _id: res._id },
-                                        { lastElement: { roomId: result._id, filterId: result.filter[result.filter.length - 1]._id } },
-                                    );
-                            })
-                            .catch((err: any) => {
-                                updateRoom(roomUpdate);
-                            });
+                        await roomUpdate.save().catch((err: any) => {
+                            updateRoom(roomUpdate);
+                        });
                         roomUpdate.filter = roomUpdate.filter
                             .filter((f) => f.indexQuery === indexQue)
                             .map((f) => {
@@ -304,7 +295,7 @@ class SendChatService {
                                 },
                             ],
                         });
-                        await ConversationRooms.updateOne({ _id: res._id }, { lastElement: { roomId: room._id, filterId: room.filter[0]._id } });
+                        await ConversationRooms.updateOne({ _id: res._id }, { lastElement: { roomId: room._id } });
                         resolve({
                             ...res._doc,
                             user: user,
@@ -404,61 +395,89 @@ class SendChatService {
     }
     getChat(conversationId: string, id: string, id_other: string, indexQuery: number, indexRef: number, moreChat: 'false' | 'true'): Promise<any> {
         return new Promise(async (resolve, reject) => {
+            function seenByPost(_id: any, filterId: any, id_oth: string) {
+                Rooms.findOneAndUpdate(
+                    { _id: _id },
+                    {
+                        $addToSet: {
+                            'filter.$[fil].data.$[oth].seenBy': id, //push all elements in the seenBy document and uniqueroom: { id: id_other }
+                        },
+                    },
+                    {
+                        arrayFilters: [{ 'fil._id': filterId }, { 'oth.id': id_oth }],
+                    },
+                );
+            }
             function getLimitRoom(id_roomChat_: any, user: any) {
                 if (id_roomChat_) {
                     if (moreChat === 'true') {
                         getNextFilter(id_roomChat_._id, indexRef, indexQuery).then(async (data_) => {
+                            id_roomChat_.user = user;
                             if (data_) {
                                 if (data_?.filter[0]?.data.length) {
-                                    id_roomChat_.user = user;
                                     id_roomChat_.rooms = [data_];
                                     resolve(id_roomChat_);
                                 } else {
-                                    const olderRooms = await Rooms.aggregate([
-                                        { $match: { chatId: id_roomChat_._id, index: indexRef - 1 } },
-                                        { $unwind: '$filter' },
-                                        { $sort: { 'filter.createdAt': -1 } },
+                                    const olderRooms = await Rooms.findOne(
+                                        { chatId: id_roomChat_._id, index: indexRef - 1 },
                                         {
-                                            $group: {
-                                                _id: '$_id',
-                                                count: { $first: '$count' },
-                                                index: { $first: '$index' },
-                                                createdAt: { $first: '$createdAt' },
-                                                filter: { $first: '$filter' },
-                                            },
+                                            count: 1,
+                                            index: 1,
+                                            createdAt: 1,
+                                            chatId: 1,
+                                            full: 1,
+                                            filter: { $elemMatch: { full: false } },
                                         },
-                                    ]);
-                                    console.log(olderRooms, 'olderRooms');
-
-                                    if (olderRooms[0]?.filter) olderRooms[0].filter = [olderRooms[0].filter];
-                                    id_roomChat_.user = user;
-                                    id_roomChat_.rooms = olderRooms;
+                                    );
+                                    if (olderRooms?.filter.length) {
+                                        id_roomChat_.rooms = [data_, olderRooms];
+                                    } else {
+                                        id_roomChat_.rooms = data_.filter.length ? [data_] : [];
+                                    }
                                     resolve(id_roomChat_);
                                 }
                             }
                         });
                     } else {
-                        getFirstFilter(id_roomChat_.lastElement.roomId).then((data_) => {
+                        getFirstFilter(id_roomChat_.lastElement.roomId).then(async (data_) => {
                             if (data_) {
-                                if (data_?.filter[0] && data_?.filter[0].data.length <= 5) {
+                                const see = await Rooms.findOneAndUpdate(
+                                    { _id: data_._id },
+                                    {
+                                        $addToSet: {
+                                            'filter.$[fil].data.$[oth].seenBy': id, //push all elements in the seenBy document and uniqueroom: { id: id_other }
+                                        },
+                                    },
+                                    { arrayFilters: [{ 'fil.indexQuery': data_.filter[0].indexQuery }, { 'oth.userId': id_other }] },
+                                );
+                                console.log(see, 'seeseeseesee 11', see?.filter);
+
+                                if (data_?.filter[0] && data_?.filter[0].data.length <= 8) {
                                     id_roomChat_.user = user;
                                     getNextFilter(id_roomChat_._id, data_?.index, data_?.filter[0].indexQuery).then(async (da_) => {
                                         if (!da_ || !da_?.filter[0]?.data.length) {
-                                            const olderRooms = await Rooms.find(
-                                                { _id: { $lt: data_._id } },
+                                            const olderRooms = await Rooms.findOne(
+                                                { chatId: id_roomChat_._id, index: data_?.index - 1 },
                                                 {
-                                                    filter: { $slice: -1 },
+                                                    count: 1,
+                                                    index: 1,
+                                                    createdAt: 1,
+                                                    chatId: 1,
+                                                    full: 1,
+                                                    filter: { $elemMatch: { full: false } },
                                                 },
-                                            )
-                                                .sort({ _id: -1 })
-                                                .limit(1);
-                                            if (olderRooms.length) {
-                                                id_roomChat_.rooms = [data_, ...olderRooms];
+                                            );
+                                            if (olderRooms) {
+                                                seenByPost(olderRooms._id, olderRooms.filter[0]._id, id_other);
+
+                                                id_roomChat_.rooms = [data_, olderRooms];
+                                                resolve(id_roomChat_);
+                                            } else {
+                                                id_roomChat_.rooms = data_ ? [data_] : [];
                                                 resolve(id_roomChat_);
                                             }
-                                            id_roomChat_.rooms = data_ ? [data_] : [];
-                                            resolve(id_roomChat_);
                                         } else {
+                                            seenByPost(da_._id, da_.filter[0]._id, id_other);
                                             da_.filter = [...data_?.filter, ...da_?.filter];
                                             id_roomChat_.rooms = [da_];
                                             resolve(id_roomChat_);
@@ -469,6 +488,8 @@ class SendChatService {
                                     id_roomChat_.rooms = data_ ? [data_] : [];
                                     resolve(id_roomChat_);
                                 }
+                            } else {
+                                resolve(undefined);
                             }
                         });
                     }
@@ -482,27 +503,21 @@ class SendChatService {
                 return rooms;
             }
             async function getFirstFilter(lastRoomId: string) {
-                const rooms = await Rooms.aggregate([
+                const rooms = await Rooms.findOne(
+                    { _id: lastRoomId },
+
                     {
-                        $match: { _id: lastRoomId },
+                        count: 1,
+                        index: 1,
+                        createdAt: 1,
+                        chatId: 1,
+                        full: 1,
+                        filter: { $elemMatch: { full: false } },
                     },
-                    { $unwind: '$filter' },
-                    { $sort: { 'filter.createdAt': -1 } },
-                    {
-                        $group: {
-                            _id: '$_id',
-                            count: { $first: '$count' },
-                            index: { $first: '$index' },
-                            createdAt: { $first: '$createdAt' },
-                            filter: { $first: '$filter' },
-                        },
-                    },
-                ]);
-                rooms[0].filter = [rooms[0].filter];
-                return rooms[0];
+                );
+                return rooms;
             }
             try {
-                console.log(conversationId, id, id_other, indexQuery, ' get  chats');
                 const data = {
                     _id: '',
                     id_us: [],
@@ -515,36 +530,7 @@ class SendChatService {
                 };
                 console.time('TIME-PROCESS');
 
-                const proSeenBy = new Promise(async (resolve, reject) => {
-                    if (conversationId && id_other) {
-                        resolve(
-                            Rooms.findOneAndUpdate(
-                                { chatId: conversationId, index: indexRef },
-                                {
-                                    $addToSet: {
-                                        'filter.$[fil].data.$[oth].seenBy': id, //push all elements in the seenBy document and uniqueroom: { id: id_other }
-                                    },
-                                },
-                                { arrayFilters: [{ 'fil.indexQuery': indexQuery }, { 'oth.id': id_other }] },
-                            ),
-                        );
-                    } else {
-                        const seenBy = ConversationRooms.findOneAndUpdate(
-                            {
-                                id_us: { $all: [id, id_other] },
-                            },
-                            {
-                                $addToSet: {
-                                    'filter.$[fil].data.$[oth].seenBy': id, //push all elements in the seenBy document and uniqueroom: { id: id_other }
-                                },
-                            },
-                            { arrayFilters: [{ 'fil.indexQuery': indexQuery }, { 'oth.id': id_other }] },
-                        );
-                        resolve(seenBy);
-                    }
-                });
-                const [_, user, id_roomChat] = await Promise.all([
-                    proSeenBy,
+                const [user, id_roomChat] = await Promise.all([
                     prisma.user.findUnique({
                         where: {
                             id: id_other,
@@ -564,7 +550,7 @@ class SendChatService {
                           }),
                 ]);
                 console.timeEnd('TIME-PROCESS');
-                console.log(_, 'seenBy', user);
+                console.log('seenBy', user);
                 if (id_roomChat) {
                     let check = false;
                     let createdAt: string | Date = '';
