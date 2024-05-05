@@ -3,88 +3,8 @@ import DateTime from '../../DateTimeCurrent/DateTimeCurrent';
 import { prisma } from '../..';
 import { v4 as primaryKey } from 'uuid';
 import { Types } from 'mongoose';
+import { PropsInfoFile, PropsOldSeenBy, PropsRoom, PropsRoomChat } from '../../typescript/senChatType';
 const { ObjectId } = Types;
-export interface PropsInfoFile {
-    id: string;
-    type: string;
-    tail: string;
-    name: string;
-    title?: string;
-    id_sort?: number;
-    width?: string;
-    height?: string;
-}
-interface PropsItemRoom {
-    _id: string;
-    chatId: string;
-    full: boolean;
-    index: number;
-    count: number;
-    createdAt: string | NativeDate;
-    filter: {
-        _id: string;
-        count: number;
-        full: boolean;
-        index: number;
-        data: {
-            _id: string;
-            text: { icon: string; t: string };
-            imageOrVideos: { v: string; icon: string; _id: string }[];
-            seenBy: string[];
-            createdAt: string | NativeDate;
-            secondary?: string;
-            // user: { avatar: any; fullName: string; gender: number; id: string };
-        }[];
-        createdAt: string | NativeDate;
-    }[];
-}
-interface PropsRoom {
-    rooms: PropsItemRoom;
-}
-export interface PropsRooms {
-    rooms: PropsItemRoom[];
-}
-export interface PropsRoomChat {
-    _id: any;
-    id_us: string[];
-    background: {
-        v: string;
-        type: string;
-        id: string;
-        latestChatId: string;
-        userId: string;
-    };
-    miss?: number;
-    lastElement: { roomId: any; filterId: any };
-    status: string;
-    users: {
-        id: string;
-        avatar: any;
-        fullName: string;
-        gender: number;
-    }[];
-    user: {
-        id: string;
-        avatar: any;
-        fullName: string;
-        gender: number;
-    };
-    deleted: {
-        id: string;
-        createdAt: string | Date | NativeDate;
-        show: boolean;
-    }[];
-    pins: {
-        _id: string;
-        chatId: string;
-        userId: string;
-        createdAt: string | Date | NativeDate;
-        updatedAt: string | Date | NativeDate;
-        latestChatId: string;
-    }[];
-
-    createdAt: string | NativeDate;
-}
 
 class SendChatService {
     send(
@@ -421,6 +341,7 @@ class SendChatService {
                                     const olderRooms = await Rooms.findOne(
                                         { chatId: id_roomChat_._id, index: indexRef - 1 },
                                         {
+                                            _id: 1,
                                             count: 1,
                                             index: 1,
                                             createdAt: 1,
@@ -450,15 +371,14 @@ class SendChatService {
                                     },
                                     { arrayFilters: [{ 'fil.indexQuery': data_.filter[0].indexQuery }, { 'oth.userId': id_other }] },
                                 );
-                                console.log(see, 'seeseeseesee 11', see?.filter);
-
                                 if (data_?.filter[0] && data_?.filter[0].data.length <= 8) {
                                     id_roomChat_.user = user;
-                                    getNextFilter(id_roomChat_._id, data_?.index, data_?.filter[0].indexQuery).then(async (da_) => {
+                                    getNextFilter(id_roomChat_._id, data_?.index, data_?.filter[0].indexQuery).then(async (da_: any) => {
                                         if (!da_ || !da_?.filter[0]?.data.length) {
-                                            const olderRooms = await Rooms.findOne(
+                                            const olderRooms: any = await Rooms.findOne(
                                                 { chatId: id_roomChat_._id, index: data_?.index - 1 },
                                                 {
+                                                    _id: 1,
                                                     count: 1,
                                                     index: 1,
                                                     createdAt: 1,
@@ -469,7 +389,6 @@ class SendChatService {
                                             );
                                             if (olderRooms) {
                                                 seenByPost(olderRooms._id, olderRooms.filter[0]._id, id_other);
-
                                                 id_roomChat_.rooms = [data_, olderRooms];
                                                 resolve(id_roomChat_);
                                             } else {
@@ -498,7 +417,7 @@ class SendChatService {
             async function getNextFilter(id_roomChat_: Types.ObjectId, indexRef_: number, indexQuery: number) {
                 const rooms = await Rooms.findOne(
                     { chatId: id_roomChat_, index: indexRef_ },
-                    { count: 1, index: 1, createdAt: 1, chatId: 1, full: 1, filter: { $elemMatch: { indexQuery: indexQuery + 1 } } },
+                    { _id: 1, count: 1, index: 1, createdAt: 1, chatId: 1, full: 1, filter: { $elemMatch: { indexQuery: indexQuery + 1 } } },
                 );
                 return rooms;
             }
@@ -507,6 +426,7 @@ class SendChatService {
                     { _id: lastRoomId },
 
                     {
+                        _id: 1,
                         count: 1,
                         index: 1,
                         createdAt: 1,
@@ -1058,6 +978,31 @@ class SendChatService {
             } catch (error) {
                 reject(error);
             }
+        });
+    }
+    setSeenBy(param: PropsOldSeenBy[], userId: string): Promise<boolean> {
+        return new Promise(async (resolve, reject) => {
+            param.forEach((value) => {
+                const updateOperation: any = {
+                    $addToSet: {},
+                };
+                const arrayFilters: any = {
+                    array: [],
+                };
+                value.data.forEach((r) => {
+                    arrayFilters.array.push({ [`fil${r.filterId}._id`]: r.filterId });
+                    r.data.forEach((c) => {
+                        const key = `filter.$[fil${r.filterId}].data.$[da${c.dataId.replace(/-/g, '')}].seenBy`;
+                        updateOperation.$addToSet[key] = userId;
+                        arrayFilters.array.push({ [`da${c.dataId.replace(/-/g, '')}._id`]: c.dataId });
+                    });
+                });
+                Rooms.updateOne({ _id: value.roomId }, updateOperation, { arrayFilters: arrayFilters.array })
+                    .then((data) => {
+                        resolve(true);
+                    })
+                    .catch((err) => reject(err));
+            });
         });
     }
 }

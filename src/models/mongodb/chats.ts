@@ -8,7 +8,6 @@ const rooms = new Schema({
     filter: [
         // 1000 records for each room
         {
-            _id: mongoose.Schema.Types.ObjectId,
             createdAt: { type: Date, default: Date.now() },
             count: { type: Number, default: 0, maxLength: 6 },
             full: { type: Boolean, default: false },
@@ -60,7 +59,6 @@ const rooms = new Schema({
                         default: null,
                     },
                 },
-                { _id: false },
             ],
         },
     ],

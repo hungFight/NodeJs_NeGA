@@ -38,10 +38,17 @@ class Validation extends Error {
             return check;
         }
     }
-    validMongoID(value: string): boolean {
+    validMongoID(value: string | string[]): boolean {
         const mongooseIdPattern: RegExp = /^[0-9a-fA-F]{24}$/;
-        if (mongooseIdPattern.test(value)) return true;
-        return false;
+        if (typeof value === 'string') {
+            return mongooseIdPattern.test(value);
+        } else {
+            let check = true;
+            value.map((v) => {
+                if (!mongooseIdPattern.test(v)) check = false;
+            });
+            return check;
+        }
     }
 }
 export default Validation;

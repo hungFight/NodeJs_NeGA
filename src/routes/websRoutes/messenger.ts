@@ -19,5 +19,6 @@ router.delete('/deletePin', sendChatController.deletePin);
 router.post('/setBackground', sendChatController.setBackground);
 router.post('/delBackground', sendChatController.delBackground);
 router.post('/getConversationBalloon', sendChatController.getConversationBalloon);
+router.post('/setSeenBy', sendChatController.setSeenBy);
 router.use(errorHandler);
 export default router;

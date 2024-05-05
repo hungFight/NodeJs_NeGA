@@ -1,5 +1,7 @@
 import express from 'express';
-import SendChatServiceSN, { PropsRoomChat, PropsRooms } from '../../services/WebsServices/SendChatServiceSN';
+import { validate as c } from 'uuid';
+
+import SendChatServiceSN from '../../services/WebsServices/SendChatServiceSN';
 import ServerError from '../../utils/errors/ServerError';
 import NotFound from '../../utils/errors/NotFound';
 import Forbidden from '../../utils/errors/Forbidden';
@@ -8,6 +10,8 @@ import { Redis } from 'ioredis';
 import { DefaultEventsMap } from 'socket.io/dist/typed-events';
 import { Server } from 'socket.io';
 import Validation from '../../utils/errors/Validation';
+import { PropsRoomChat, PropsRooms } from '../../typescript/senChatType';
+import { io } from '../..';
 
 class SendChat {
     sendChat = async (req: any, res: any, next: express.NextFunction) => {
@@ -73,7 +77,9 @@ class SendChat {
     };
     getRoom = async (req: any, res: any) => {
         try {
+            const valid = new Validation();
             const id = req.cookies.k_user;
+            if (!valid.validUUID(id)) throw new NotFound('GetRoom', 'Invalid id regex!');
             const limit = req.query.limit;
             const redisClient: Redis = res.redisClient;
             const offset = req.query.offset;
@@ -102,6 +108,7 @@ class SendChat {
     };
     getChat = async (req: any, res: any, next: express.NextFunction) => {
         try {
+            const valid = new Validation();
             const id = req.cookies.k_user;
             const conversationId = req.query.conversationId;
             const id_other = req.query.id_other;
@@ -109,6 +116,8 @@ class SendChat {
             const io: Server<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any> = res.io;
             const indexQuery: number = req.query.indexQuery;
             const moreChat = req.query.moreChat;
+            if (!valid.validUUID([id, id_other]) || (conversationId && !valid.validMongoID([conversationId])))
+                throw new NotFound('GetChat', 'Invalid id regex!');
 
             if (id_other) {
                 const data: PropsRoomChat & PropsRooms = await SendChatServiceSN.getChat(
@@ -208,6 +217,7 @@ class SendChat {
     };
     updateChat = async (req: express.Request, res: any, next: express.NextFunction) => {
         try {
+            const valid = new Validation();
             const conversationId: string = req.body.conversationId;
             const roomId: string = req.body.roomId;
             const filterId: string = req.body.filterId;
@@ -218,7 +228,7 @@ class SendChat {
             const id_other: string = req.body.id_other;
             const files = req.body.filesId;
             const io: Server<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any> = res.io;
-            if (!conversationId || !dataId || !id_other || !filterId || !roomId)
+            if (!conversationId || !dataId || !id_other || !filterId || !roomId || !valid.validMongoID([conversationId, filterId, roomId]))
                 throw new NotFound('updateChat UP', 'conversationId, filterId, roomId, userId, id_other or dataId or userId not provided');
             if (userId === userIdCur) {
                 const data = await SendChatServiceSN.updateChat(roomId, filterId, dataId, userId, id_other, value, files);
@@ -351,6 +361,20 @@ class SendChat {
                 redisClient.set(`managerFactory_balloon_${userId}`, JSON.stringify({ state: conversationId, newRes: data }));
                 return res.status(200).json(data);
             });
+        } catch (error) {
+            next(error);
+        }
+    };
+    setSeenBy = async (req: any, res: any, next: express.NextFunction) => {
+        try {
+            const valid = new Validation();
+            const param = req.body.param;
+            const userId = req.cookies.k_user;
+            const conversationId = req.body.conversationId;
+            if (!valid.validMongoID(conversationId)) throw new NotFound('SetSeenBy', 'invalid Id!');
+            io.emit(`conversation_see_chats_${conversationId}`, { param, userId });
+            const data = await SendChatServiceSN.setSeenBy(param, userId);
+            return res.status(200).json(data);
         } catch (error) {
             next(error);
         }
