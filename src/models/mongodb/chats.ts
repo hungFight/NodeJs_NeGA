@@ -33,8 +33,7 @@ const rooms = new Schema({
                         { _id: false },
                     ],
                     delete: { type: String, maxLength: 50, default: '' },
-                    update: { type: String, maxLength: 50, default: '' },
-                    seenBy: { type: [String], maxLength: 50 },
+                    seenBy: [{ id: { type: String, maxLength: 50 }, createdAt: { type: Date, default: Date.now() } }],
                     createdAt: { type: Date, default: Date.now() },
                     updatedAt: { type: Date, default: '' },
                     secondary: { type: String, maxLength: 50 },
@@ -71,7 +70,15 @@ const chats = new Schema(
         id_us: { type: [String] },
         users: { type: [mongoose.Schema.Types.Mixed], require: false },
         user: mongoose.Schema.Types.Mixed,
-        lastElement: { roomId: mongoose.Schema.Types.ObjectId },
+        visiter: [
+            {
+                userId: { type: String, maxLength: 50 },
+                permissions: [String],
+                createdAt: { type: Date, default: Date.now() },
+                status: [{ userId: { type: String, maxLength: 50 }, title: String, createdAt: { type: Date, default: Date.now() } }],
+            },
+        ],
+        lastElement: { roomId: { type: String, maxLength: 50 } },
         deleted: [
             // who has deleted
             {

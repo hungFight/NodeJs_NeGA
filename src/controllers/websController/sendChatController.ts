@@ -12,7 +12,6 @@ import { Server } from 'socket.io';
 import Validation from '../../utils/errors/Validation';
 import { PropsRoomChat, PropsRooms } from '../../typescript/senChatType';
 import { io } from '../..';
-
 class SendChat {
     sendChat = async (req: any, res: any, next: express.NextFunction) => {
         try {
@@ -27,7 +26,7 @@ class SendChat {
             const conversationId = req.body.conversationId;
             const indexRoom = req.body.indexRoom;
             const valid = new Validation();
-            if (!valid.validUUID([id_data, id, id_other]) || !valid.validMongoID(conversationId))
+            if (!valid.validUUID([id_data, id, id_other]) || (conversationId && !valid.validMongoID(conversationId)))
                 throw new NotFound('SendChatController', 'Invalid regex');
             if (id_other && id_data) {
                 console.log(id_other, 'id_others');
@@ -58,11 +57,14 @@ class SendChat {
                     //     }
                     // });
                     data._id = data._id.toString();
-                    console.log(data.rooms, 'data');
+                    console.log(data, 'data');
                     io.emit(`${id_other}roomChat`, JSON.stringify(data)); // It's in App.tsx
-                    if (data.rooms?.filter[0].data[0].secondary) {
+                    if (!conversationId) {
+                        console.log(conversationId, 'conversationId');
+
                         io.emit(`${id + '-' + id_other}phrase_chatRoom`, { userId: id, data: data }); // It's in Messenger
                     } else {
+                        console.log(conversationId, 'no conversationId');
                         io.emit(`${data._id}phrase_chatRoom`, { userId: id, data: data }); // It's in Messenger
                     }
 
@@ -116,7 +118,7 @@ class SendChat {
             const io: Server<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any> = res.io;
             const indexQuery: number = req.query.indexQuery;
             const moreChat = req.query.moreChat;
-            if (!valid.validUUID([id, id_other]) || (conversationId && !valid.validMongoID([conversationId])))
+            if (!valid.validUUID([id, id_other]) || (conversationId && !valid.validMongoID(conversationId)))
                 throw new NotFound('GetChat', 'Invalid id regex!');
 
             if (id_other) {
@@ -128,22 +130,7 @@ class SendChat {
                     Number(indexRef),
                     moreChat,
                 );
-
-                if (data) {
-                    // if (Number(offset) === 0) {
-                    //     // get and send seenBy to other
-                    //     if (moreChat === 'false') {
-                    //         for (let i = 0; i < data.room.length; i++) {
-                    //             if (data.room[i].id === id_other) {
-                    //                 io.emit(`phrase_chatRoom_response_${data._id}_${data.user.id}`, data?.room[i]._id);
-                    //                 break;
-                    //             }
-                    //         }
-                    //     }
-                    // }
-                    return res.status(200).json(data);
-                }
-                throw new NotFound('GetChat', 'Conversation is Not Found ');
+                return res.status(200).json(data);
             }
             throw new NotFound('GetChat', 'Not Found id_room or id_other');
         } catch (error) {
@@ -372,8 +359,9 @@ class SendChat {
             const userId = req.cookies.k_user;
             const conversationId = req.body.conversationId;
             if (!valid.validMongoID(conversationId)) throw new NotFound('SetSeenBy', 'invalid Id!');
-            io.emit(`conversation_see_chats_${conversationId}`, { param, userId });
-            const data = await SendChatServiceSN.setSeenBy(param, userId);
+            const date = new Date();
+            io.emit(`conversation_see_chats_${conversationId}`, { param, userId, createdAt: date });
+            const data = await SendChatServiceSN.setSeenBy(param, userId, date);
             return res.status(200).json(data);
         } catch (error) {
             next(error);
