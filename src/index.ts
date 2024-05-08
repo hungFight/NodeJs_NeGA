@@ -82,29 +82,12 @@ io.on('connection', (client: any) => {
                     id: res.id_other,
                 });
             });
-            client.on(`user_${id}_in_roomChat_personal_receive_and_saw`, async (data: { userIdReceived: string; idSent: string; idChat: string }) => {
-                //    const seenBy = await Rooms.findOneAndUpdate(
-                //                 { chatId: conversationId, index: indexRef },
-                //                 {
-                //                     $addToSet: {
-                //                         'filter.$[fil].data.$[oth].seenBy': id, //push all elements in the seenBy document and uniqueroom: { id: id_other }
-                //                     },
-                //                 },
-                //                 { arrayFilters: [{ 'fil.index': offset }, { 'oth.id': id_other }] },
-                //             );
-                //         await ConversationRooms.findOneAndUpdate(
-                //             {
-                //                 id_us: { $all: [data.idSent, data.userIdReceived] },
-                //                 'room._id': data.idChat,
-                //             },
-                //             {
-                //                 $addToSet: {
-                //                     'room.$[].seenBy': data.userIdReceived, //push all elements in the seenBy document and unique
-                //                 },
-                //             },
-                //         );
-                client.broadcast.emit(`user_${data.idSent}_in_roomChat_personal_receive_and_saw_other`, data);
-            });
+            client.on(
+                `user_${id}_in_roomChat_personal_receive_and_saw`,
+                async (data: { userIdReceived: string; conversationId: string; idChat: string }) => {
+                    client.broadcast.emit(`user_${data.conversationId}_in_roomChat_personal_receive_and_saw_other`, data);
+                },
+            );
         });
     });
     client.on('disconnect', () => {

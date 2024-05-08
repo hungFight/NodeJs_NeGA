@@ -97,7 +97,6 @@ const chats = new Schema(
             v: { type: String, maxLength: 50 },
             type: { type: String, maxLength: 20 },
             id: { type: String, maxLength: 50 },
-            latestChatId: { type: String, maxLength: 50 },
             userId: { type: String, maxLength: 50 },
         },
         pins: [
@@ -111,6 +110,7 @@ const chats = new Schema(
             },
             { _id: false },
         ],
+        statusOperation: [{ userId: { type: String, maxLength: 50 }, title: String, createdAt: { type: Date, default: Date.now() } }],
         createdAt: { type: Date, default: Date.now() },
     },
     {

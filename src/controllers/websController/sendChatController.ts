@@ -214,6 +214,8 @@ class SendChat {
             const userId: string = req.body.userId;
             const id_other: string = req.body.id_other;
             const files = req.body.filesId;
+            console.log(value, 'valuevaluevalue', files);
+
             const io: Server<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any> = res.io;
             if (!conversationId || !dataId || !id_other || !filterId || !roomId || !valid.validMongoID([conversationId, filterId, roomId]))
                 throw new NotFound('updateChat UP', 'conversationId, filterId, roomId, userId, id_other or dataId or userId not provided');
@@ -279,14 +281,13 @@ class SendChat {
     setBackground = async (req: any, res: any, next: express.NextFunction) => {
         try {
             const conversationId = req.body.conversationId;
-            const latestChatId = req.body.latestChatId;
             const userId = req.cookies.k_user;
             const id_file = req.body.id_file;
             const io: Server<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any> = res.io;
 
-            if (!conversationId || !id_file || !latestChatId || !userId)
+            if (!conversationId || !id_file || !userId)
                 throw new NotFound('setBackground chat', 'conversationId, files, latestChatId, userId not provided');
-            const data = await SendChatServiceSN.setBackground(conversationId, id_file, latestChatId, userId);
+            const data = await SendChatServiceSN.setBackground(conversationId, id_file, userId);
             if (data) {
                 io.emit(`conversation_changeBG_room_${conversationId}`, data);
             }

@@ -181,6 +181,10 @@ class SendChatService {
                                 return f;
                             });
                         console.log(roomUpdate, 'roomUpdate');
+                        if (res.lastElement.roomId !== roomUpdate._id) {
+                            res.lastElement.roomId = roomUpdate._id;
+                            await ConversationRooms.updateOne({ _id: res._id }, { lastElement: { roomId: roomUpdate._id } });
+                        }
                         resolve({
                             ...res._doc,
                             user: user,
@@ -217,7 +221,7 @@ class SendChatService {
                                 },
                             ],
                         });
-                        ConversationRooms.updateOne({ _id: res._id }, { lastElement: { roomId: room._id } });
+                        await ConversationRooms.updateOne({ _id: res._id }, { lastElement: { roomId: room._id } });
                         res.lastElement.roomId = room._id;
                         resolve({
                             ...res._doc,
@@ -853,7 +857,19 @@ class SendChatService {
             }
         });
     }
-    setBackground(conversationId: string, id_file: { id: string; type: string }, latestChatId: string, userId: string) {
+    setBackground(
+        conversationId: string,
+        id_file: { id: string; type: string },
+        userId: string,
+    ): Promise<{
+        operation: { userId: string; createdAt: Date; title: string };
+        ids_file: {
+            type: string;
+            v: string;
+            id: string;
+            userId: string;
+        };
+    } | null> {
         // delete both side
         return new Promise(async (resolve, reject) => {
             try {
@@ -862,8 +878,8 @@ class SendChatService {
                     v: id_file.id,
                     id: id_file.id,
                     userId,
-                    latestChatId,
                 };
+                const date = new Date();
                 const res = await ConversationRooms.updateOne(
                     {
                         _id: conversationId,
@@ -872,11 +888,14 @@ class SendChatService {
                         $set: {
                             background: ids_file,
                         },
+                        $push: {
+                            statusOperation: { userId, createdAt: date, title: 'change_background' },
+                        },
                     },
                     { new: true },
                 );
                 if (res.acknowledged) {
-                    resolve(ids_file);
+                    resolve({ ids_file, operation: { userId, createdAt: date, title: 'change_background' } });
                 }
                 resolve(null);
             } catch (error) {
@@ -939,7 +958,7 @@ class SendChatService {
             }
         });
     }
-    setSeenBy(param: PropsOldSeenBy[], userId: string, date: Date): Promise<string> {
+    setSeenBy(param: PropsOldSeenBy[], userId: string, date: Date): Promise<boolean> {
         return new Promise(async (resolve, reject) => {
             param.forEach((value) => {
                 const updateOperation: any = {
