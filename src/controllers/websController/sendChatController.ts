@@ -299,13 +299,14 @@ class SendChat {
     delBackground = async (req: any, res: any, next: express.NextFunction) => {
         try {
             const conversationId = req.body.conversationId;
+            const userId = req.body.userId;
             const io: Server<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any> = res.io;
             console.log('delBackground');
 
             if (!conversationId) throw new NotFound('delBackground chat', 'conversationId not provided');
-            const data = await SendChatServiceSN.delBackground(conversationId);
+            const data = await SendChatServiceSN.delBackground(conversationId, userId);
             if (data) {
-                io.emit(`conversation_deleteBG_room_${conversationId}`);
+                io.emit(`conversation_deleteBG_room_${conversationId}`, data);
             }
             return res.status(200).json(data);
         } catch (error) {

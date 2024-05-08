@@ -12,6 +12,12 @@ export interface PropsInfoFile {
     width?: string;
     height?: string;
 }
+export interface PropsItemOperationsCon {
+    userId: string;
+    createdAt: string | Date;
+    title: string;
+}
+
 interface PropsItemRoom {
     _id: string;
     chatId: string;
@@ -80,6 +86,6 @@ export interface PropsRoomChat {
         updatedAt: string | Date | NativeDate;
         latestChatId: string;
     }[];
-
+    statusOperation: PropsItemOperationsCon[];
     createdAt: string | NativeDate;
 }

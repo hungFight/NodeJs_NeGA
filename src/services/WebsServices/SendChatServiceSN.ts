@@ -3,7 +3,7 @@ import DateTime from '../../DateTimeCurrent/DateTimeCurrent';
 import { prisma } from '../..';
 import { v4 as primaryKey } from 'uuid';
 import { Types } from 'mongoose';
-import { PropsInfoFile, PropsOldSeenBy, PropsRoom, PropsRoomChat } from '../../typescript/senChatType';
+import { PropsInfoFile, PropsItemOperationsCon, PropsOldSeenBy, PropsRoom, PropsRoomChat } from '../../typescript/senChatType';
 const { ObjectId } = Types;
 
 class SendChatService {
@@ -836,10 +836,11 @@ class SendChatService {
             }
         });
     }
-    delBackground(conversationId: string) {
+    delBackground(conversationId: string, userId: string): Promise<PropsItemOperationsCon> {
         // delete both side
         return new Promise(async (resolve, reject) => {
             try {
+                const statusOperation = { userId, title: 'delete_background', createdAt: new Date() };
                 const res = await ConversationRooms.updateOne(
                     {
                         _id: conversationId,
@@ -848,10 +849,13 @@ class SendChatService {
                         $set: {
                             background: null,
                         },
+                        $push: {
+                            statusOperation,
+                        },
                     },
                     { new: true },
                 );
-                resolve(res.acknowledged);
+                resolve(statusOperation);
             } catch (error) {
                 reject(error);
             }
