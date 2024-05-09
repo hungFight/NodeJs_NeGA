@@ -1,15 +1,9 @@
 import { v4 as primaryKey } from 'uuid';
-import { file } from 'googleapis/build/src/apis/file';
 import DateTime from '../../../DateTimeCurrent/DateTimeCurrent';
 import { Comments, NewPost } from '../../../models/mongodb/SN_DB/home';
 import { prisma } from '../../..';
 import { PropsComments, PropsCommentsIn, PropsDataPosts, feel } from '../../../../socailType';
-import { convertToURL } from '../../../utils/convertURL';
 import { PropsInfoFile } from '../../../typescript/senChatType';
-// const Sequelize = require('sequelize');
-// const Op = Sequelize.Op;
-const { ObjectId } = require('mongodb');
-// const db = require('../../../models');
 
 class PostServiceSN {
     setPost = (
@@ -57,7 +51,7 @@ class PostServiceSN {
                         const imageOrVideos = data_file?.map((f) => {
                             return {
                                 id_sort: f.id_sort,
-                                file: { link: convertToURL(f.id, f.type), type: f.type, title: f.title, width: f.width, height: f.height },
+                                file: { link: f.id, type: f.type, title: f.title, width: f.width, height: f.height },
                             };
                         });
                         content = {
@@ -175,8 +169,7 @@ class PostServiceSN {
                     const dataPost: any = await NewPost.find({ id_user: { $in: [...friends_id, ...follow_id, id] } })
                         .sort({ createdAt: -1 })
                         .limit(limit)
-                        .skip(offset)
-                        .select('-comments');
+                        .skip(offset);
                     if (dataPost.length) {
                         const newData = await Promise.all(
                             dataPost.map(async (p: any, index: number) => {

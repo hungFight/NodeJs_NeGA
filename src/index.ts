@@ -149,7 +149,7 @@ app.use(cookieParser(process.env.SECRET));
 app.use(
     cors({
         credentials: true,
-        origin: ['http://localhost:3000', `${process.env.REACT_URL}`],
+        origin: [`${process.env.REACT_URL}`],
     }),
 );
 app.use(morgan('combined'));

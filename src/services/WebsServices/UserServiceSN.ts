@@ -1,7 +1,6 @@
 import moment from 'moment';
 import { esClient, prisma } from '../..';
 import xPrismaF from '../../models/prisma/extension/xPrismaF';
-import { convertToURL } from '../../utils/convertURL';
 export interface PropsParams {
     fullName?: boolean;
     active?: boolean;
@@ -590,10 +589,10 @@ class UserService {
                     if (name) if (value.length > 30) resolve(0);
                     const data: any = await prisma.user.update({
                         where: { id: id },
-                        data: { [`${av || akg || name}`]: av || akg ? convertToURL(value.id_file, value.type) : value },
+                        data: { [`${av || akg || name}`]: av || akg ? value.id_file : value },
                     });
                     if (name) resolve(data[`${name}`]);
-                    if (akg || av) resolve(convertToURL(value.id_file, value.type));
+                    if (akg || av) resolve(value.id_file);
                 }
             } catch (error) {
                 reject(error);
