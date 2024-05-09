@@ -16,6 +16,7 @@ export interface PropsItemOperationsCon {
     userId: string;
     createdAt: string | Date;
     title: string;
+    dataId: string;
 }
 
 interface PropsItemRoom {

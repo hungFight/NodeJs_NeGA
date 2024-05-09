@@ -836,11 +836,11 @@ class SendChatService {
             }
         });
     }
-    delBackground(conversationId: string, userId: string): Promise<PropsItemOperationsCon> {
+    delBackground(conversationId: string, userId: string, dataId: string): Promise<PropsItemOperationsCon> {
         // delete both side
         return new Promise(async (resolve, reject) => {
             try {
-                const statusOperation = { userId, title: 'delete_background', createdAt: new Date() };
+                const statusOperation = { userId, title: 'delete_background', createdAt: new Date(), dataId };
                 const res = await ConversationRooms.updateOne(
                     {
                         _id: conversationId,
@@ -850,12 +850,14 @@ class SendChatService {
                             background: null,
                         },
                         $push: {
-                            statusOperation,
+                            statusOperation: statusOperation,
                         },
                     },
                     { new: true },
                 );
-                resolve(statusOperation);
+                if (res.acknowledged) {
+                    resolve(statusOperation);
+                } else reject('Error delete background');
             } catch (error) {
                 reject(error);
             }
@@ -865,8 +867,9 @@ class SendChatService {
         conversationId: string,
         id_file: { id: string; type: string },
         userId: string,
+        dataId: string,
     ): Promise<{
-        operation: { userId: string; createdAt: Date; title: string };
+        operation: { userId: string; createdAt: Date; title: string; dataId: string };
         ids_file: {
             type: string;
             v: string;
@@ -884,6 +887,7 @@ class SendChatService {
                     userId,
                 };
                 const date = new Date();
+                const statusOperation = { userId, createdAt: date, title: 'change_background', dataId };
                 const res = await ConversationRooms.updateOne(
                     {
                         _id: conversationId,
@@ -893,15 +897,14 @@ class SendChatService {
                             background: ids_file,
                         },
                         $push: {
-                            statusOperation: { userId, createdAt: date, title: 'change_background' },
+                            statusOperation: statusOperation,
                         },
                     },
                     { new: true },
                 );
                 if (res.acknowledged) {
-                    resolve({ ids_file, operation: { userId, createdAt: date, title: 'change_background' } });
-                }
-                resolve(null);
+                    resolve({ ids_file, operation: statusOperation });
+                } else reject('Error set background');
             } catch (error) {
                 reject(error);
             }

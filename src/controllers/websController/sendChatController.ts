@@ -280,14 +280,16 @@ class SendChat {
     };
     setBackground = async (req: any, res: any, next: express.NextFunction) => {
         try {
+            const valid = new Validation();
             const conversationId = req.body.conversationId;
             const userId = req.cookies.k_user;
+            const dataId = req.body.dataId;
             const id_file = req.body.id_file;
             const io: Server<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any> = res.io;
 
-            if (!conversationId || !id_file || !userId)
-                throw new NotFound('setBackground chat', 'conversationId, files, latestChatId, userId not provided');
-            const data = await SendChatServiceSN.setBackground(conversationId, id_file, userId);
+            if (!valid.validMongoID(conversationId) || !valid.validUUID([userId, dataId]) || !id_file)
+                throw new NotFound('setBackground chat', 'invalid regex!');
+            const data = await SendChatServiceSN.setBackground(conversationId, id_file, userId, dataId);
             if (data) {
                 io.emit(`conversation_changeBG_room_${conversationId}`, data);
             }
@@ -299,12 +301,13 @@ class SendChat {
     delBackground = async (req: any, res: any, next: express.NextFunction) => {
         try {
             const conversationId = req.body.conversationId;
-            const userId = req.body.userId;
+            const userId = req.cookies.k_user;
+            const dataId = req.body.dataId;
             const io: Server<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any> = res.io;
             console.log('delBackground');
 
             if (!conversationId) throw new NotFound('delBackground chat', 'conversationId not provided');
-            const data = await SendChatServiceSN.delBackground(conversationId, userId);
+            const data = await SendChatServiceSN.delBackground(conversationId, userId, dataId);
             if (data) {
                 io.emit(`conversation_deleteBG_room_${conversationId}`, data);
             }

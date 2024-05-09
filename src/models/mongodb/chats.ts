@@ -110,7 +110,14 @@ const chats = new Schema(
             },
             { _id: false },
         ],
-        statusOperation: [{ userId: { type: String, maxLength: 50 }, title: String, createdAt: { type: Date, default: Date.now() } }],
+        statusOperation: [
+            {
+                dataId: { type: String, maxLength: 50 },
+                userId: { type: String, maxLength: 50 },
+                title: String,
+                createdAt: { type: Date, default: Date.now() },
+            },
+        ], //title: actions_background
         createdAt: { type: Date, default: Date.now() },
     },
     {
