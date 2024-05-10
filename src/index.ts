@@ -22,8 +22,8 @@ import routeSN from './routes/websRoutes';
 import moment from 'moment';
 
 import { Server } from 'socket.io';
-import { ConversationRooms } from './models/mongodb/chats';
 const connection = new Set();
+const subConnection = new Set();
 export const prisma = new PrismaClient();
 // Listen to Prisma 'user' post event and index user in Elasticsearch
 
@@ -67,34 +67,33 @@ export const esClient = new Client({
 io.on('connection', (client: any) => {
     console.log('conn');
 
-    client.on('sendId', (res: string) => {
+    client.on('sendId', (res: { userId?: string; any: string }) => {
         // sent to client
-        connection.add(res);
+        if (res?.userId) connection.add(res.userId);
+        subConnection.add(res.any);
         client.userId = res;
         if (client.userId) redisClient.del(`online_duration: ${client.userId}`); // when user not active but still send chat, it will be deleted
-        console.log('user connected', res, Array.from(connection));
         client.emit('user connectedd', JSON.stringify(Array.from(connection)));
         client.broadcast.emit('user connectedd', JSON.stringify(Array.from(connection)));
-        Array.from(connection).map((id) => {
-            client.on(`user_${id}_in_roomChat_personal_writing`, (res: { roomId: string; id_other: string; value: number }) => {
-                client.broadcast.emit(`user_${res.id_other}_in_roomChat_${res.roomId}_personal_receive`, {
-                    length: res.value,
-                    id: res.id_other,
-                });
+    });
+    Array.from(subConnection).map((id) => {
+        client.on(`user_${id}_in_roomChat_personal_writing`, (res: { roomId: string; id_other: string; value: number }) => {
+            client.broadcast.emit(`user_${res.id_other}_in_roomChat_${res.roomId}_personal_receive`, {
+                length: res.value,
+                id: res.id_other,
             });
-            client.on(
-                `user_${id}_in_roomChat_personal_receive_and_saw`,
-                async (data: { userIdReceived: string; conversationId: string; idChat: string }) => {
-                    client.broadcast.emit(`user_${data.conversationId}_in_roomChat_personal_receive_and_saw_other`, data);
-                },
-            );
         });
+        client.on(
+            `user_${id}_in_roomChat_personal_receive_and_saw`,
+            async (data: { userIdReceived: string; conversationId: string; idChat: string }) => {
+                client.broadcast.emit(`user_${data.conversationId}_in_roomChat_personal_receive_and_saw_other`, data);
+            },
+        );
     });
     client.on('disconnect', () => {
         const currentDate = moment(new Date()).format('YYYY-MM-DD HH:mm:ss');
         // calculator users online
         connection.delete(client.userId);
-        console.log('client disconnect', client.userId);
         const key_Reload = client.userId + 'Reload';
         if (client.userId)
             redisClient.set(`online_duration: ${client.userId}`, currentDate, () => {
@@ -126,10 +125,8 @@ io.on('connection', (client: any) => {
         client.emit('user connectedd', JSON.stringify(Array.from(connection)));
         client.broadcast.emit('user connectedd', JSON.stringify(Array.from(connection)));
     });
-
     // user connected
 });
-io.of('/online').on;
 app.use(
     compression({
         //compression response is returned
