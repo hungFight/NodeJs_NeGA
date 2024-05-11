@@ -18,7 +18,7 @@ export interface PropsRefreshToken {
 
     mac: string;
     userId: string;
-    status: { name: 'login' | 'logout'; dateTime: Date; ip: string }[];
+    status: { name: 'login' | 'logout'; dateTime: Date | string; ip: string }[];
     userAgent: string;
 }
 
@@ -138,9 +138,13 @@ class AuthServices {
                                                         if (p.mac === foundDa.mac) {
                                                             p.status.push({ name: 'login', dateTime: new Date(), ip: IP_USER });
                                                             p.userAgent = userAgent;
+                                                            p.refreshToken = refreshToken + '@_@' + secret;
                                                         }
+                                                        return p;
                                                     });
                                                 }
+                                                console.log(newDa, 'newDa', newDa[0].status);
+
                                                 redisClient.set(u.id + 'refreshToken', JSON.stringify(newDa), (err: any, res: any) => {
                                                     if (err) {
                                                         console.log('Error setting refreshToken', err);
@@ -185,18 +189,29 @@ class AuthServices {
             }
         });
     };
-    logOut = (req: any, res: any, redisClient: Redis) => {
+    logOut = (req: any, res: any, redisClient: Redis, IP_MAC: string, IP_USER: string) => {
         return new Promise(async (resolve, reject) => {
             try {
                 const userId = req.cookies.k_user;
                 console.log(req.cookies, '123456');
-                redisClient.del(userId + 'refreshToken', (err, count) => {
+                redisClient.get(userId + 'refreshToken', (err, preData) => {
                     if (err) {
                         console.log('Error getting refresh token in Redis', err);
                         resolve({ status: 404, message: 'Error getting refresh token in Redis' });
                     }
-                    if (count) {
+                    if (preData) {
+                        const parsed: PropsRefreshToken[] = JSON.parse(preData);
                         const currentDate = moment(new Date()).format('YYYY-MM-DD HH:mm:ss');
+                        parsed.map((p) => {
+                            if (p.mac === IP_MAC) {
+                                p.refreshToken = '';
+                                p.status.push({ ip: IP_USER, dateTime: currentDate, name: 'logout' });
+                            }
+                            return p;
+                        });
+                        redisClient.set(userId + 'refreshToken', JSON.stringify(parsed), (e) => {
+                            if (e) resolve({ status: 401, message: 'Error in Redis!' });
+                        });
                         redisClient.set(`online_duration: ${userId}`, currentDate, () => {
                             redisClient.expire(`online_duration: ${userId}`, 24 * 60 * 60);
                         });

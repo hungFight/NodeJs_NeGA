@@ -71,7 +71,10 @@ class authController {
             const id = req.cookies.k_user;
             const redisClient: Redis = res.redisClient;
             const key_Reload = id + 'Reload';
-            const data: any = await authServices.logOut(req, res, redisClient);
+            const IP_MAC = getMAC();
+            const IP_USER = req.socket.remoteAddress ?? req.ip;
+            if (!isMAC(IP_MAC)) throw new NotFound('Logout', 'Invalid MAC');
+            const data: any = await authServices.logOut(req, res, redisClient, IP_MAC, IP_USER);
             if (data?.status === 200) {
                 redisClient.lrange(key_Reload, 0, -1, (err, items) => {
                     if (err) console.log(err);
@@ -97,7 +100,6 @@ class authController {
     register = async (req: express.Request, res: express.Response, next: express.NextFunction) => {
         try {
             console.log('body', req.body);
-
             const message: any = await authServices.add(req.body.params);
             console.log(message, 'dayyyyyyyyyyyyyyyyyy');
 
