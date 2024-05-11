@@ -7,6 +7,7 @@ import ServerError from '../../utils/errors/ServerError';
 import getMAC, { isMAC } from 'getmac';
 import { Redis } from 'ioredis';
 import Security from '../AuthServices/Security';
+import { PropsRefreshToken } from '../AuthServices/AuthServices';
 class RefreshTokenCookie {
     refreshToken = async (req: express.Request, res: any, next: express.NextFunction) => {
         try {
@@ -25,15 +26,9 @@ class RefreshTokenCookie {
                     return res.status(500).json('Error getting refresh token: ' + err);
                 }
                 if (data) {
-                    const newData: {
-                        refreshToken: string;
-                        accept: boolean;
-                        ip: string;
-                        mac: string;
-                        id_user: string;
-                    }[] = JSON.parse(data);
+                    const newData: PropsRefreshToken[] = JSON.parse(data);
                     console.log(newData, 'newDataD');
-                    const newDataFiltered = newData.filter((g) => g.id_user === userId && g.mac === IP_MAC);
+                    const newDataFiltered = newData.filter((g) => g.userId === userId && g.mac === IP_MAC);
                     if (newDataFiltered.length) {
                         console.log(newData, 'newData - newData');
                         const de = newDataFiltered[0];
@@ -59,7 +54,12 @@ class RefreshTokenCookie {
                                 userId + 'refreshToken',
                                 JSON.stringify(
                                     newData.map((re) => {
-                                        if (re.refreshToken === refreshToken + '@_@' + code && re.id_user === user.id && re.ip === IP_USER) {
+                                        if (
+                                            re.refreshToken === refreshToken + '@_@' + code &&
+                                            re.userId === user.id &&
+                                            re.mac === IP_MAC &&
+                                            re.accept
+                                        ) {
                                             re.refreshToken = newRefreshToken + '@_@' + secret;
                                         }
                                         return re;

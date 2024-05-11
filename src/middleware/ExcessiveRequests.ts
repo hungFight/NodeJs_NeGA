@@ -14,12 +14,11 @@ class ExcessiveRequests {
                 await new Promise<void>((resolve, reject) => {
                     redisClient.get('_prohibited_request_ID_' + id, async (errGet, prohibit) => {
                         // true or false
-                        if (errGet)
-                            reject(new ServerError('Increment by Redis in MiddleWare ExcessiveRequests', errGet));
+                        if (errGet) reject(new ServerError('Increment by Redis in MiddleWare ExcessiveRequests', errGet));
                         if (prohibit && prohibit === 'true') {
                             reject(
                                 new ServerError('ExcessiveRequests', {
-                                    status: 9999, // 9999 is busy
+                                    status: 9, // 9999 is busy
                                     message: 'Server is busy!',
                                 }),
                             );
@@ -29,8 +28,7 @@ class ExcessiveRequests {
                                     // increment by 1
                                     redisClient.get(':ExcessiveRequests_DateTime_ID:' + id, (errGet, prohibit) => {
                                         console.log(moment(prohibit).second(), ':ExcessiveRequests_DateTime:');
-                                        if (!prohibit)
-                                            redisClient.set(':ExcessiveRequests_DateTime_ID:' + id, String(new Date()));
+                                        if (!prohibit) redisClient.set(':ExcessiveRequests_DateTime_ID:' + id, String(new Date()));
                                     });
 
                                     redisClient.expire(
@@ -39,31 +37,15 @@ class ExcessiveRequests {
                                         (err, sTime) => {
                                             //second
                                             // per minute only to be requested up to 25
-                                            if (err)
-                                                reject(
-                                                    new ServerError(
-                                                        'Expiration by Redis in MiddleWare ExcessiveRequests',
-                                                        err,
-                                                    ),
-                                                );
+                                            if (err) reject(new ServerError('Expiration by Redis in MiddleWare ExcessiveRequests', err));
                                         },
                                     );
-                                    if (err)
-                                        throw new ServerError(
-                                            'Increment by Redis in MiddleWare ExcessiveRequests',
-                                            err,
-                                        );
+                                    if (err) throw new ServerError('Increment by Redis in MiddleWare ExcessiveRequests', err);
                                     console.log(mun, 'redisClient');
 
                                     if (mun && mun >= Number(process.env.REDIS_EXCESSIVE)) {
                                         redisClient.set('_prohibited_request_ID_' + id, 'true', (err) => {
-                                            if (err)
-                                                reject(
-                                                    new ServerError(
-                                                        'Expire by Redis in MiddleWare ExcessiveRequests',
-                                                        err,
-                                                    ),
-                                                );
+                                            if (err) reject(new ServerError('Expire by Redis in MiddleWare ExcessiveRequests', err));
                                             redisClient.expire(
                                                 '_prohibited_request_ID_' + id,
                                                 Number(process.env.REDIS_EXCESSIVE_TIME_AT_PROHIBITED),
@@ -89,12 +71,11 @@ class ExcessiveRequests {
                 await new Promise<void>((resolve, reject) => {
                     redisClient.get('_prohibited_request_IP_' + ip_User, async (errGet, prohibit) => {
                         // true or false
-                        if (errGet)
-                            reject(new ServerError('Increment by Redis in MiddleWare ExcessiveRequests', errGet));
+                        if (errGet) reject(new ServerError('Increment by Redis in MiddleWare ExcessiveRequests', errGet));
                         if (prohibit && prohibit === 'true') {
                             reject(
                                 new ServerError('ExcessiveRequests', {
-                                    status: 9999, // 9999 is busy
+                                    status: 9, // 9999 is busy
                                     message: 'Server is busy!',
                                 }),
                             );
@@ -104,11 +85,7 @@ class ExcessiveRequests {
                                     // increment by 1
                                     redisClient.get(':ExcessiveRequests_DateTime_IP:' + ip_User, (errGet, prohibit) => {
                                         console.log(moment(prohibit).second(), ':ExcessiveRequests_DateTime:');
-                                        if (!prohibit)
-                                            redisClient.set(
-                                                ':ExcessiveRequests_DateTime_IP:' + ip_User,
-                                                String(new Date()),
-                                            );
+                                        if (!prohibit) redisClient.set(':ExcessiveRequests_DateTime_IP:' + ip_User, String(new Date()));
                                     });
 
                                     redisClient.expire(
@@ -117,31 +94,15 @@ class ExcessiveRequests {
                                         (err, sTime) => {
                                             //second
                                             // per minute only to be requested up to 25
-                                            if (err)
-                                                reject(
-                                                    new ServerError(
-                                                        'Expiration by Redis in MiddleWare ExcessiveRequests',
-                                                        err,
-                                                    ),
-                                                );
+                                            if (err) reject(new ServerError('Expiration by Redis in MiddleWare ExcessiveRequests', err));
                                         },
                                     );
-                                    if (err)
-                                        throw new ServerError(
-                                            'Increment by Redis in MiddleWare ExcessiveRequests',
-                                            err,
-                                        );
+                                    if (err) throw new ServerError('Increment by Redis in MiddleWare ExcessiveRequests', err);
                                     console.log(mun, 'redisClient');
 
                                     if (mun && mun >= Number(process.env.REDIS_EXCESSIVE)) {
                                         redisClient.set('_prohibited_request_IP_' + ip_User, 'true', (err) => {
-                                            if (err)
-                                                reject(
-                                                    new ServerError(
-                                                        'Expire by Redis in MiddleWare ExcessiveRequests',
-                                                        err,
-                                                    ),
-                                                );
+                                            if (err) reject(new ServerError('Expire by Redis in MiddleWare ExcessiveRequests', err));
                                             redisClient.expire(
                                                 '_prohibited_request_IP_' + ip_User,
                                                 Number(process.env.REDIS_EXCESSIVE_TIME_AT_PROHIBITED),

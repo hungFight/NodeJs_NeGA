@@ -17,6 +17,8 @@ class OTPService {
             if (!users.length) {
                 resolve({ status: 0, message: "Account doesn't exist" });
             } else {
+                console.log('Hello');
+
                 const otp = Math.floor(Math.random() * (999999 - 100000) + 100000);
                 const CLIENT_ID = process.env.CLIENT_ID;
                 const CLIENT_SECRET = process.env.CLIENT_SECRET;
@@ -33,68 +35,69 @@ class OTPService {
                 const client = require('twilio')(process.env.ACCOUNTSID, process.env.TWILIO_AUTH_TOKEN);
                 if (isNaN(Number(phoneMail))) {
                     try {
-                        const otpHash = await Security.hash(String(otp));
-                        const data: any = await Prohibit.findOne({ email: phoneMail });
-                        const date = new Date(data?.createdAt);
-                        const currentDate = new Date();
-                        const a = [date.getFullYear(), date.getMonth() + 1, date.getDate()];
-                        const b = [currentDate.getFullYear(), currentDate.getMonth() + 1, currentDate.getDate()];
-                        const oldDate = moment(a);
-                        const curDate = moment(b);
-                        const checkDate: boolean = curDate.diff(oldDate) > 2592000000;
-                        if (data?.sended <= 4 || !data || checkDate) {
-                            const dbSend = await VerifyMail.create({
-                                email: phoneMail,
-                                otp: otpHash,
-                            });
-                            if (data?.sended > 0) {
-                                await Prohibit.findOne({ email: data.email }).updateOne({
-                                    $inc: { sended: +1 },
+                        const [otpHash, data] = await Promise.all([Security.hash(String(otp)), Prohibit.findOne({ email: phoneMail })]);
+                        if (data) {
+                            const checkDate: boolean = moment(new Date()).diff(data?.updatedAt, 'minute') > 1;
+                            console.log(checkDate, 'checkDate_OTP', moment(new Date()).diff(data?.updatedAt, 'minute'));
+
+                            if ((data?.sended <= 4 && checkDate) || !data) {
+                                console.log(data, 'data');
+
+                                const dbSend = await VerifyMail.create({
+                                    email: phoneMail,
+                                    createdAt: new Date(),
+                                    otp: otpHash,
                                 });
-                            } else {
-                                await Prohibit.create({
-                                    email: dbSend.email,
-                                    sended: 1,
+                                if (data?.sended > 0) {
+                                    await Prohibit.findOne({ email: data.email }).updateOne({
+                                        $inc: { sended: +1 },
+                                    });
+                                } else {
+                                    await Prohibit.create({
+                                        email: dbSend.email,
+                                        sended: 1,
+                                        createdAt: new Date(),
+                                    });
+                                }
+                                const accessToken = await OAUTH2Client.getAccessToken();
+                                const transporter = nodemailer.createTransport({
+                                    service: 'gmail',
+                                    auth: {
+                                        type: 'OAuth2',
+                                        user: String(EMAIL_ADDRESS),
+                                        clientId: String(CLIENT_ID),
+                                        clientSecret: String(CLIENT_SECRET),
+                                        refreshToken: String(REFRESH_TOKEN),
+                                        accessToken: String(accessToken),
+                                    },
                                 });
-                            }
-                            const accessToken = await OAUTH2Client.getAccessToken();
-                            const transporter = nodemailer.createTransport({
-                                service: 'gmail',
-                                auth: {
-                                    type: 'OAuth2',
-                                    user: String(EMAIL_ADDRESS),
-                                    clientId: String(CLIENT_ID),
-                                    clientSecret: String(CLIENT_SECRET),
-                                    refreshToken: String(REFRESH_TOKEN),
-                                    accessToken: String(accessToken),
-                                },
-                            });
-                            const html = `<div style=" width: '100%', text-align: 'center' ">
-                                                <p>Which is OTP Code to Verify Your Email. Please Enter your code to verify</p>
+                                const html = `<div style=" width: '100%', text-align: 'center' ">
+                                                <p>Which is OTP Code to Verify Your Email. Please Enter your code to verify NeGA</p>
                                                 <h3 style="padding: '50px', background-color: '#cdcbc8' ">${otp}</h3>
                                             </div>`;
 
-                            transporter.sendMail(
-                                {
-                                    from: 'hungsendemail@gmail.com',
-                                    to: phoneMail,
-                                    subject: 'Verify Email',
-                                    html: html,
-                                },
-                                (err, info) => {
-                                    if (err) {
-                                        reject(err);
-                                    } else {
-                                        console.log(err, info);
-                                        resolve({ status: 1, message: 'Sended Successful!' });
-                                    }
-                                },
-                            );
-                        } else if (data?.sended > 4 && !checkDate) {
-                            resolve({
-                                status: 0,
-                                message: 'You sended too 5 OTP, please wait until after the next 1 month. Thank you!',
-                            });
+                                transporter.sendMail(
+                                    {
+                                        from: 'hungsendemail@gmail.com',
+                                        to: phoneMail,
+                                        subject: 'Verify Email',
+                                        html: html,
+                                    },
+                                    (err, info) => {
+                                        if (err) {
+                                            reject(err);
+                                        } else {
+                                            console.log(err, info);
+                                            resolve({ status: 1, message: 'Sended Successful!' });
+                                        }
+                                    },
+                                );
+                            } else if (data?.sended > 4 || !checkDate) {
+                                resolve({
+                                    status: 0,
+                                    message: 'You sended too 5 OTP, please wait until after the next 1 month. Thank you!',
+                                });
+                            }
                         }
                     } catch (error) {
                         reject(error);

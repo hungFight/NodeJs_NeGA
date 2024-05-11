@@ -14,19 +14,14 @@ class authController {
             const password = req.body.params.password;
             const redisClient: Redis = res.redisClient;
             const IP_MAC = getMAC();
-            const IP_USER = req.socket.remoteAddress || req.ip;
+            const userAgent = req.headers['user-agent'] ?? '';
+            const IP_USER = req.socket.remoteAddress ?? req.ip;
             console.log(getMAC(), 'x-mac-address');
             if (isMAC(IP_MAC)) {
                 if (!phoneNumberEmail || !password || phoneNumberEmail.includes(error) || password.includes(error)) {
                     throw new NotFound('Login', 'Please enter your Account!');
                 } else {
-                    const userData: any = await authServices.login(
-                        redisClient,
-                        phoneNumberEmail,
-                        password,
-                        IP_USER,
-                        IP_MAC,
-                    );
+                    const userData: any = await authServices.login(redisClient, phoneNumberEmail, password, IP_USER, IP_MAC, userAgent);
                     if (userData) {
                         return res.status(200).json(userData);
                     }
@@ -46,16 +41,11 @@ class authController {
             const id_you = req.cookies.k_user;
             const redisClient: Redis = res.redisClient;
             const id_other = req.body.id;
-            const IP_USER = req.socket.remoteAddress || req.ip;
+            const IP_USER = req.socket.remoteAddress ?? req.ip;
             const IP_MAC = getMAC();
+            const userAgent = req.headers['user-agent'] ?? '';
 
-            if (
-                !phoneNumberEmail ||
-                !password ||
-                phoneNumberEmail.includes(error) ||
-                password.includes(error) ||
-                !isMAC(IP_MAC)
-            ) {
+            if (!phoneNumberEmail || !password || phoneNumberEmail.includes(error) || password.includes(error) || !isMAC(IP_MAC)) {
                 throw new NotFound('Login', 'Please enter your Account!');
             } else {
                 const userData: any = await authServices.login(
@@ -64,6 +54,7 @@ class authController {
                     password,
                     IP_USER,
                     IP_MAC,
+                    userAgent,
                     true,
                     id_you,
                     id_other,

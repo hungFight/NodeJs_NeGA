@@ -4,7 +4,6 @@ class OTPController {
     sendOTP = async (req: express.Request, res: express.Response) => {
         try {
             const phoneMail = req.body.params.phoneMail;
-            const IP = req.socket.remoteAddress;
             if (phoneMail) {
                 const data: any = await OTP.sendOTP(phoneMail);
                 if (data) {

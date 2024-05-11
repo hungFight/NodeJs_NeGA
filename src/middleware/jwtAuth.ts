@@ -5,10 +5,12 @@ import moment from 'moment';
 import ServerError from '../utils/errors/ServerError';
 import { Redis } from 'ioredis';
 import getMAC, { isMAC } from 'getmac';
+import { PropsRefreshToken } from '../services/AuthServices/AuthServices';
 moment.locale('vi');
 // status = 0 is login again
-// status = 9999 is server busy
-// status = 8888 is Unauthorized
+// status = 9 is server busy
+// status = 10 is waiting for allowedexport
+
 class JWTVERIFY {
     verifyToken = async (req: express.Request, res: any, next: express.NextFunction) => {
         try {
@@ -16,43 +18,29 @@ class JWTVERIFY {
             const authHeader = req.cookies.tks;
             const redisClient: Redis = res.redisClient;
             const IP_MAC = getMAC();
-            const userAgent = req.headers['user-agent'];
-            const dateTime = moment().format('HH:mm:ss DD-MM-YYYY');
+            const userAgent = req.headers['user-agent'] ?? '';
+            const dateTime = new Date();
             console.log('User Agent:', userAgent, IP_MAC);
             if (!IP_MAC || !isMAC(IP_MAC)) return res.status(403).json({ status: 0, message: "You're IP_m is empty!" });
-            const warning = JSON.stringify({
-                id: 0,
-                device: userAgent,
-                dateTime,
-                message: 'There was an person trying to login to your Account from an another site!',
-            });
+
             console.log('JWTVERIFY');
-            const IP_USER = req.headers['user-agent'] ?? '';
             redisClient.get(userId + 'refreshToken', (err, dataRD) => {
                 console.log('JWTVERIFY', userId, dataRD);
 
                 // save token into redis
-                if (err) {
-                    return res.status(404).json('Error getting refresh token: ' + err);
-                }
+                if (err) return res.status(404).json('Error getting refresh token: ' + err);
+
                 if (dataRD) {
-                    const newDataD: {
-                        refreshToken: string;
-                        accept: boolean;
-                        ip: string;
-                        mac: string;
-                        id_user: string;
-                    }[] = JSON.parse(dataRD);
-                    const newDataFiltered = newDataD.filter((g) => g.id_user === userId && g.mac === IP_MAC);
-                    if (newDataFiltered.length > 0) {
-                        const dataRes = newDataFiltered[0];
-                        const my = dataRes.refreshToken.split('@_@');
+                    const newDataD: PropsRefreshToken[] = JSON.parse(dataRD);
+                    const newDataFiltered = newDataD.find((g) => g.userId === userId && g.mac === IP_MAC);
+                    if (newDataFiltered) {
+                        const my = newDataFiltered.refreshToken.split('@_@');
                         const [refreshToken, code] = my;
-                        console.log(refreshToken, code, 'newDataD', newDataFiltered.length, dataRes);
+                        console.log(refreshToken, code, 'newDataD', newDataFiltered);
                         if (authHeader && userId && refreshToken && code) {
                             const tokenc = authHeader && authHeader.split(' ')[1];
                             if (!tokenc) {
-                                return res.status(401).json({ status: 8888, message: 'Unauthorized! 1' });
+                                return res.status(401).json({ status: 0, message: 'Unauthorized! 1' });
                             } else {
                                 try {
                                     jwt.verify(tokenc, code, (err: any, user: any) => {
@@ -73,18 +61,31 @@ class JWTVERIFY {
                                                 return res.status(403).json({ status: 0, message: 'RefreshToken is not valid' });
                                             }
                                             if (data.id === userId) {
-                                                if (!dataRes.accept) {
-                                                    redisClient.set(userId + 'warning_login_by_an_another_site', warning, (err) => {
+                                                if (!newDataFiltered.accept) {
+                                                    redisClient.get(userId + 'warning_login_by_an_another_site', (err, preData) => {
                                                         if (err) throw new ServerError('JWTAuth', err);
+                                                        if (!preData)
+                                                            redisClient.set(
+                                                                userId + 'warning_login_by_an_another_site',
+                                                                JSON.stringify({
+                                                                    id: 0,
+                                                                    device: userAgent,
+                                                                    dateTime,
+                                                                    status: 'login',
+                                                                }),
+                                                                (err) => {
+                                                                    if (err) throw new ServerError('JWTAuth', err);
+                                                                },
+                                                            );
                                                     });
                                                     return res.status(401).json({
-                                                        status: 8888,
+                                                        status: 10,
                                                         message: 'Unauthorized!',
                                                         waiting: true,
                                                     });
                                                 }
                                             } else {
-                                                return res.status(401).json({ status: 8888, message: 'Unauthorized! 2' });
+                                                return res.status(401).json({ status: 0, message: 'Unauthorized! 2' });
                                             }
                                             next();
                                         });
@@ -99,7 +100,7 @@ class JWTVERIFY {
                             return res.status(403).json({ status: 0, message: "You're not authenticated!" });
                         }
                     } else {
-                        return res.status(403).json({ status: 8888, message: 'Unauthorized! 3' });
+                        return res.status(403).json({ status: 0, message: 'Unauthorized! 3' });
                     }
                 } else {
                     token.deleteToken(res);

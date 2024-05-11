@@ -19,14 +19,7 @@ class VerifyService {
                     const d: any = data[data.length - 1].createdAt;
                     const date = new Date(d);
                     const currentDate = new Date();
-                    const a = [
-                        date.getFullYear(),
-                        date.getMonth() + 1,
-                        date.getDate(),
-                        date.getHours(),
-                        date.getMinutes(),
-                        date.getSeconds(),
-                    ];
+                    const a = [date.getFullYear(), date.getMonth() + 1, date.getDate(), date.getHours(), date.getMinutes(), date.getSeconds()];
                     const b = [
                         currentDate.getFullYear(),
                         currentDate.getMonth() + 1,
@@ -37,7 +30,7 @@ class VerifyService {
                     ];
                     const oldDate = moment(a);
                     const curDate = moment(b);
-                    const checkDate: boolean = curDate.diff(oldDate) < 65000;
+                    const checkDate: boolean = moment(curDate).diff(oldDate, 'minutes') < 2;
                     const checkOTP = bcrypt.compareSync(otp, data[data.length - 1].otp);
                     if (checkOTP && checkDate) console.log(checkDate, checkOTP, curDate.diff(oldDate));
                     if (checkDate) {
