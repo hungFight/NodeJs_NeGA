@@ -18,7 +18,7 @@ export interface PropsRefreshToken {
 
     mac: string;
     userId: string;
-    status: { name: 'login' | 'logout'; dateTime: Date | string; ip: string }[];
+    status: { name: 'login' | 'logout' | 'invalid'; dateTime: Date | string; ip: string }[];
     userAgent: string;
 }
 
@@ -71,6 +71,7 @@ class AuthServices {
                                                 const resSub = await prisma.subAccounts.create({
                                                     // create
                                                     data: {
+                                                        id: primaryKey(),
                                                         userId: id,
                                                         phoneNumberEmail: phoneNumberEmail,
                                                         accountId: u.id,
@@ -133,7 +134,10 @@ class AuthServices {
                                                         status: [{ name: 'login', dateTime: new Date(), ip: IP_USER }],
                                                         userAgent,
                                                     });
-                                                } else if (foundDa.status[foundDa.status.length - 1].name === 'logout' && foundDa.accept) {
+                                                } else if (
+                                                    ['logout', 'invalid'].includes(foundDa.status[foundDa.status.length - 1].name) &&
+                                                    foundDa.accept
+                                                ) {
                                                     newDa.map((p) => {
                                                         if (p.mac === foundDa.mac) {
                                                             p.status.push({ name: 'login', dateTime: new Date(), ip: IP_USER });

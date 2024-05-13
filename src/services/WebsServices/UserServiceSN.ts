@@ -1,6 +1,7 @@
 import moment from 'moment';
 import { esClient, prisma } from '../..';
 import xPrismaF from '../../models/prisma/extension/xPrismaF';
+import { v4 as primaryKey } from 'uuid';
 export interface PropsParams {
     fullName?: boolean;
     active?: boolean;
@@ -562,6 +563,7 @@ class UserService {
                     if (love === 'love' && !lv) {
                         loverData = await prisma.lovers.create({
                             data: {
+                                id: primaryKey(),
                                 userId: id_req,
                                 idIsLoved: id,
                             },
@@ -658,6 +660,7 @@ class UserService {
                 if (!follows) {
                     const following = await prisma.followers.create({
                         data: {
+                            id: primaryKey(),
                             idFollowing: id_fl,
                             idIsFollowed: id,
                             following: 2,

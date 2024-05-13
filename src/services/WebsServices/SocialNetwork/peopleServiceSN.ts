@@ -3,7 +3,26 @@ import { v4 as primaryKey } from 'uuid';
 import { prisma } from '../../..';
 moment.locale('vi');
 class PeopleService {
-    setFriend(id: string, id_friend: string, per: string) {
+    setFriend(
+        id: string,
+        id_friend: string,
+        per: string,
+    ): Promise<{
+        id_friend: string;
+        user: any;
+        data: {
+            id: string;
+            idRequest: string;
+            idIsRequested: string;
+            level: number;
+            createdAt: Date;
+            updatedAt: Date;
+        };
+        quantity: number;
+        count_flw?: number;
+        id?: string;
+        id_fl?: string;
+    }> {
         return new Promise(async (resolve, reject) => {
             try {
                 const id_mess = primaryKey();
@@ -19,6 +38,7 @@ class PeopleService {
                     if (!dataF) {
                         const newF = await prisma.friends.create({
                             data: {
+                                id: id_mess,
                                 idRequest: id,
                                 idIsRequested: id_friend,
                                 level: 1,
@@ -26,6 +46,13 @@ class PeopleService {
                         });
                         const id_user = newF.idRequest;
                         const id_fr = newF.idIsRequested;
+                        const userF = await prisma.user.findUnique({
+                            where: { id: id_user },
+                            select: { id: true, avatar: true, fullName: true, gender: true },
+                        });
+                        const user: any = { ...userF };
+                        user.status = 1;
+                        user.id_f_user = { createdAt: newF.createdAt };
                         if (!dataF && newF && id_user && id_fr) {
                             const follow = await prisma.followers.findFirst({
                                 where: {
@@ -36,8 +63,10 @@ class PeopleService {
                                 },
                             });
                             if (!follow) {
+                                const id_flow = primaryKey();
                                 await prisma.followers.create({
                                     data: {
+                                        id: id_flow,
                                         idFollowing: id_user,
                                         idIsFollowed: id_fr,
                                         following: 2,
@@ -45,14 +74,7 @@ class PeopleService {
                                     },
                                 });
                             }
-                            const userF = await prisma.user.findUnique({
-                                where: { id: id_user },
-                                select: { id: true, avatar: true, fullName: true, gender: true },
-                            });
-                            const user: any = { ...userF };
-                            user.status = 1;
-                            user.id_f_user;
-                            user.id_f_user = { createdAt: newF.createdAt };
+
                             if (per === 'yes') {
                                 // per is in personalPage
                                 const count_flw = await prisma.followers.count({
@@ -63,7 +85,6 @@ class PeopleService {
                                         ],
                                     },
                                 });
-
                                 resolve({
                                     // Setting Notification
                                     id_friend: id_fr,
@@ -74,17 +95,31 @@ class PeopleService {
                                     id: id_fr,
                                     id_fl: id,
                                 });
+                            } else {
+                                resolve({
+                                    id_friend: id_fr,
+                                    user,
+                                    data: newF,
+                                    quantity: 1,
+                                });
                             }
-                            resolve({
-                                id_friend: id_fr,
-                                user,
-                                data: newF,
-                                quantity: 1,
-                            });
-                        } else {
-                            console.log('Was friend');
                         }
+                    } else {
+                        const userF = await prisma.user.findUnique({
+                            where: { id: dataF.idRequest },
+                            select: { id: true, avatar: true, fullName: true, gender: true },
+                        });
+                        const user: any = { ...userF };
+                        user.status = 1;
+                        user.id_f_user = { createdAt: dataF.createdAt };
+                        resolve({
+                            id_friend: dataF.idIsRequested,
+                            user,
+                            data: dataF,
+                            quantity: 1,
+                        });
                     }
+                    console.log(dataF, 'dataF');
                 }
             } catch (error) {
                 reject(error);
@@ -106,11 +141,7 @@ class PeopleService {
                                 idIsRequested: true,
                             },
                         })
-                        .then((fr: any[]) =>
-                            fr.map((f) =>
-                                f.idIsRequested !== id ? f.idIsRequested : f.idRequest !== id ? f.idRequest : '',
-                            ),
-                        );
+                        .then((fr: any[]) => fr.map((f) => (f.idIsRequested !== id ? f.idIsRequested : f.idRequest !== id ? f.idRequest : '')));
 
                     const dataYousent = await prisma.user.findMany({
                         where: { id: { in: friend_ids } },
@@ -137,11 +168,7 @@ class PeopleService {
                                 idIsRequested: true,
                             },
                         })
-                        .then((fr: any[]) =>
-                            fr.map((f) =>
-                                f.idIsRequested !== id ? f.idIsRequested : f.idRequest !== id ? f.idRequest : '',
-                            ),
-                        );
+                        .then((fr: any[]) => fr.map((f) => (f.idIsRequested !== id ? f.idIsRequested : f.idRequest !== id ? f.idRequest : '')));
                     const dataOthers = await prisma.user.findMany({
                         where: { id: { in: ohters_id } },
                         skip: offset,
@@ -169,11 +196,7 @@ class PeopleService {
                                 idIsRequested: true,
                             },
                         })
-                        .then((fr: any[]) =>
-                            fr.map((f) =>
-                                f.idIsRequested !== id ? f.idIsRequested : f.idRequest !== id ? f.idRequest : '',
-                            ),
-                        );
+                        .then((fr: any[]) => fr.map((f) => (f.idIsRequested !== id ? f.idIsRequested : f.idRequest !== id ? f.idRequest : '')));
                     const dataFriends = await prisma.user.findMany({
                         where: { id: { in: friends_id } },
                         skip: offset,
@@ -415,11 +438,7 @@ class PeopleService {
                             idIsRequested: true,
                         },
                     })
-                    .then((fr: any[]) =>
-                        fr.map((f) =>
-                            f.idIsRequested !== id ? f.idIsRequested : f.idRequest !== id ? f.idRequest : '',
-                        ),
-                    );
+                    .then((fr: any[]) => fr.map((f) => (f.idIsRequested !== id ? f.idIsRequested : f.idRequest !== id ? f.idRequest : '')));
                 // const relatives_id = await db.relatives
                 //     .findAll({
                 //         where: {

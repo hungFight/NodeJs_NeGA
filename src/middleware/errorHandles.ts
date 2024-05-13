@@ -23,7 +23,6 @@ const errorHandler = (err: any, req: express.Request, res: express.Response, nex
         errorAny,
     };
     const status = err.status || 400;
-    if (errorMessage === 'login again') Token.deleteToken(res);
     return res.status(status).json(error);
 };
 

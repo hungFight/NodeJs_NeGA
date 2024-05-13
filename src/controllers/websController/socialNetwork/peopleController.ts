@@ -27,37 +27,34 @@ class peopleController {
             const per = req.body.params.per;
             console.log('Hung');
 
-            const data: any = await peopleServiceSN.setFriend(id, id_friend, per);
+            const data = await peopleServiceSN.setFriend(id, id_friend, per);
             console.log(data, 'data setFriend');
-
+            io.emit(`Request others?id=${data.id_friend}`, data);
             const keyDel = id + 'Get_people_at_';
-            redisClient.del(keyDel + 'yousent', (err: any, count: any) => {
-                if (err) throw new ServerError('At CTL SetFriend', err);
-            });
-            redisClient.del(keyDel + 'friends', (err: any, count: any) => {
-                if (err) throw new ServerError('At CTL SetFriend', err);
-            });
-            redisClient.del(keyDel + 'others', (err: any, count: any) => {
-                if (err) throw new ServerError('At CTL SetFriend', err);
-            });
-            redisClient.get(`${data.id_friend} message`, (err, rs) => {
-                if (err) console.log(err);
-                if (data && rs && JSON.parse(rs)) {
-                    redisClient.set(
-                        `${data.id_friend} message`,
-                        JSON.stringify({ quantity: JSON.parse(rs).quantity + 1 }),
-                    );
-                } else {
-                    redisClient.set(`${data.id_friend} message`, JSON.stringify({ quantity: 1 }));
-                }
-                redisClient.get(`${data.id_friend} message`, (err, rs) => {
-                    if (err) console.log(err);
-                    if (rs && JSON.parse(rs).quantity > 0) data.quantity = JSON.parse(rs).quantity;
-                    io.emit(`Request others?id=${data.id_friend}`, JSON.stringify(data));
-                });
-                redisClient.del(`${data.id_friend} user_message`);
-                return res.status(200).json(data);
-            });
+            // redisClient.del(keyDel + 'yousent', (err: any, count: any) => {
+            //     if (err) throw new ServerError('At CTL SetFriend', err);
+            // });
+            // redisClient.del(keyDel + 'friends', (err: any, count: any) => {
+            //     if (err) throw new ServerError('At CTL SetFriend', err);
+            // });
+            // redisClient.del(keyDel + 'others', (err: any, count: any) => {
+            //     if (err) throw new ServerError('At CTL SetFriend', err);
+            // });
+            // redisClient.get(`${data.id_friend} message`, (err, rs) => {
+            //     if (err) console.log(err);
+            //     if (data && rs && JSON.parse(rs)) {
+            //         redisClient.set(`${data.id_friend} message`, JSON.stringify({ quantity: JSON.parse(rs).quantity + 1 }));
+            //     } else {
+            //         redisClient.set(`${data.id_friend} message`, JSON.stringify({ quantity: 1 }));
+            //     }
+            //     redisClient.get(`${data.id_friend} message`, (err, rs) => {
+            //         if (err) console.log(err);
+            //         if (rs && JSON.parse(rs).quantity > 0) data.quantity = JSON.parse(rs).quantity;
+            //         io.emit(`Request others?id=${data.id_friend}`, JSON.stringify(data));
+            //     });
+            //     redisClient.del(`${data.id_friend} user_message`);
+            // });
+            return res.status(200).json(data);
         } catch (error) {
             console.log(error);
         }
@@ -148,10 +145,7 @@ class peopleController {
                 redisClient.get(`${data.ok?.idFriend} message`, (err, rs) => {
                     if (err) console.log(err);
                     if (data && rs && JSON.parse(rs).quantity > 0) {
-                        redisClient.set(
-                            `${data.ok?.idFriend} message`,
-                            JSON.stringify({ quantity: JSON.parse(rs).quantity - 1 }),
-                        );
+                        redisClient.set(`${data.ok?.idFriend} message`, JSON.stringify({ quantity: JSON.parse(rs).quantity - 1 }));
                     }
                 });
             }
@@ -191,12 +185,7 @@ class peopleController {
             const io = res.io;
             const atInfo = req.body.params.atInfor;
             console.log('vo', atInfo);
-            const data: { ok: number; id_fr: string; id: string } | any = await peopleServiceSN.setConfirm(
-                id,
-                id_fr,
-                kindOf,
-                per,
-            );
+            const data: { ok: number; id_fr: string; id: string } | any = await peopleServiceSN.setConfirm(id, id_fr, kindOf, per);
             if (data.ok === 1 && atInfo) {
                 io.emit(`Confirmed atInfo ${data.id}`, JSON.stringify({ ok: 1, id_fr: data.id, id: data.id_fr }));
             }
@@ -230,24 +219,25 @@ class peopleController {
             const redisClient: Redis = res.redisClient;
             const key = id + 'strangers';
             const key_Reload = id + 'Reload';
-            redisClient.get(key, async (err, data) => {
-                if (err) throw new ServerError('GetStrangers!', err);
-                const people = data ? JSON.parse(data) : [];
-                console.log(people, 'redis', rel, !people?.length && rel, people?.length);
+            const datas: any = await peopleServiceSN.getStrangers(id, Number(limit));
+            return res.status(200).json(datas);
 
-                if (rel) {
-                    const datas: any = await peopleServiceSN.getStrangers(id, Number(limit));
-                    console.log('MySQL', datas);
-                    redisClient.set(key, JSON.stringify(datas));
-                    redisClient.lrange(key_Reload, 0, -1, (err, items) => {
-                        if (err) throw new ServerError('GetStrangers!', err);
-                        if (items && !items.includes(key)) redisClient.rpush(key_Reload, key);
-                    });
-                    return res.status(200).json(datas);
-                }
-                console.log(people, 'redis');
-                return res.status(200).json(people);
-            });
+            // redisClient.get(key, async (err, data) => {
+            //     if (err) throw new ServerError('GetStrangers!', err);
+            //     const people = data ? JSON.parse(data) : [];
+            //     console.log(people, 'redis', rel, !people?.length && rel, people?.length);
+
+            //     if (rel) {
+            //         console.log('MySQL', datas);
+            //         redisClient.set(key, JSON.stringify(datas));
+            //         redisClient.lrange(key_Reload, 0, -1, (err, items) => {
+            //             if (err) throw new ServerError('GetStrangers!', err);
+            //             if (items && !items.includes(key)) redisClient.rpush(key_Reload, key);
+            //         });
+            //         return res.status(200).json(datas);
+            //     }
+            //     console.log(people, 'redis');
+            // });
         } catch (error) {
             next(error);
         }

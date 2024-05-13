@@ -59,7 +59,7 @@ model Mores {
 }
 
 model SubAccounts {
-    id               Int      @id @default(autoincrement())
+    id                String   @id @db.VarChar(50)
     userId           String   @db.VarChar(50)
     user             User     @relation("MoreAccountsUser", fields: [userId], references: [id])
     phoneNumberEmail String   @db.VarChar(50)
@@ -70,7 +70,7 @@ model SubAccounts {
 }
 
 model Friends {
-    id              Int      @id @default(autoincrement())
+    id              String   @id @db.VarChar(50)
     idRequest       String   @db.VarChar(50)
     idIsRequested   String   @db.VarChar(50)
     userRequest     User     @relation("UserRequest", fields: [idRequest], references: [id])
@@ -81,7 +81,7 @@ model Friends {
 }
 
 model Followers {
-    id            Int      @id @default(autoincrement())
+    id            String   @id @db.VarChar(50)
     idFollowing   String   @db.VarChar(50)
     idIsFollowed  String   @db.VarChar(50)
     userFollowing User     @relation("UserFollowing", fields: [idFollowing], references: [id])
@@ -93,7 +93,7 @@ model Followers {
 }
 
 model Relationship {
-    id        Int      @id @default(autoincrement())
+    id        String   @id @db.VarChar(50)
     userId    String   @db.VarChar(50)
     idRel     String   @db.VarChar(50)
     myself    User     @relation("Myself", fields: [userId], references: [id])
@@ -105,7 +105,7 @@ model Relationship {
 }
 
 model Lovers {
-    id          Int      @id @default(autoincrement())
+    id          String   @id @db.VarChar(50)
     userId      String   @db.VarChar(50)
     idIsLoved   String   @db.VarChar(50)
     userLoved   User     @relation("UserLoved", fields: [userId], references: [id])

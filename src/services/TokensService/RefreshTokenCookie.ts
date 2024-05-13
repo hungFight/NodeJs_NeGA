@@ -15,7 +15,7 @@ class RefreshTokenCookie {
             const accessToken = req.cookies.tks;
             const redisClient: Redis = res.redisClient;
             const IP_MAC = getMAC();
-            const IP_USER = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+            const IP_USER = req.connection.remoteAddress ?? req.ip;
             if (!IP_MAC || !isMAC(IP_MAC)) return res.status(403).json({ status: 0, message: "You're IP_m is empty!" });
             const warning = JSON.stringify({
                 id: 0,
@@ -35,13 +35,13 @@ class RefreshTokenCookie {
                         const my = de.refreshToken.split('@_@');
                         const [refreshToken, code] = my;
                         if (!refreshToken || !userId || !accessToken || !code) {
-                            token.deleteToken(res);
+                            token.deleteToken(res, userId, IP_MAC, IP_USER);
                             return res.status(403).json({ status: 0, message: "You're not Authenticated" });
                         }
                         jwt.verify(refreshToken, code, async (err: any, user: any) => {
                             // {id:string; iat: number; exp: number}
                             if (err || userId !== user.id || user.iss !== process.env.REACT_URL || user.aud !== process.env.REACT_URL) {
-                                token.deleteToken(res);
+                                token.deleteToken(res, userId, IP_MAC, IP_USER);
                                 return res.status(401).json({ status: 8888, message: 'Unauthorized' });
                             }
                             delete user.iat;
@@ -76,11 +76,11 @@ class RefreshTokenCookie {
                             return res.status(200).json({ newAccessToken: newAccessToken });
                         });
                     } else {
-                        token.deleteToken(res);
+                        token.deleteToken(res, userId, IP_MAC, IP_USER);
                         return res.status(401).json({ status: 0, message: 'Unauthorized' });
                     }
                 } else {
-                    Token.deleteToken(res);
+                    Token.deleteToken(res, userId, IP_MAC, IP_USER);
                     return res.status(404).json({ status: 0, message: 'Expired refresh token' });
                 }
             });

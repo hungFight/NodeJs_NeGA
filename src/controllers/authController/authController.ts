@@ -89,7 +89,7 @@ class authController {
                     if (err) console.log(err);
                     console.log(`Deleted ${count} key(s)`);
                 });
-                Token.deleteToken(res);
+                Token.deleteToken(res, id, IP_MAC, IP_USER);
                 return res.status(200).json(data);
             }
             throw new Forbidden('LogOut', data);

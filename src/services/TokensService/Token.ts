@@ -1,6 +1,7 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
-import UserIT from '../interface/inTerFaceUser';
+import { redisClient } from '../..';
+import { PropsRefreshToken } from '../AuthServices/AuthServices';
 class Token {
     accessTokenF = (data: { id: string }, secret: string, jwtId: string) => {
         try {
@@ -27,10 +28,26 @@ class Token {
             console.log(error, 'generate reFreshToken');
         }
     };
-    deleteToken(res: express.Response) {
+    deleteToken(res: express.Response, userId: string, IP_MAC: string, IP_USER: string) {
         console.log('delete coookies');
         res.clearCookie('tks');
         res.clearCookie('k_user');
+        redisClient.get(userId + 'refreshToken', (err, data) => {
+            console.log(data, 'IN AuthService');
+            if (err) console.log(err, 'IN AuthService');
+            if (data && JSON.parse(data)?.length) {
+                const newDa: PropsRefreshToken[] = JSON.parse(data);
+                if (newDa) {
+                    newDa.map((p) => {
+                        if (p.mac === IP_MAC) {
+                            p.status.push({ name: 'invalid', dateTime: new Date(), ip: IP_USER });
+                            p.refreshToken = '';
+                        }
+                        return p;
+                    });
+                }
+            }
+        });
     }
 }
 export default new Token();
