@@ -184,27 +184,27 @@ class peopleController {
             const io = res.io;
             const atInfo = req.body.params.atInfor;
             console.log('vo', atInfo);
-            const data: { ok: number; id_fr: string; id: string } | any = await peopleServiceSN.setConfirm(id, id_fr, kindOf, per);
-            if (data.ok === 1 && atInfo) {
-                io.emit(`Confirmed atInfo ${data.id}`, JSON.stringify({ ok: 1, id_fr: data.id, id: data.id_fr }));
-            }
+            const data: any = await peopleServiceSN.setConfirm(id, id_fr, kindOf, per);
+            // if (data.ok === 1 && atInfo) {
+            //     io.emit(`Confirmed atInfo ${data.id}`, JSON.stringify({ ok: 1, id_fr: data.id, id: data.id_fr }));
+            // }
 
-            if (data.ok === 1) io.emit(`Confirmed ${data.id_fr}`, JSON.stringify(data));
-            redisClient.del(`${data.id_fr} user_message`);
+            if (data) io.emit(`Confirmed_friend_${data.id_fr}`, data);
+            // redisClient.del(`${data.id_fr} user_message`);
 
-            const keyDel = id + 'Get_Friends';
-            redisClient.del(keyDel + 'yousent', (err: any, count: any) => {
-                if (err) console.log(err);
-                console.log(`Set_Friend: Deleted ${count} of You sent key(s)`);
-            });
-            redisClient.del(keyDel + 'friends', (err: any, count: any) => {
-                if (err) console.log(err);
-                console.log(`Set_Friend: Deleted ${count} of friends key(s)`);
-            });
-            redisClient.del(keyDel + 'others', (err: any, count: any) => {
-                if (err) console.log(err);
-                console.log(`Set_Friend: Deleted ${count} of others sent key(s)`);
-            });
+            // const keyDel = id + 'Get_Friends';
+            // redisClient.del(keyDel + 'yousent', (err: any, count: any) => {
+            //     if (err) console.log(err);
+            //     console.log(`Set_Friend: Deleted ${count} of You sent key(s)`);
+            // });
+            // redisClient.del(keyDel + 'friends', (err: any, count: any) => {
+            //     if (err) console.log(err);
+            //     console.log(`Set_Friend: Deleted ${count} of friends key(s)`);
+            // });
+            // redisClient.del(keyDel + 'others', (err: any, count: any) => {
+            //     if (err) console.log(err);
+            //     console.log(`Set_Friend: Deleted ${count} of others sent key(s)`);
+            // });
             return res.status(200).json(data);
         } catch (error) {
             console.log(error, 'setConfrim');

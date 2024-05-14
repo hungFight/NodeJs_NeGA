@@ -54,22 +54,24 @@ class PeopleService {
                         const id_user = newF.idRequest;
                         const id_fr = newF.idIsRequested;
                         // for notification
-                        const userF = await prisma.user.findUnique({
-                            where: { id: id_user },
-                            select: { id: true, avatar: true, fullName: true, gender: true },
-                        });
-                        const user: any = { ...userF };
-                        user.status = 1;
-                        user.id_f_user = { createdAt: newF.createdAt };
                         if (newF && id_user && id_fr) {
-                            let follow = await prisma.followers.findFirst({
-                                where: {
-                                    OR: [
-                                        { idFollowing: id_user, idIsFollowed: id_fr },
-                                        { idFollowing: id_fr, idIsFollowed: id_user },
-                                    ],
-                                },
-                            });
+                            let [userF, follow] = await Promise.all([
+                                prisma.user.findUnique({
+                                    where: { id: id_user },
+                                    select: { id: true, avatar: true, fullName: true, gender: true },
+                                }),
+                                prisma.followers.findFirst({
+                                    where: {
+                                        OR: [
+                                            { idFollowing: id_user, idIsFollowed: id_fr },
+                                            { idFollowing: id_fr, idIsFollowed: id_user },
+                                        ],
+                                    },
+                                }),
+                            ]);
+                            const user: any = { ...userF };
+                            user.status = 1;
+                            user.id_f_user = { createdAt: newF.createdAt };
                             if (!follow) {
                                 const id_flow = primaryKey();
                                 follow = await prisma.followers.create({
@@ -433,48 +435,50 @@ class PeopleService {
                                 },
                             });
                             if (dataFL) {
-                                const newDF = await prisma.followers.update({
-                                    where: {
-                                        id: dataFL.id,
-                                        idFollowing: dataFL.idFollowing,
-                                        idIsFollowed: dataFL.idIsFollowed,
-                                    },
-                                    data: {
-                                        followed: 2,
-                                    },
-                                });
-                                const count_following = await prisma.followers.count({
-                                    where: {
-                                        OR: [
-                                            { idFollowing: id_fr, following: 2 },
-                                            { idIsFollowed: id_fr, followed: 2 },
-                                        ],
-                                    },
-                                });
-                                frUp.userRequest.mores[0].followingAmount = count_following;
-                                const count_followed = await prisma.followers.count({
-                                    where: {
-                                        OR: [
-                                            { idFollowing: id_fr, followed: 2 },
-                                            { idIsFollowed: id_fr, following: 2 },
-                                        ],
-                                    },
-                                });
-                                frUp.userRequest.mores[0].followedAmount = count_followed;
+                                const [newDF, count_following, count_followed, count_friends] = await Promise.all([
+                                    prisma.followers.update({
+                                        where: {
+                                            id: dataFL.id,
+                                            idFollowing: dataFL.idFollowing,
+                                            idIsFollowed: dataFL.idIsFollowed,
+                                        },
+                                        data: {
+                                            followed: 2,
+                                        },
+                                    }),
+                                    prisma.followers.count({
+                                        where: {
+                                            OR: [
+                                                { idFollowing: id_fr, following: 2 },
+                                                { idIsFollowed: id_fr, followed: 2 },
+                                            ],
+                                        },
+                                    }),
+                                    prisma.followers.count({
+                                        where: {
+                                            OR: [
+                                                { idFollowing: id_fr, followed: 2 },
+                                                { idIsFollowed: id_fr, following: 2 },
+                                            ],
+                                        },
+                                    }),
+                                    prisma.friends.count({
+                                        where: {
+                                            OR: [
+                                                { idRequest: id_fr, level: 2 },
+                                                { idIsRequested: id_fr, level: 2 },
+                                            ],
+                                        },
+                                    }),
+                                ]);
+                                if (per === 'personal') {
+                                    frUp.userRequest.mores[0].followingAmount = count_following;
+                                    frUp.userRequest.mores[0].followedAmount = count_followed;
+                                    frUp.userRequest.mores[0].friendAmount = count_friends;
+                                }
+                                resolve({ ok: frUp, id_fr: id_fr, id: id, count_friends });
                             }
-
-                            const count_friends = await prisma.friends.count({
-                                where: {
-                                    OR: [
-                                        { idRequest: id_fr, level: 2 },
-                                        { idIsRequested: id_fr, level: 2 },
-                                    ],
-                                },
-                            });
-                            frUp.userRequest.mores[0].friendAmount = count_friends;
-                            frUp.userRequest.mores[0].followedAmount;
-                            resolve({ ok: frUp, id_fr: id_fr, id: id, count_friends });
-                        }
+                        } else resolve(false);
                     }
                 } else {
                     console.log('relatives');
