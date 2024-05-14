@@ -75,7 +75,7 @@ model Friends {
     idIsRequested   String   @db.VarChar(50)
     userRequest     User     @relation("UserRequest", fields: [idRequest], references: [id])
     userIsRequested User     @relation("UserIsRequested", fields: [idIsRequested], references: [id])
-    level           Int      @default(1)
+    level           Int      @default(1) // 1 & 2
     createdAt       DateTime @default(now())
     updatedAt       DateTime @default(now())
 }

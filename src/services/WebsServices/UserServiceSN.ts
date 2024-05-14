@@ -117,204 +117,191 @@ class UserService {
                         },
                     });
 
-                    const newData = await new Promise(async (resolve: any, reject: any) => {
-                        try {
-                            const newData = await Promise.all(
-                                data.map(
-                                    async (us: {
-                                        mores: { privacy: any }[];
-                                        id: string;
-                                        userRequest: { level: number }[];
-                                        userIsRequested: { level: number }[];
-                                    }) => {
-                                        const privacy: any = us.mores[0].privacy;
-                                        const privates: {
-                                            position: string;
-                                            address: string;
-                                            birthday: string;
-                                            relationship: string;
-                                            gender: string;
-                                            schoolName: string;
-                                            occupation: string;
-                                            hobby: string;
-                                            skill: string;
-                                            language: string;
-                                            subAccount: string;
-                                        } = privacy;
-                                        let accountUser: any = {
-                                            select: {
-                                                account: {
-                                                    select: {
-                                                        id: true,
-                                                        fullName: true,
-                                                        avatar: true,
-                                                        gender: true,
-                                                        phoneNumberEmail: true,
-                                                    },
-                                                },
-                                            },
-                                        };
-                                        console.log(us.mores[0].privacy, 'us.mores[0].privacy');
-                                        if (id !== us.id) {
-                                            params.address =
-                                                privates.address === 'everyone' ||
-                                                ((us.userRequest[0]?.level === 2 || us.userIsRequested[0]?.level === 2) &&
-                                                    privates.address !== 'only')
-                                                    ? true
-                                                    : false;
-                                            params.birthday =
-                                                privates.birthday === 'everyone' ||
-                                                ((us.userRequest[0]?.level === 2 || us.userIsRequested[0]?.level === 2) &&
-                                                    privates.birthday !== 'only')
-                                                    ? true
-                                                    : false;
-                                            params.occupation =
-                                                privates.occupation === 'everyone' ||
-                                                ((us.userRequest[0]?.level === 2 || us.userIsRequested[0]?.level === 2) &&
-                                                    privates.occupation !== 'only')
-                                                    ? true
-                                                    : false;
-                                            params.hobby =
-                                                privates.hobby === 'everyone' ||
-                                                ((us.userRequest[0]?.level === 2 || us.userIsRequested[0]?.level === 2) && privates.hobby !== 'only')
-                                                    ? true
-                                                    : false;
-                                            params.skill =
-                                                privates.skill === 'everyone' ||
-                                                ((us.userRequest[0]?.level === 2 || us.userIsRequested[0]?.level === 2) && privates.skill !== 'only')
-                                                    ? true
-                                                    : false;
-                                            params.schoolName =
-                                                privates.schoolName === 'everyone' ||
-                                                ((us.userRequest[0]?.level === 2 || us.userIsRequested[0]?.level === 2) &&
-                                                    privates.schoolName !== 'only')
-                                                    ? true
-                                                    : false;
-                                            params.gender =
-                                                privates.gender === 'everyone' ||
-                                                ((us.userRequest[0]?.level === 2 || us.userIsRequested[0]?.level === 2) && privates.gender !== 'only')
-                                                    ? true
-                                                    : false;
-                                            if (mores) {
-                                                mores.language =
-                                                    privates.language === 'everyone' ||
-                                                    ((us.userRequest[0]?.level === 2 || us.userIsRequested[0]?.level === 2) &&
-                                                        privates.position !== 'only')
-                                                        ? true
-                                                        : false;
-                                                mores.position =
-                                                    privates.position === 'everyone' ||
-                                                    ((us.userRequest[0]?.level === 2 || us.userIsRequested[0]?.level === 2) &&
-                                                        privates.position !== 'only')
-                                                        ? true
-                                                        : false;
-                                            }
-                                            if (
-                                                privates.subAccount !== 'everyone' ||
-                                                !(us.userRequest[0]?.level === 2 || us.userIsRequested[0]?.level === 2)
-                                            ) {
-                                                accountUser = false;
-                                            }
-                                        }
-
-                                        const newUs = await prisma.user.findUnique({
-                                            where: {
-                                                id: us.id,
-                                            },
+                    const newData = await Promise.all(
+                        data.map(
+                            async (us: {
+                                mores: { privacy: any }[];
+                                id: string;
+                                userRequest: { level: number }[];
+                                userIsRequested: { level: number }[];
+                            }) => {
+                                const privacy: any = us.mores[0].privacy;
+                                const privates: {
+                                    position: string;
+                                    address: string;
+                                    birthday: string;
+                                    relationship: string;
+                                    gender: string;
+                                    schoolName: string;
+                                    occupation: string;
+                                    hobby: string;
+                                    skill: string;
+                                    language: string;
+                                    subAccount: string;
+                                } = privacy;
+                                let accountUser: any = {
+                                    select: {
+                                        account: {
                                             select: {
                                                 id: true,
-                                                ...params,
-                                                mores: {
-                                                    select: {
-                                                        ...mores,
-                                                    },
-                                                },
-                                                userRequest: {
-                                                    where: {
-                                                        OR: [
-                                                            { idRequest: id, idIsRequested: us.id },
-                                                            { idRequest: us.id, idIsRequested: id },
-                                                        ],
-                                                    },
-                                                },
-                                                userIsRequested: {
-                                                    where: {
-                                                        OR: [
-                                                            { idRequest: us.id, idIsRequested: id },
-                                                            { idRequest: id, idIsRequested: us.id },
-                                                        ],
-                                                    },
-                                                },
-                                                followings: {
-                                                    where: {
-                                                        OR: [
-                                                            { idFollowing: id, idIsFollowed: us.id },
-                                                            { idFollowing: us.id, idIsFollowed: id },
-                                                        ],
-                                                    },
-                                                },
-                                                followed: {
-                                                    where: {
-                                                        OR: [
-                                                            { idFollowing: us.id, idIsFollowed: id },
-                                                            { idFollowing: id, idIsFollowed: us.id },
-                                                        ],
-                                                    },
-                                                },
-                                                isLoved: {
-                                                    where: {
-                                                        userId: id,
-                                                    },
-                                                },
-                                                accountUser,
+                                                fullName: true,
+                                                avatar: true,
+                                                gender: true,
+                                                phoneNumberEmail: true,
                                             },
-                                        });
-                                        if (newUs?.mores) {
-                                            const count_following = await prisma.followers.count({
-                                                where: {
-                                                    OR: [
-                                                        { idFollowing: us.id, following: 2 }, // idIsFollowing's user is other people are following, the under is opposite too
-                                                        { idIsFollowed: us.id, followed: 2 },
-                                                    ],
-                                                },
-                                            });
-                                            newUs.mores[0].followingAmount = count_following;
-                                            const count_followed = await prisma.followers.count({
-                                                where: {
-                                                    OR: [
-                                                        { idFollowing: us.id, followed: 2 },
-                                                        { idIsFollowed: us.id, following: 2 },
-                                                    ],
-                                                },
-                                            });
-                                            newUs.mores[0].followedAmount = count_followed;
-
-                                            const count_friends = await prisma.friends.count({
-                                                where: {
-                                                    OR: [
-                                                        { idRequest: us.id, level: 2 },
-                                                        { idIsRequested: us.id, level: 2 },
-                                                    ],
-                                                },
-                                            });
-                                            newUs.mores[0].friendAmount = count_friends;
-                                            const count_loves = await prisma.lovers.count({
-                                                where: { idIsLoved: us.id },
-                                            });
-                                            newUs.mores[0].loverAmount = count_loves;
-                                            console.log('loves newUs', newUs, privates, mores, 'mores');
-                                            return newUs;
-                                        }
+                                        },
                                     },
-                                ),
-                            );
-                            console.log(newData, 'newData');
+                                };
+                                console.log(us.mores[0].privacy, 'us.mores[0].privacy');
+                                if (id !== us.id) {
+                                    params.address =
+                                        privates.address === 'everyone' ||
+                                        ((us.userRequest[0]?.level === 2 || us.userIsRequested[0]?.level === 2) && privates.address !== 'only')
+                                            ? true
+                                            : false;
+                                    params.birthday =
+                                        privates.birthday === 'everyone' ||
+                                        ((us.userRequest[0]?.level === 2 || us.userIsRequested[0]?.level === 2) && privates.birthday !== 'only')
+                                            ? true
+                                            : false;
+                                    params.occupation =
+                                        privates.occupation === 'everyone' ||
+                                        ((us.userRequest[0]?.level === 2 || us.userIsRequested[0]?.level === 2) && privates.occupation !== 'only')
+                                            ? true
+                                            : false;
+                                    params.hobby =
+                                        privates.hobby === 'everyone' ||
+                                        ((us.userRequest[0]?.level === 2 || us.userIsRequested[0]?.level === 2) && privates.hobby !== 'only')
+                                            ? true
+                                            : false;
+                                    params.skill =
+                                        privates.skill === 'everyone' ||
+                                        ((us.userRequest[0]?.level === 2 || us.userIsRequested[0]?.level === 2) && privates.skill !== 'only')
+                                            ? true
+                                            : false;
+                                    params.schoolName =
+                                        privates.schoolName === 'everyone' ||
+                                        ((us.userRequest[0]?.level === 2 || us.userIsRequested[0]?.level === 2) && privates.schoolName !== 'only')
+                                            ? true
+                                            : false;
+                                    params.gender =
+                                        privates.gender === 'everyone' ||
+                                        ((us.userRequest[0]?.level === 2 || us.userIsRequested[0]?.level === 2) && privates.gender !== 'only')
+                                            ? true
+                                            : false;
+                                    if (mores) {
+                                        mores.language =
+                                            privates.language === 'everyone' ||
+                                            ((us.userRequest[0]?.level === 2 || us.userIsRequested[0]?.level === 2) && privates.position !== 'only')
+                                                ? true
+                                                : false;
+                                        mores.position =
+                                            privates.position === 'everyone' ||
+                                            ((us.userRequest[0]?.level === 2 || us.userIsRequested[0]?.level === 2) && privates.position !== 'only')
+                                                ? true
+                                                : false;
+                                    }
+                                    if (
+                                        privates.subAccount !== 'everyone' ||
+                                        !(us.userRequest[0]?.level === 2 || us.userIsRequested[0]?.level === 2)
+                                    ) {
+                                        accountUser = false;
+                                    }
+                                }
 
-                            resolve(newData);
-                        } catch (error) {
-                            reject(error);
-                        }
-                    });
+                                const newUs = await prisma.user.findUnique({
+                                    where: {
+                                        id: us.id,
+                                    },
+                                    select: {
+                                        id: true,
+                                        ...params,
+                                        mores: {
+                                            select: {
+                                                ...mores,
+                                            },
+                                        },
+                                        userRequest: {
+                                            where: {
+                                                OR: [
+                                                    { idRequest: id, idIsRequested: us.id },
+                                                    { idRequest: us.id, idIsRequested: id },
+                                                ],
+                                            },
+                                        },
+                                        userIsRequested: {
+                                            where: {
+                                                OR: [
+                                                    { idRequest: us.id, idIsRequested: id },
+                                                    { idRequest: id, idIsRequested: us.id },
+                                                ],
+                                            },
+                                        },
+                                        followings: {
+                                            where: {
+                                                OR: [
+                                                    { idFollowing: id, idIsFollowed: us.id },
+                                                    { idFollowing: us.id, idIsFollowed: id },
+                                                ],
+                                            },
+                                        },
+                                        followed: {
+                                            where: {
+                                                OR: [
+                                                    { idFollowing: us.id, idIsFollowed: id },
+                                                    { idFollowing: id, idIsFollowed: us.id },
+                                                ],
+                                            },
+                                        },
+                                        isLoved: {
+                                            where: {
+                                                userId: id,
+                                            },
+                                        },
+                                        accountUser,
+                                    },
+                                });
+                                if (newUs?.mores) {
+                                    const count_following = await prisma.followers.count({
+                                        where: {
+                                            OR: [
+                                                { idFollowing: us.id, following: 2 }, // idIsFollowing's user is other people are following, the under is opposite too
+                                                { idIsFollowed: us.id, followed: 2 },
+                                            ],
+                                        },
+                                    });
+                                    newUs.mores[0].followingAmount = count_following;
+                                    const count_followed = await prisma.followers.count({
+                                        where: {
+                                            OR: [
+                                                { idFollowing: us.id, followed: 2 },
+                                                { idIsFollowed: us.id, following: 2 },
+                                            ],
+                                        },
+                                    });
+                                    newUs.mores[0].followedAmount = count_followed;
+
+                                    const count_friends = await prisma.friends.count({
+                                        where: {
+                                            OR: [
+                                                { idRequest: us.id, level: 2 },
+                                                { idIsRequested: us.id, level: 2 },
+                                            ],
+                                        },
+                                    });
+                                    newUs.mores[0].friendAmount = count_friends;
+                                    const count_loves = await prisma.lovers.count({
+                                        where: { idIsLoved: us.id },
+                                    });
+                                    newUs.mores[0].loverAmount = count_loves;
+                                    console.log('loves newUs', newUs, privates, mores, 'mores');
+                                    return newUs;
+                                }
+                            },
+                        ),
+                    );
+                    console.log(newData, 'newData', id_reqs);
+
                     resolve(newData);
                 }
                 resolve(false);

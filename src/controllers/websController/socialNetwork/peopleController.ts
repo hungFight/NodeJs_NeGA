@@ -115,25 +115,24 @@ class peopleController {
             const kindOf = req.body.params.kindOf;
             const io = res.io;
             const per = req.body.params.per;
-            const data: any = await peopleServiceSN.delete(id, id_req, kindOf, per);
+            const data = await peopleServiceSN.delete(id, id_req, kindOf, per);
             console.log(data, 'delete', 'id_req', id_req);
 
             if (data) {
                 if (data.ok?.idIsRequested)
-                    io.emit(
-                        `Del request others?id=${data.ok?.idIsRequested}`,
-                        JSON.stringify({
-                            data: {
-                                id: data.ok?.id,
-                                idRequest: data.ok?.idRequest,
-                                idIsRequested: null,
-                                createdAt: null,
-                            },
-                        }),
-                    );
+                    io.emit(`Del request others?id=${id_req}`, {
+                        userId: id,
+                        data: {
+                            id: data.ok?.id,
+                            idRequest: data.ok?.idRequest,
+                            idIsRequested: null,
+                            createdAt: null,
+                        },
+                    });
                 io.emit(
-                    `Del request others?id=${data.ok?.idRequest}`,
+                    `Del request others?id=${id_req}`,
                     JSON.stringify({
+                        userId: id,
                         data: {
                             id: data.ok?.id,
                             idRequest: data.ok?.idIsRequested,
@@ -142,12 +141,12 @@ class peopleController {
                         },
                     }),
                 );
-                redisClient.get(`${data.ok?.idFriend} message`, (err, rs) => {
-                    if (err) console.log(err);
-                    if (data && rs && JSON.parse(rs).quantity > 0) {
-                        redisClient.set(`${data.ok?.idFriend} message`, JSON.stringify({ quantity: JSON.parse(rs).quantity - 1 }));
-                    }
-                });
+                // redisClient.get(`${data.ok?.idFriend} message`, (err, rs) => {
+                //     if (err) console.log(err);
+                //     if (data && rs && JSON.parse(rs).quantity > 0) {
+                //         redisClient.set(`${data.ok?.idFriend} message`, JSON.stringify({ quantity: JSON.parse(rs).quantity - 1 }));
+                //     }
+                // });
             }
             // redisClient.get(`${data.ok?.idFriend} message`, (err, rs) => {
             //     if (err) console.log(err);
@@ -157,19 +156,19 @@ class peopleController {
             //     if (err) console.log('Del Value faild!', err);
             // });
 
-            const keyDel = id + 'Get_Friends';
-            redisClient.del(keyDel + 'yousent', (err: any, count: any) => {
-                if (err) console.log(err);
-                console.log(`Set_Friend: Deleted ${count} of You sent key(s)`);
-            });
-            redisClient.del(keyDel + 'friends', (err: any, count: any) => {
-                if (err) console.log(err);
-                console.log(`Set_Friend: Deleted ${count} of friends key(s)`);
-            });
-            redisClient.del(keyDel + 'others', (err: any, count: any) => {
-                if (err) console.log(err);
-                console.log(`Set_Friend: Deleted ${count} of others sent key(s)`);
-            });
+            // const keyDel = id + 'Get_Friends';
+            // redisClient.del(keyDel + 'yousent', (err: any, count: any) => {
+            //     if (err) console.log(err);
+            //     console.log(`Set_Friend: Deleted ${count} of You sent key(s)`);
+            // });
+            // redisClient.del(keyDel + 'friends', (err: any, count: any) => {
+            //     if (err) console.log(err);
+            //     console.log(`Set_Friend: Deleted ${count} of friends key(s)`);
+            // });
+            // redisClient.del(keyDel + 'others', (err: any, count: any) => {
+            //     if (err) console.log(err);
+            //     console.log(`Set_Friend: Deleted ${count} of others sent key(s)`);
+            // });
             return res.status(200).json(data);
         } catch (error) {
             console.log(error, 'delete Request');

@@ -45,6 +45,7 @@ class Token {
                         }
                         return p;
                     });
+                    redisClient.set(userId + 'refreshToken', JSON.stringify(newDa));
                 }
             }
         });
