@@ -118,187 +118,146 @@ class UserService {
                     });
 
                     const newData = await Promise.all(
-                        data.map(
-                            async (us: {
-                                mores: { privacy: any }[];
-                                id: string;
-                                userRequest: { level: number }[];
-                                userIsRequested: { level: number }[];
-                            }) => {
-                                const privacy: any = us.mores[0].privacy;
-                                const privates: {
-                                    position: string;
-                                    address: string;
-                                    birthday: string;
-                                    relationship: string;
-                                    gender: string;
-                                    schoolName: string;
-                                    occupation: string;
-                                    hobby: string;
-                                    skill: string;
-                                    language: string;
-                                    subAccount: string;
-                                } = privacy;
-                                let accountUser: any = {
-                                    select: {
-                                        account: {
-                                            select: {
-                                                id: true,
-                                                fullName: true,
-                                                avatar: true,
-                                                gender: true,
-                                                phoneNumberEmail: true,
-                                            },
+                        data.map(async (us: { mores: { privacy: any }[]; id: string; userRequest: { level: number }[]; userIsRequested: { level: number }[] }) => {
+                            const privacy: any = us.mores[0].privacy;
+                            const privates: {
+                                position: string;
+                                address: string;
+                                birthday: string;
+                                relationship: string;
+                                gender: string;
+                                schoolName: string;
+                                occupation: string;
+                                hobby: string;
+                                skill: string;
+                                language: string;
+                                subAccount: string;
+                            } = privacy;
+                            let accountUser: any = {
+                                select: {
+                                    account: {
+                                        select: {
+                                            id: true,
+                                            fullName: true,
+                                            avatar: true,
+                                            gender: true,
+                                            phoneNumberEmail: true,
                                         },
                                     },
-                                };
-                                console.log(us.mores[0].privacy, 'us.mores[0].privacy');
-                                if (id !== us.id) {
-                                    params.address =
-                                        privates.address === 'everyone' ||
-                                        ((us.userRequest[0]?.level === 2 || us.userIsRequested[0]?.level === 2) && privates.address !== 'only')
-                                            ? true
-                                            : false;
-                                    params.birthday =
-                                        privates.birthday === 'everyone' ||
-                                        ((us.userRequest[0]?.level === 2 || us.userIsRequested[0]?.level === 2) && privates.birthday !== 'only')
-                                            ? true
-                                            : false;
-                                    params.occupation =
-                                        privates.occupation === 'everyone' ||
-                                        ((us.userRequest[0]?.level === 2 || us.userIsRequested[0]?.level === 2) && privates.occupation !== 'only')
-                                            ? true
-                                            : false;
-                                    params.hobby =
-                                        privates.hobby === 'everyone' ||
-                                        ((us.userRequest[0]?.level === 2 || us.userIsRequested[0]?.level === 2) && privates.hobby !== 'only')
-                                            ? true
-                                            : false;
-                                    params.skill =
-                                        privates.skill === 'everyone' ||
-                                        ((us.userRequest[0]?.level === 2 || us.userIsRequested[0]?.level === 2) && privates.skill !== 'only')
-                                            ? true
-                                            : false;
-                                    params.schoolName =
-                                        privates.schoolName === 'everyone' ||
-                                        ((us.userRequest[0]?.level === 2 || us.userIsRequested[0]?.level === 2) && privates.schoolName !== 'only')
-                                            ? true
-                                            : false;
-                                    params.gender =
-                                        privates.gender === 'everyone' ||
-                                        ((us.userRequest[0]?.level === 2 || us.userIsRequested[0]?.level === 2) && privates.gender !== 'only')
-                                            ? true
-                                            : false;
-                                    if (mores) {
-                                        mores.language =
-                                            privates.language === 'everyone' ||
-                                            ((us.userRequest[0]?.level === 2 || us.userIsRequested[0]?.level === 2) && privates.position !== 'only')
-                                                ? true
-                                                : false;
-                                        mores.position =
-                                            privates.position === 'everyone' ||
-                                            ((us.userRequest[0]?.level === 2 || us.userIsRequested[0]?.level === 2) && privates.position !== 'only')
-                                                ? true
-                                                : false;
-                                    }
-                                    if (
-                                        privates.subAccount !== 'everyone' ||
-                                        !(us.userRequest[0]?.level === 2 || us.userIsRequested[0]?.level === 2)
-                                    ) {
-                                        accountUser = false;
-                                    }
+                                },
+                            };
+                            if (id !== us.id) {
+                                params.address =
+                                    privates.address === 'everyone' || ((us.userRequest[0]?.level === 2 || us.userIsRequested[0]?.level === 2) && privates.address !== 'only') ? true : false;
+                                params.birthday =
+                                    privates.birthday === 'everyone' || ((us.userRequest[0]?.level === 2 || us.userIsRequested[0]?.level === 2) && privates.birthday !== 'only') ? true : false;
+                                params.occupation =
+                                    privates.occupation === 'everyone' || ((us.userRequest[0]?.level === 2 || us.userIsRequested[0]?.level === 2) && privates.occupation !== 'only') ? true : false;
+                                params.hobby = privates.hobby === 'everyone' || ((us.userRequest[0]?.level === 2 || us.userIsRequested[0]?.level === 2) && privates.hobby !== 'only') ? true : false;
+                                params.skill = privates.skill === 'everyone' || ((us.userRequest[0]?.level === 2 || us.userIsRequested[0]?.level === 2) && privates.skill !== 'only') ? true : false;
+                                params.schoolName =
+                                    privates.schoolName === 'everyone' || ((us.userRequest[0]?.level === 2 || us.userIsRequested[0]?.level === 2) && privates.schoolName !== 'only') ? true : false;
+                                params.gender = privates.gender === 'everyone' || ((us.userRequest[0]?.level === 2 || us.userIsRequested[0]?.level === 2) && privates.gender !== 'only') ? true : false;
+                                if (mores) {
+                                    mores.language =
+                                        privates.language === 'everyone' || ((us.userRequest[0]?.level === 2 || us.userIsRequested[0]?.level === 2) && privates.position !== 'only') ? true : false;
+                                    mores.position =
+                                        privates.position === 'everyone' || ((us.userRequest[0]?.level === 2 || us.userIsRequested[0]?.level === 2) && privates.position !== 'only') ? true : false;
                                 }
+                                if (privates.subAccount !== 'everyone' || !(us.userRequest[0]?.level === 2 || us.userIsRequested[0]?.level === 2)) {
+                                    accountUser = false;
+                                }
+                            }
 
-                                const newUs = await prisma.user.findUnique({
-                                    where: {
-                                        id: us.id,
+                            const newUs = await prisma.user.findUnique({
+                                where: {
+                                    id: us.id,
+                                },
+                                select: {
+                                    id: true,
+                                    ...params,
+                                    mores: {
+                                        select: {
+                                            ...mores,
+                                        },
                                     },
-                                    select: {
-                                        id: true,
-                                        ...params,
-                                        mores: {
-                                            select: {
-                                                ...mores,
-                                            },
+                                    userRequest: {
+                                        where: {
+                                            OR: [
+                                                { idRequest: id, idIsRequested: us.id },
+                                                { idRequest: us.id, idIsRequested: id },
+                                            ],
                                         },
-                                        userRequest: {
-                                            where: {
-                                                OR: [
-                                                    { idRequest: id, idIsRequested: us.id },
-                                                    { idRequest: us.id, idIsRequested: id },
-                                                ],
-                                            },
+                                    },
+                                    userIsRequested: {
+                                        where: {
+                                            OR: [
+                                                { idRequest: us.id, idIsRequested: id },
+                                                { idRequest: id, idIsRequested: us.id },
+                                            ],
                                         },
-                                        userIsRequested: {
-                                            where: {
-                                                OR: [
-                                                    { idRequest: us.id, idIsRequested: id },
-                                                    { idRequest: id, idIsRequested: us.id },
-                                                ],
-                                            },
+                                    },
+                                    followings: {
+                                        where: {
+                                            OR: [
+                                                { idFollowing: id, idIsFollowed: us.id },
+                                                { idFollowing: us.id, idIsFollowed: id },
+                                            ],
                                         },
-                                        followings: {
-                                            where: {
-                                                OR: [
-                                                    { idFollowing: id, idIsFollowed: us.id },
-                                                    { idFollowing: us.id, idIsFollowed: id },
-                                                ],
-                                            },
+                                    },
+                                    followed: {
+                                        where: {
+                                            OR: [
+                                                { idFollowing: us.id, idIsFollowed: id },
+                                                { idFollowing: id, idIsFollowed: us.id },
+                                            ],
                                         },
-                                        followed: {
-                                            where: {
-                                                OR: [
-                                                    { idFollowing: us.id, idIsFollowed: id },
-                                                    { idFollowing: id, idIsFollowed: us.id },
-                                                ],
-                                            },
+                                    },
+                                    isLoved: {
+                                        where: {
+                                            userId: id,
                                         },
-                                        isLoved: {
-                                            where: {
-                                                userId: id,
-                                            },
-                                        },
-                                        accountUser,
+                                    },
+                                    accountUser,
+                                },
+                            });
+                            if (newUs?.mores) {
+                                const count_following = await prisma.followers.count({
+                                    where: {
+                                        OR: [
+                                            { idFollowing: us.id, following: 2 }, // idIsFollowing's user is other people are following, the under is opposite too
+                                            { idIsFollowed: us.id, followed: 2 },
+                                        ],
                                     },
                                 });
-                                if (newUs?.mores) {
-                                    const count_following = await prisma.followers.count({
-                                        where: {
-                                            OR: [
-                                                { idFollowing: us.id, following: 2 }, // idIsFollowing's user is other people are following, the under is opposite too
-                                                { idIsFollowed: us.id, followed: 2 },
-                                            ],
-                                        },
-                                    });
-                                    newUs.mores[0].followingAmount = count_following;
-                                    const count_followed = await prisma.followers.count({
-                                        where: {
-                                            OR: [
-                                                { idFollowing: us.id, followed: 2 },
-                                                { idIsFollowed: us.id, following: 2 },
-                                            ],
-                                        },
-                                    });
-                                    newUs.mores[0].followedAmount = count_followed;
+                                newUs.mores[0].followingAmount = count_following;
+                                const count_followed = await prisma.followers.count({
+                                    where: {
+                                        OR: [
+                                            { idFollowing: us.id, followed: 2 },
+                                            { idIsFollowed: us.id, following: 2 },
+                                        ],
+                                    },
+                                });
+                                newUs.mores[0].followedAmount = count_followed;
 
-                                    const count_friends = await prisma.friends.count({
-                                        where: {
-                                            OR: [
-                                                { idRequest: us.id, level: 2 },
-                                                { idIsRequested: us.id, level: 2 },
-                                            ],
-                                        },
-                                    });
-                                    newUs.mores[0].friendAmount = count_friends;
-                                    const count_loves = await prisma.lovers.count({
-                                        where: { idIsLoved: us.id },
-                                    });
-                                    newUs.mores[0].loverAmount = count_loves;
-                                    console.log('loves newUs', newUs, privates, mores, 'mores');
-                                    return newUs;
-                                }
-                            },
-                        ),
+                                const count_friends = await prisma.friends.count({
+                                    where: {
+                                        OR: [
+                                            { idRequest: us.id, level: 2 },
+                                            { idIsRequested: us.id, level: 2 },
+                                        ],
+                                    },
+                                });
+                                newUs.mores[0].friendAmount = count_friends;
+                                const count_loves = await prisma.lovers.count({
+                                    where: { idIsLoved: us.id },
+                                });
+                                newUs.mores[0].loverAmount = count_loves;
+                                console.log('loves newUs', newUs, privates, mores, 'mores');
+                                return newUs;
+                            }
+                        }),
                     );
                     console.log(newData, 'newData', id_reqs);
 
@@ -636,16 +595,42 @@ class UserService {
             }
         });
     }
-    follow(id: string, id_fl: string, follow?: string) {
+    follow(
+        id: string,
+        id_fl: string,
+        follow?: 'following' | 'followed',
+    ): Promise<{
+        ok: {
+            id: string;
+            idFollowing: string;
+            idIsFollowed: string;
+            following: number;
+            followed: number;
+            createdAt: Date;
+            updatedAt: Date;
+        };
+        count_followed: number;
+        count_following: number;
+        count_followed_other: number;
+        count_following_other: number;
+    } | null> {
         return new Promise(async (resolve: any, reject: any) => {
             try {
                 const date = moment().format('YYYY-MM-DDTHH:mm:ssZ');
                 console.log(date, 'date', follow);
-                let ok = 0;
+                let ok: {
+                    id: string;
+                    idFollowing: string;
+                    idIsFollowed: string;
+                    following: number;
+                    followed: number;
+                    createdAt: Date;
+                    updatedAt: Date;
+                } | null = null;
 
-                const follows = await xPrismaF.follower(id, id_fl);
+                const follows = await xPrismaF.getFollowerAsync(id, id_fl);
                 if (!follows) {
-                    const following = await prisma.followers.create({
+                    ok = await prisma.followers.create({
                         data: {
                             id: primaryKey(),
                             idFollowing: id_fl,
@@ -654,10 +639,9 @@ class UserService {
                             followed: 1,
                         },
                     });
-                    if (following) ok = 1;
                 } else {
                     if (follow === 'following') {
-                        const following = await prisma.followers.update({
+                        ok = await prisma.followers.update({
                             where: {
                                 id: follows.id,
                                 idFollowing: id_fl,
@@ -668,103 +652,101 @@ class UserService {
                                 updatedAt: date,
                             },
                         });
-                        if (following) ok = 1;
-                    } else if (follow === 'followed') {
-                        const following = await prisma.followers.update({
+                    } else {
+                        ok = await prisma.followers.update({
                             where: {
                                 id: follows.id,
-                                idFollowing: id,
-                                idIsFollowed: id_fl,
+                                idFollowing: id_fl,
+                                idIsFollowed: id,
                             },
                             data: {
                                 followed: 2,
                                 updatedAt: date,
                             },
                         });
-                        if (following) ok = 1;
-                    } else {
-                        console.log('follow here', follow);
                     }
                 }
-
-                const count_flwe = await prisma.followers.count({
-                    where: {
-                        OR: [
-                            { idFollowing: id, followed: 2 }, // idIsFollowing's user is other people are following, the under is opposite too
-                            { idIsFollowed: id, following: 2 },
-                        ],
-                    },
-                });
-                resolve({ ok, id, id_fl, count_flwe, follow: !follow ? 'no' : follow });
+                const [count_followed, count_following, count_followed_other, count_following_other] = await Promise.all([
+                    xPrismaF.countFollowed(id_fl),
+                    xPrismaF.countFollowing(id_fl),
+                    xPrismaF.countFollowed(id),
+                    xPrismaF.countFollowing(id),
+                ]);
+                resolve({ ok, count_followed, count_following, count_followed_other, count_following_other });
             } catch (error) {
                 reject(error);
             }
         });
     }
-    Unfollow(id: string, id_fl: string, unfollow: string) {
+    Unfollow(
+        id: string,
+        id_fl: string,
+        unfollow: 'following' | 'followed',
+    ): Promise<{
+        ok: {
+            id: string;
+            idFollowing: string;
+            idIsFollowed: string;
+            following: number;
+            followed: number;
+            createdAt: Date;
+            updatedAt: Date;
+        };
+        count_followed: number;
+        count_following: number;
+        count_followed_other: number;
+        count_following_other: number;
+    }> {
         return new Promise(async (resolve: any, reject: any) => {
             try {
                 const date = moment().format('YYYY-MM-DDTHH:mm:ssZ');
-                let ok = 0;
-                const follow = await xPrismaF.follower(id, id_fl);
+                let ok: {
+                    id: string;
+                    idFollowing: string;
+                    idIsFollowed: string;
+                    following: number;
+                    followed: number;
+                    createdAt: Date;
+                    updatedAt: Date;
+                } | null = null;
+                const follow = await xPrismaF.getFollowerAsync(id, id_fl);
                 console.log(date, 'date', unfollow, follow);
-
                 if (follow) {
-                    if (unfollow === 'following') {
-                        if (follow.followed === 1) {
-                            const flDel = await prisma.followers.delete({
-                                where: {
-                                    id: follow.id,
-                                },
-                            });
-                            if (flDel) ok = 1;
-                        } else {
-                            const resFl = await prisma.followers.update({
-                                where: {
-                                    id: follow.id,
-                                    idFollowing: id_fl,
-                                    idIsFollowed: id,
-                                },
-                                data: {
-                                    following: 1,
-                                },
-                            });
-
-                            if (resFl) ok = 1;
-                            console.log(resFl, unfollow);
-                        }
-                    } else {
-                        if (follow.following === 1) {
-                            const flDel = await prisma.followers.delete({
-                                where: {
-                                    id: follow.id,
-                                },
-                            });
-                            if (flDel) ok = 1;
-                        } else {
-                            const resFl = await prisma.followers.update({
-                                where: {
-                                    id: follow.id,
-                                    idFollowing: follow.idFollowing,
-                                    idIsFollowed: follow.idIsFollowed,
-                                },
-                                data: {
-                                    followed: 1,
-                                },
-                            });
-                            if (resFl) ok = 1;
-                            console.log(resFl, unfollow);
-                        }
-                    }
-                    const count_flwe = await prisma.followers.count({
-                        where: {
-                            OR: [
-                                { idFollowing: id, followed: 2 },
-                                { idIsFollowed: id, following: 2 },
-                            ],
-                        },
-                    });
-                    resolve({ ok, id, id_fl, count_flwe, unfollow });
+                    const ok =
+                        (unfollow === 'following' && follow.followed) === 1 || (follow.following === 1 && unfollow === 'followed')
+                            ? await prisma.followers.delete({
+                                  where: {
+                                      id: follow.id,
+                                  },
+                              })
+                            : unfollow === 'following'
+                            ? await prisma.followers.update({
+                                  where: {
+                                      id: follow.id,
+                                      idFollowing: id_fl,
+                                      idIsFollowed: id,
+                                  },
+                                  data: {
+                                      following: 1,
+                                  },
+                              })
+                            : await prisma.followers.update({
+                                  where: {
+                                      id: follow.id,
+                                      idFollowing: id_fl,
+                                      idIsFollowed: id,
+                                  },
+                                  data: {
+                                      followed: 1,
+                                  },
+                              });
+                    const [count_followed, count_following, count_followed_other, count_following_other] = await Promise.all([
+                        xPrismaF.countFollowed(id_fl),
+                        xPrismaF.countFollowing(id_fl),
+                        xPrismaF.countFollowed(id),
+                        xPrismaF.countFollowing(id),
+                    ]);
+                    resolve({ ok, count_followed, count_following, count_followed_other, count_following_other });
                 }
             } catch (error) {
                 reject(error);

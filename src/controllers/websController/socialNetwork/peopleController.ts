@@ -29,7 +29,8 @@ class peopleController {
 
             const data = await peopleServiceSN.setFriend(id, id_friend, per);
             console.log(data, 'data setFriend');
-            io.emit(`Request others?id=${data.id_friend}`, data);
+            io.emit(`Request others?id=${id_friend}`, data);
+            io.emit(`Request others?id=${id}`, data);
             const keyDel = id + 'Get_people_at_';
             // redisClient.del(keyDel + 'yousent', (err: any, count: any) => {
             //     if (err) throw new ServerError('At CTL SetFriend', err);
@@ -117,30 +118,15 @@ class peopleController {
             const per = req.body.params.per;
             const data = await peopleServiceSN.delete(id, id_req, kindOf, per);
             console.log(data, 'delete', 'id_req', id_req);
-
             if (data) {
-                if (data.ok?.idIsRequested)
-                    io.emit(`Del request others?id=${id_req}`, {
-                        userId: id,
-                        data: {
-                            id: data.ok?.id,
-                            idRequest: data.ok?.idRequest,
-                            idIsRequested: null,
-                            createdAt: null,
-                        },
-                    });
-                io.emit(
-                    `Del request others?id=${id_req}`,
-                    JSON.stringify({
-                        userId: id,
-                        data: {
-                            id: data.ok?.id,
-                            idRequest: data.ok?.idIsRequested,
-                            idFriend: null,
-                            createdAt: null,
-                        },
-                    }),
-                );
+                io.emit(`Del request others?id=${id_req}`, {
+                    userId: id,
+                    ...data,
+                });
+                io.emit(`Del request others?id=${id}`, {
+                    userId: id,
+                    ...data,
+                });
                 // redisClient.get(`${data.ok?.idFriend} message`, (err, rs) => {
                 //     if (err) console.log(err);
                 //     if (data && rs && JSON.parse(rs).quantity > 0) {
@@ -189,7 +175,7 @@ class peopleController {
             //     io.emit(`Confirmed atInfo ${data.id}`, JSON.stringify({ ok: 1, id_fr: data.id, id: data.id_fr }));
             // }
 
-            if (data) io.emit(`Confirmed_friend_${data.id_fr}`, data);
+            if (data) io.emit(`Confirmed_friend_${data.id_fr}`, { ...data, userId: id });
             // redisClient.del(`${data.id_fr} user_message`);
 
             // const keyDel = id + 'Get_Friends';

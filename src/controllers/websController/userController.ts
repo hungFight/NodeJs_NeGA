@@ -5,6 +5,7 @@ import Validation from '../../utils/errors/Validation';
 import NotFound from '../../utils/errors/NotFound';
 import ServerError from '../../utils/errors/ServerError';
 import { Redis } from 'ioredis';
+import { io } from '../..';
 class userController {
     getById = async (req: express.Request, res: express.Response, next: express.NextFunction) => {
         try {
@@ -154,7 +155,10 @@ class userController {
             const follow = req.body.params.follow;
             const data = await UserServiceSN.follow(id, id_fl, follow);
             console.log(data, 'nooo');
-
+            if (data) {
+                io.emit(`follow_${id_fl}`, { ...data, userId: id_fl });
+                io.emit(`follow_${id}`, { ...data, userId: id_fl });
+            }
             return res.status(200).json(data);
         } catch (error) {
             console.log(error);
@@ -166,6 +170,10 @@ class userController {
             const id = req.body.params.id;
             const Unfollow = req.body.params.unfollow;
             const data = await UserServiceSN.Unfollow(id, id_fl, Unfollow);
+            if (data) {
+                io.emit(`Unfollow_${id_fl}`, { ...data, userId: id_fl });
+                io.emit(`Unfollow_${id}`, { ...data, userId: id_fl });
+            }
             console.log(data, 'contr');
             return res.status(200).json(data);
         } catch (error) {
