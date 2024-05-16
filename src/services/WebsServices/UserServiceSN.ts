@@ -598,7 +598,6 @@ class UserService {
     follow(
         id: string,
         id_fl: string,
-        follow?: 'following' | 'followed',
     ): Promise<{
         ok: {
             id: string;
@@ -617,7 +616,7 @@ class UserService {
         return new Promise(async (resolve: any, reject: any) => {
             try {
                 const date = moment().format('YYYY-MM-DDTHH:mm:ssZ');
-                console.log(date, 'date', follow);
+                console.log(date, 'date');
                 let ok: {
                     id: string;
                     idFollowing: string;
@@ -629,6 +628,8 @@ class UserService {
                 } | null = null;
 
                 const follows = await xPrismaF.getFollowerAsync(id, id_fl);
+                console.log(follows, 'follows_');
+
                 if (!follows) {
                     ok = await prisma.followers.create({
                         data: {
@@ -640,24 +641,22 @@ class UserService {
                         },
                     });
                 } else {
-                    if (follow === 'following') {
+                    console.log(follows, id_fl, ' yyyyy__');
+
+                    if (follows.idFollowing === id_fl) {
                         ok = await prisma.followers.update({
                             where: {
                                 id: follows.id,
-                                idFollowing: id_fl,
-                                idIsFollowed: id,
                             },
                             data: {
                                 following: 2,
                                 updatedAt: date,
                             },
                         });
-                    } else {
+                    } else if (follows.idIsFollowed === id_fl) {
                         ok = await prisma.followers.update({
                             where: {
                                 id: follows.id,
-                                idFollowing: id_fl,
-                                idIsFollowed: id,
                             },
                             data: {
                                 followed: 2,
@@ -681,7 +680,6 @@ class UserService {
     Unfollow(
         id: string,
         id_fl: string,
-        unfollow: 'following' | 'followed',
     ): Promise<{
         ok: {
             id: string;
@@ -710,36 +708,34 @@ class UserService {
                     updatedAt: Date;
                 } | null = null;
                 const follow = await xPrismaF.getFollowerAsync(id, id_fl);
-                console.log(date, 'date', unfollow, follow);
+                console.log(date, 'date', follow);
                 if (follow) {
-                    const ok =
-                        (unfollow === 'following' && follow.followed) === 1 || (follow.following === 1 && unfollow === 'followed')
-                            ? await prisma.followers.delete({
-                                  where: {
-                                      id: follow.id,
-                                  },
-                              })
-                            : unfollow === 'following'
-                            ? await prisma.followers.update({
-                                  where: {
-                                      id: follow.id,
-                                      idFollowing: id_fl,
-                                      idIsFollowed: id,
-                                  },
-                                  data: {
-                                      following: 1,
-                                  },
-                              })
-                            : await prisma.followers.update({
-                                  where: {
-                                      id: follow.id,
-                                      idFollowing: id_fl,
-                                      idIsFollowed: id,
-                                  },
-                                  data: {
-                                      followed: 1,
-                                  },
-                              });
+                    if ((follow.idFollowing === id_fl && follow.followed === 1) || (follow.idIsFollowed === id_fl && follow.following === 1)) {
+                        ok = await prisma.followers.delete({
+                            where: {
+                                id: follow.id,
+                            },
+                        });
+                    } else if (follow.idFollowing === id_fl) {
+                        ok = await prisma.followers.update({
+                            where: {
+                                id: follow.id,
+                            },
+                            data: {
+                                following: 1,
+                            },
+                        });
+                    } else if (follow.idIsFollowed === id_fl) {
+                        ok = await prisma.followers.update({
+                            where: {
+                                id: follow.id,
+                            },
+                            data: {
+                                followed: 1,
+                            },
+                        });
+                    }
+
                     const [count_followed, count_following, count_followed_other, count_following_other] = await Promise.all([
                         xPrismaF.countFollowed(id_fl),
                         xPrismaF.countFollowing(id_fl),

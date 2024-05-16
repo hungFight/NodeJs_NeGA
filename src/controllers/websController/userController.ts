@@ -152,12 +152,11 @@ class userController {
         try {
             const id_fl = req.cookies.k_user;
             const id = req.body.params.id;
-            const follow = req.body.params.follow;
-            const data = await UserServiceSN.follow(id, id_fl, follow);
+            const data = await UserServiceSN.follow(id, id_fl);
             console.log(data, 'nooo');
             if (data) {
-                io.emit(`follow_${id_fl}`, { ...data, userId: id_fl });
-                io.emit(`follow_${id}`, { ...data, userId: id_fl });
+                io.emit(`follow_${id_fl}`, { ...data, userId: id });
+                io.emit(`follow_${id}`, { ...data, userId: id });
             }
             return res.status(200).json(data);
         } catch (error) {
@@ -168,11 +167,10 @@ class userController {
         try {
             const id_fl = req.cookies.k_user;
             const id = req.body.params.id;
-            const Unfollow = req.body.params.unfollow;
-            const data = await UserServiceSN.Unfollow(id, id_fl, Unfollow);
+            const data = await UserServiceSN.Unfollow(id, id_fl);
             if (data) {
-                io.emit(`Unfollow_${id_fl}`, { ...data, userId: id_fl });
-                io.emit(`Unfollow_${id}`, { ...data, userId: id_fl });
+                io.emit(`Unfollow_${id_fl}`, { ...data, userId: id });
+                io.emit(`Unfollow_${id}`, { ...data, userId: id });
             }
             console.log(data, 'contr');
             return res.status(200).json(data);
