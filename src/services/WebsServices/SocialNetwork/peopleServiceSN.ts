@@ -2,6 +2,7 @@ import moment from 'moment';
 import { v4 as primaryKey } from 'uuid';
 import { prisma } from '../../..';
 import xPrismaF from '../../../models/prisma/extension/xPrismaF';
+import Validation from '../../../utils/errors/Validation';
 moment.locale('vi');
 class PeopleService {
     setFriend(
@@ -305,7 +306,32 @@ class PeopleService {
             }
         });
     }
-    setConfirm(id: string, id_fr: string, kindOf: string, per?: string) {
+    setConfirm(
+        id: string,
+        id_fr: string,
+        kindOf: string,
+        per?: string,
+    ): Promise<
+        | {
+              ok: any;
+              follower: {
+                  id: string;
+                  idFollowing: string;
+                  idIsFollowed: string;
+                  following: number;
+                  followed: number;
+                  createdAt: Date;
+                  updatedAt: Date;
+              };
+              count_following: number;
+              count_followed: number;
+              count_following_other: number;
+              count_followed_other: number;
+              count_friends: number;
+              count_friends_other: number;
+          }
+        | false
+    > {
         return new Promise(async (resolve, reject) => {
             try {
                 if (kindOf) {
@@ -318,7 +344,7 @@ class PeopleService {
                             },
                         });
                         if (dataF) {
-                            const [frUp, dataFL] = await Promise.all([
+                            let [friendData, dataFL] = await Promise.all([
                                 per === 'personal'
                                     ? prisma.friends.update({
                                           where: {
@@ -375,6 +401,50 @@ class PeopleService {
                                                       },
                                                   },
                                               },
+                                              userIsRequested: {
+                                                  select: {
+                                                      address: true,
+                                                      biography: true,
+                                                      birthday: true,
+                                                      gender: true,
+                                                      hobby: true,
+                                                      skill: true,
+                                                      occupation: true,
+                                                      schoolName: true,
+                                                      accountUser: {
+                                                          where: {
+                                                              userId: dataF.idIsRequested,
+                                                          },
+                                                          select: {
+                                                              account: {
+                                                                  select: {
+                                                                      id: true,
+                                                                      fullName: true,
+                                                                      avatar: true,
+                                                                      gender: true,
+                                                                      phoneNumberEmail: true,
+                                                                  },
+                                                              },
+                                                          },
+                                                      },
+                                                      mores: {
+                                                          select: {
+                                                              id: true,
+                                                              position: true,
+                                                              star: true,
+                                                              loverAmount: true,
+                                                              friendAmount: true,
+                                                              visitorAmount: true,
+                                                              followedAmount: true,
+                                                              followingAmount: true,
+                                                              relationship: true,
+                                                              language: true,
+                                                              createdAt: true,
+                                                              privacy: true,
+                                                          },
+                                                      },
+                                                  },
+                                              },
                                           },
                                       })
                                     : prisma.friends.update({
@@ -391,49 +461,70 @@ class PeopleService {
                                 xPrismaF.getFollower(id_fr, id),
                             ]);
                             if (dataFL) {
-                                const [newDF, count_following, count_followed, count_friends] = await Promise.all([
-                                    prisma.followers.update({
+                                const newDF = await prisma.followers.update({
+                                    where: {
+                                        id: dataFL.id,
+                                    },
+                                    data: {
+                                        [`${dataFL.idFollowing === id ? 'following' : 'followed'}`]: 2,
+                                        updatedAt: new Date(),
+                                    },
+                                });
+                                const [count_following, count_followed, count_following_other, count_followed_other, count_friends, count_friends_other] = await Promise.all([
+                                    xPrismaF.countFollowing(id),
+                                    xPrismaF.countFollowed(id),
+                                    xPrismaF.countFollowing(id_fr),
+                                    xPrismaF.countFollowed(id_fr),
+                                    xPrismaF.countFriends(id),
+                                    xPrismaF.countFriends(id_fr),
+                                ]);
+                                const fffff: any = friendData;
+                                fffff.userRequest.mores[0].followingAmount = count_following_other;
+                                fffff.userRequest.mores[0].followedAmount = count_followed_other;
+                                fffff.userRequest.mores[0].friendAmount = count_friends_other;
+                                fffff.userIsRequested.mores[0].followingAmount = count_following;
+                                fffff.userIsRequested.mores[0].followedAmount = count_followed;
+                                fffff.userIsRequested.mores[0].friendAmount = count_friends;
+                                resolve({ ok: fffff, follower: newDF, count_following, count_followed, count_following_other, count_followed_other, count_friends, count_friends_other });
+                            } else {
+                                const key = primaryKey();
+                                const valid = new Validation();
+                                if (valid.validUUID(key)) {
+                                    dataFL = await prisma.followers.create({
+                                        data: {
+                                            id: key,
+                                            idFollowing: id,
+                                            idIsFollowed: id_fr,
+                                            following: 2,
+                                            followed: 1,
+                                        },
+                                    });
+                                    const newDF = await prisma.followers.update({
                                         where: {
                                             id: dataFL.id,
-                                            idFollowing: dataFL.idFollowing,
-                                            idIsFollowed: dataFL.idIsFollowed,
                                         },
                                         data: {
-                                            followed: 2,
+                                            [`${dataFL.idFollowing === id ? 'following' : 'followed'}`]: 2,
+                                            updatedAt: new Date(),
                                         },
-                                    }),
-                                    prisma.followers.count({
-                                        where: {
-                                            OR: [
-                                                { idFollowing: id_fr, following: 2 },
-                                                { idIsFollowed: id_fr, followed: 2 },
-                                            ],
-                                        },
-                                    }),
-                                    prisma.followers.count({
-                                        where: {
-                                            OR: [
-                                                { idFollowing: id_fr, followed: 2 },
-                                                { idIsFollowed: id_fr, following: 2 },
-                                            ],
-                                        },
-                                    }),
-                                    prisma.friends.count({
-                                        where: {
-                                            OR: [
-                                                { idRequest: id_fr, level: 2 },
-                                                { idIsRequested: id_fr, level: 2 },
-                                            ],
-                                        },
-                                    }),
-                                ]);
-                                const fffff: any = frUp;
-                                if (per === 'personal') {
-                                    fffff.userRequest.mores[0].followingAmount = count_following;
-                                    fffff.userRequest.mores[0].followedAmount = count_followed;
-                                    fffff.userRequest.mores[0].friendAmount = count_friends;
-                                }
-                                resolve({ ok: fffff, follower: newDF, id_fr: id_fr, id: id, count_friends });
+                                    });
+                                    const [count_following, count_followed, count_following_other, count_followed_other, count_friends, count_friends_other] = await Promise.all([
+                                        xPrismaF.countFollowing(id),
+                                        xPrismaF.countFollowed(id),
+                                        xPrismaF.countFollowing(id_fr),
+                                        xPrismaF.countFollowed(id_fr),
+                                        xPrismaF.countFriends(id),
+                                        xPrismaF.countFriends(id_fr),
+                                    ]);
+                                    const fffff: any = friendData;
+                                    fffff.userRequest.mores[0].followingAmount = count_following_other;
+                                    fffff.userRequest.mores[0].followedAmount = count_followed_other;
+                                    fffff.userRequest.mores[0].friendAmount = count_friends_other;
+                                    fffff.userIsRequested.mores[0].followingAmount = count_following;
+                                    fffff.userIsRequested.mores[0].followedAmount = count_followed;
+                                    fffff.userIsRequested.mores[0].friendAmount = count_friends;
+                                    resolve({ ok: fffff, follower: newDF, count_following, count_followed, count_following_other, count_followed_other, count_friends, count_friends_other });
+                                } else reject('Invalid UUID');
                             }
                         } else resolve(false);
                     }

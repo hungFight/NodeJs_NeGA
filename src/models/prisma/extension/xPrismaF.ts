@@ -73,5 +73,23 @@ class xPrismaF {
                 ],
             },
         });
+    countFriends = (id: string) =>
+        prisma.friends.count({
+            where: {
+                OR: [
+                    { idRequest: id, level: 2 }, // idIsFollowing's user is other people are following, the under is opposite too
+                    { idIsRequested: id, level: 2 },
+                ],
+            },
+        });
+    countFriendsAsync = async (id: string) =>
+        await prisma.friends.count({
+            where: {
+                OR: [
+                    { idRequest: id, level: 2 }, // idIsFollowing's user is other people are following, the under is opposite too
+                    { idIsRequested: id, level: 2 },
+                ],
+            },
+        });
 }
 export default new xPrismaF();

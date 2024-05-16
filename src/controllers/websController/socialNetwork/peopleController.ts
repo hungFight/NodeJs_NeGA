@@ -172,12 +172,14 @@ class peopleController {
             const io = res.io;
             const atInfo = req.body.params.atInfor;
             console.log('vo', atInfo);
-            const data: any = await peopleServiceSN.setConfirm(id, id_fr, kindOf, per);
+            const data = await peopleServiceSN.setConfirm(id, id_fr, kindOf, per);
             // if (data.ok === 1 && atInfo) {
             //     io.emit(`Confirmed atInfo ${data.id}`, JSON.stringify({ ok: 1, id_fr: data.id, id: data.id_fr }));
             // }
-
-            if (data) io.emit(`Confirmed_friend_${data.id_fr}`, { ...data, userId: id });
+            if (data) {
+                io.emit(`Confirmed_friend_${id_fr}`, { ...data, userId: id_fr, youId: id });
+                io.emit(`Confirmed_friend_${id}`, { ...data, userId: id_fr, youId: id });
+            }
             // redisClient.del(`${data.id_fr} user_message`);
 
             // const keyDel = id + 'Get_Friends';
