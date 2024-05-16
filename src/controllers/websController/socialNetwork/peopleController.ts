@@ -29,8 +29,8 @@ class peopleController {
 
             const data = await peopleServiceSN.setFriend(id, id_friend, per);
             console.log(data, 'data setFriend');
-            io.emit(`Request others?id=${id_friend}`, data);
-            io.emit(`Request others?id=${id}`, data);
+            io.emit(`Request others?id=${id_friend}`, { ...data, youId: id });
+            io.emit(`Request others?id=${id}`, { ...data, youId: id });
             const keyDel = id + 'Get_people_at_';
             // redisClient.del(keyDel + 'yousent', (err: any, count: any) => {
             //     if (err) throw new ServerError('At CTL SetFriend', err);
@@ -120,11 +120,13 @@ class peopleController {
             console.log(data, 'delete', 'id_req', id_req);
             if (data) {
                 io.emit(`Del request others?id=${id_req}`, {
-                    userId: id,
+                    userId: id_req,
+                    youId: id,
                     ...data,
                 });
                 io.emit(`Del request others?id=${id}`, {
-                    userId: id,
+                    userId: id_req,
+                    youId: id,
                     ...data,
                 });
                 // redisClient.get(`${data.ok?.idFriend} message`, (err, rs) => {
