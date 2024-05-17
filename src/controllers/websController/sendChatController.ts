@@ -25,22 +25,11 @@ class SendChat {
             const reply = req.body.reply;
             const conversationId = req.body.conversationId;
             const indexRoom = req.body.indexRoom;
-            const valid = new Validation();
-            if (!valid.validUUID([id_data, id, id_other]) || (conversationId && !valid.validMongoID(conversationId)))
-                throw new NotFound('SendChatController', 'Invalid regex');
+            if (!Validation.validUUID([id_data, id, id_other]) || (conversationId && !Validation.validMongoID(conversationId))) throw new NotFound('SendChatController', 'Invalid regex');
             if (id_other && id_data) {
                 console.log(id_other, 'id_others');
 
-                const data = await SendChatServiceSN.send(
-                    conversationId,
-                    id,
-                    id_other,
-                    value,
-                    valueInfoFile,
-                    id_data,
-                    indexRoom,
-                    reply ? JSON.parse(reply) : id_secondary,
-                );
+                const data = await SendChatServiceSN.send(conversationId, id, id_other, value, valueInfoFile, id_data, indexRoom, reply ? JSON.parse(reply) : id_secondary);
                 const key_redis = id_other + '-' + 'AmountMessageIsNotSeen' + '-' + data._id;
 
                 if (data) {
@@ -79,9 +68,8 @@ class SendChat {
     };
     getRoom = async (req: any, res: any) => {
         try {
-            const valid = new Validation();
             const id = req.cookies.k_user;
-            if (!valid.validUUID(id)) throw new NotFound('GetRoom', 'Invalid id regex!');
+            if (!Validation.validUUID(id)) throw new NotFound('GetRoom', 'Invalid id regex!');
             const limit = req.query.limit;
             const redisClient: Redis = res.redisClient;
             const offset = req.query.offset;
@@ -110,7 +98,6 @@ class SendChat {
     };
     getChat = async (req: any, res: any, next: express.NextFunction) => {
         try {
-            const valid = new Validation();
             const id = req.cookies.k_user;
             const conversationId = req.query.conversationId;
             const id_other = req.query.id_other;
@@ -118,18 +105,10 @@ class SendChat {
             const io: Server<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any> = res.io;
             const indexQuery: number = req.query.indexQuery;
             const moreChat = req.query.moreChat;
-            if (!valid.validUUID([id, id_other]) || (conversationId && !valid.validMongoID(conversationId)))
-                throw new NotFound('GetChat', 'Invalid id regex!');
+            if (!Validation.validUUID([id, id_other]) || (conversationId && !Validation.validMongoID(conversationId))) throw new NotFound('GetChat', 'Invalid id regex!');
 
             if (id_other) {
-                const data: PropsRoomChat & PropsRooms = await SendChatServiceSN.getChat(
-                    conversationId,
-                    id,
-                    id_other,
-                    Number(indexQuery),
-                    Number(indexRef),
-                    moreChat,
-                );
+                const data: PropsRoomChat & PropsRooms = await SendChatServiceSN.getChat(conversationId, id, id_other, Number(indexQuery), Number(indexRef), moreChat);
                 return res.status(200).json(data);
             }
             throw new NotFound('GetChat', 'Not Found id_room or id_other');
@@ -173,8 +152,7 @@ class SendChat {
             const userIdCur = req.cookies.k_user;
             console.log(conversationId, dataId, userId);
             const io: Server<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any> = res.io;
-            if (!conversationId || !dataId || !userId || !roomId || !filterId)
-                throw new NotFound('delChatAll', 'conversationId, userId or chatId or userId not provided');
+            if (!conversationId || !dataId || !userId || !roomId || !filterId) throw new NotFound('delChatAll', 'conversationId, userId or chatId or userId not provided');
             if (userId === userIdCur) {
                 const data = await SendChatServiceSN.delChatAll(roomId, filterId, dataId, userId);
                 if (data) {
@@ -194,8 +172,7 @@ class SendChat {
             const dataId = req.body.dataId;
             const filterId = req.body.filterId;
             const userIdCur = req.cookies.k_user;
-            if (!conversationId || !filterId || !dataId || !userIdCur || !roomId)
-                throw new NotFound('delChatAll', 'conversationId, filterId, userIdCur, roomId or dataId or userId not provided');
+            if (!conversationId || !filterId || !dataId || !userIdCur || !roomId) throw new NotFound('delChatAll', 'conversationId, filterId, userIdCur, roomId or dataId or userId not provided');
             const data = await SendChatServiceSN.delChatSelf(roomId, filterId, dataId, userIdCur);
             return res.status(200).json(data);
         } catch (error) {
@@ -204,7 +181,6 @@ class SendChat {
     };
     updateChat = async (req: express.Request, res: any, next: express.NextFunction) => {
         try {
-            const valid = new Validation();
             const conversationId: string = req.body.conversationId;
             const roomId: string = req.body.roomId;
             const filterId: string = req.body.filterId;
@@ -217,7 +193,7 @@ class SendChat {
             console.log(value, 'valuevaluevalue', files);
 
             const io: Server<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any> = res.io;
-            if (!conversationId || !dataId || !id_other || !filterId || !roomId || !valid.validMongoID([conversationId, filterId, roomId]))
+            if (!conversationId || !dataId || !id_other || !filterId || !roomId || !Validation.validMongoID([conversationId, filterId, roomId]))
                 throw new NotFound('updateChat UP', 'conversationId, filterId, roomId, userId, id_other or dataId or userId not provided');
             if (userId === userIdCur) {
                 const data = await SendChatServiceSN.updateChat(roomId, filterId, dataId, userId, id_other, value, files);
@@ -239,8 +215,7 @@ class SendChat {
             const io: Server<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any> = res.io;
             const latestChatId: string = req.body.latestChatId;
 
-            if (!conversationId || !chatId || !userId || !latestChatId)
-                throw new NotFound('Pin chat', 'conversationId, userId, chatId, latestChatId or chatId or userId not provided');
+            if (!conversationId || !chatId || !userId || !latestChatId) throw new NotFound('Pin chat', 'conversationId, userId, chatId, latestChatId or chatId or userId not provided');
             const data = await SendChatServiceSN.pin(conversationId, chatId, userId, latestChatId);
             if (data) {
                 io.emit(`conversation_pins_room_${conversationId}`, data);
@@ -280,15 +255,13 @@ class SendChat {
     };
     setBackground = async (req: any, res: any, next: express.NextFunction) => {
         try {
-            const valid = new Validation();
             const conversationId = req.body.conversationId;
             const userId = req.cookies.k_user;
             const dataId = req.body.dataId;
             const id_file = req.body.id_file;
             const io: Server<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any> = res.io;
 
-            if (!valid.validMongoID(conversationId) || !valid.validUUID([userId, dataId]) || !id_file)
-                throw new NotFound('setBackground chat', 'invalid regex!');
+            if (!Validation.validMongoID(conversationId) || !Validation.validUUID([userId, dataId]) || !id_file) throw new NotFound('setBackground chat', 'invalid regex!');
             const data = await SendChatServiceSN.setBackground(conversationId, id_file, userId, dataId);
             if (data) {
                 io.emit(`conversation_changeBG_room_${conversationId}`, data);
@@ -338,12 +311,7 @@ class SendChat {
                         }[];
                     } = JSON.parse(dataB);
                     if (JSON.stringify(dd.state) === JSON.stringify(conversationId)) {
-                        console.log(
-                            'redis b',
-                            JSON.stringify(dd.state),
-                            JSON.stringify(conversationId),
-                            JSON.stringify(dd.state) === JSON.stringify(conversationId),
-                        );
+                        console.log('redis b', JSON.stringify(dd.state), JSON.stringify(conversationId), JSON.stringify(dd.state) === JSON.stringify(conversationId));
                         return res.status(200).json(dd.newRes);
                     }
                 }
@@ -359,11 +327,10 @@ class SendChat {
     };
     setSeenBy = async (req: any, res: any, next: express.NextFunction) => {
         try {
-            const valid = new Validation();
             const param = req.body.param;
             const userId = req.cookies.k_user;
             const conversationId = req.body.conversationId;
-            if (!valid.validMongoID(conversationId)) throw new NotFound('SetSeenBy', 'invalid Id!');
+            if (!Validation.validMongoID(conversationId)) throw new NotFound('SetSeenBy', 'invalid Id!');
             const date = new Date();
             io.emit(`conversation_see_chats_${conversationId}`, { param, userId, createdAt: date });
             const data = await SendChatServiceSN.setSeenBy(param, userId, date);

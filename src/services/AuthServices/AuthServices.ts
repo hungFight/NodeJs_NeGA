@@ -134,10 +134,7 @@ class AuthServices {
                                                         status: [{ name: 'login', dateTime: new Date(), ip: IP_USER }],
                                                         userAgent,
                                                     });
-                                                } else if (
-                                                    ['logout', 'invalid'].includes(foundDa.status[foundDa.status.length - 1].name) &&
-                                                    foundDa.accept
-                                                ) {
+                                                } else if (['logout', 'invalid'].includes(foundDa.status[foundDa.status.length - 1].name) && foundDa.accept) {
                                                     newDa.map((p) => {
                                                         if (p.mac === foundDa.mac) {
                                                             p.status.push({ name: 'login', dateTime: new Date(), ip: IP_USER });
@@ -232,14 +229,12 @@ class AuthServices {
     add = async (data: UserIT) => {
         return new Promise(async (resolve, reject) => {
             if (data) {
-                const validate = new Validation();
                 if (isNaN(data.phoneMail)) {
-                    if (!validate.validEmail(data.phoneMail)) resolve({ check: 5, message: 'Email invalid' });
+                    if (!Validation.validEmail(data.phoneMail)) resolve({ check: 5, message: 'Email invalid' });
                 } else {
-                    if (!validate.validLength(data.phoneMail, 9, 11)) resolve({ check: 5, message: 'Phone Number must 9 - 11 characters' });
+                    if (!Validation.validLength(data.phoneMail, 9, 11)) resolve({ check: 5, message: 'Phone Number must 9 - 11 characters' });
                 }
-                if (!validate.validLength(data.password, 6, 100))
-                    resolve({ check: 5, message: 'Password must be greater than 6 characters and less than 100' });
+                if (!Validation.validLength(data.password, 6, 100)) resolve({ check: 5, message: 'Password must be greater than 6 characters and less than 100' });
                 const checkPhoneNumberEmail = await prisma.user.findMany({
                     where: { phoneNumberEmail: data.phoneMail },
                 });

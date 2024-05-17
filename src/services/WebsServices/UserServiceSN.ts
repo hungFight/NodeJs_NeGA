@@ -2,6 +2,7 @@ import moment from 'moment';
 import { esClient, prisma } from '../..';
 import xPrismaF from '../../models/prisma/extension/xPrismaF';
 import { v4 as primaryKey } from 'uuid';
+import Validation from '../../utils/errors/Validation';
 export interface PropsParams {
     fullName?: boolean;
     active?: boolean;
@@ -21,7 +22,7 @@ export interface PropsParams {
     secondPage?: boolean;
     thirdPage?: boolean;
 }
-interface PropsParamsMores {
+export interface PropsParamsMores {
     position?: boolean;
     star?: boolean;
     loverAmount?: boolean;
@@ -79,13 +80,22 @@ async function indexUserInElasticsearch(userId: string) {
     }
 }
 class UserService {
-    getById(id: string, id_reqs: string[], params: PropsParams, mores: PropsParamsMores, first?: string) {
+    getById(id: string, id_reqs: string[], params: any | PropsParams, mores: any | PropsParamsMores, first?: string) {
         return new Promise(async (resolve: any, reject: (arg0: unknown) => void) => {
             try {
                 if (first) {
                     const data = await prisma.user.findUnique({
                         where: { id: id },
-                        select: params,
+                        select: {
+                            id: true,
+                            fullName: true,
+                            gender: true,
+                            avatar: true,
+                            background: true,
+                            ...params,
+                            password: false,
+                            phoneNumberEmail: false,
+                        },
                     });
                     if (data) resolve(data);
                 } else {
@@ -121,7 +131,7 @@ class UserService {
                         data.map(async (us: { mores: { privacy: any }[]; id: string; userRequest: { level: number }[]; userIsRequested: { level: number }[] }) => {
                             const privacy: any = us.mores[0].privacy;
                             const privates: {
-                                position: string;
+                                [position: string]: string;
                                 address: string;
                                 birthday: string;
                                 relationship: string;
@@ -147,38 +157,33 @@ class UserService {
                                 },
                             };
                             if (id !== us.id) {
-                                params.address =
-                                    privates.address === 'everyone' || ((us.userRequest[0]?.level === 2 || us.userIsRequested[0]?.level === 2) && privates.address !== 'only') ? true : false;
-                                params.birthday =
-                                    privates.birthday === 'everyone' || ((us.userRequest[0]?.level === 2 || us.userIsRequested[0]?.level === 2) && privates.birthday !== 'only') ? true : false;
-                                params.occupation =
-                                    privates.occupation === 'everyone' || ((us.userRequest[0]?.level === 2 || us.userIsRequested[0]?.level === 2) && privates.occupation !== 'only') ? true : false;
-                                params.hobby = privates.hobby === 'everyone' || ((us.userRequest[0]?.level === 2 || us.userIsRequested[0]?.level === 2) && privates.hobby !== 'only') ? true : false;
-                                params.skill = privates.skill === 'everyone' || ((us.userRequest[0]?.level === 2 || us.userIsRequested[0]?.level === 2) && privates.skill !== 'only') ? true : false;
-                                params.schoolName =
-                                    privates.schoolName === 'everyone' || ((us.userRequest[0]?.level === 2 || us.userIsRequested[0]?.level === 2) && privates.schoolName !== 'only') ? true : false;
-                                params.gender = privates.gender === 'everyone' || ((us.userRequest[0]?.level === 2 || us.userIsRequested[0]?.level === 2) && privates.gender !== 'only') ? true : false;
-                                if (mores) {
-                                    mores.language =
-                                        privates.language === 'everyone' || ((us.userRequest[0]?.level === 2 || us.userIsRequested[0]?.level === 2) && privates.position !== 'only') ? true : false;
-                                    mores.position =
-                                        privates.position === 'everyone' || ((us.userRequest[0]?.level === 2 || us.userIsRequested[0]?.level === 2) && privates.position !== 'only') ? true : false;
-                                }
+                                Object.keys(params).forEach((key: any) => {
+                                    params[key] = privates[key] === 'everyone' || ((us.userRequest[0]?.level === 2 || us.userIsRequested[0]?.level === 2) && privates[key] !== 'only') ? true : false;
+                                });
+                                Object.keys(mores).forEach((key: any) => {
+                                    mores[key] = privates[key] === 'everyone' || ((us.userRequest[0]?.level === 2 || us.userIsRequested[0]?.level === 2) && privates[key] !== 'only') ? true : false;
+                                });
                                 if (privates.subAccount !== 'everyone' || !(us.userRequest[0]?.level === 2 || us.userIsRequested[0]?.level === 2)) {
                                     accountUser = false;
                                 }
                             }
-
-                            const newUs = await prisma.user.findUnique({
+                            const newUs: any = await prisma.user.findUnique({
                                 where: {
                                     id: us.id,
                                 },
                                 select: {
                                     id: true,
+                                    fullName: true,
+                                    gender: true,
+                                    avatar: true,
+                                    background: true,
                                     ...params,
+                                    password: false,
+                                    phoneNumberEmail: false,
                                     mores: {
                                         select: {
                                             ...mores,
+                                            privacy: true,
                                         },
                                     },
                                     userRequest: {
@@ -222,37 +227,17 @@ class UserService {
                                 },
                             });
                             if (newUs?.mores) {
-                                const count_following = await prisma.followers.count({
-                                    where: {
-                                        OR: [
-                                            { idFollowing: us.id, following: 2 }, // idIsFollowing's user is other people are following, the under is opposite too
-                                            { idIsFollowed: us.id, followed: 2 },
-                                        ],
-                                    },
-                                });
+                                const [count_friends, count_following, count_followed, count_loves] = await Promise.all([
+                                    xPrismaF.countFriends(us.id),
+                                    xPrismaF.countFollowing(us.id),
+                                    xPrismaF.countFollowed(us.id),
+                                    prisma.lovers.count({
+                                        where: { idIsLoved: us.id },
+                                    }),
+                                ]);
                                 newUs.mores[0].followingAmount = count_following;
-                                const count_followed = await prisma.followers.count({
-                                    where: {
-                                        OR: [
-                                            { idFollowing: us.id, followed: 2 },
-                                            { idIsFollowed: us.id, following: 2 },
-                                        ],
-                                    },
-                                });
                                 newUs.mores[0].followedAmount = count_followed;
-
-                                const count_friends = await prisma.friends.count({
-                                    where: {
-                                        OR: [
-                                            { idRequest: us.id, level: 2 },
-                                            { idIsRequested: us.id, level: 2 },
-                                        ],
-                                    },
-                                });
                                 newUs.mores[0].friendAmount = count_friends;
-                                const count_loves = await prisma.lovers.count({
-                                    where: { idIsLoved: us.id },
-                                });
                                 newUs.mores[0].loverAmount = count_loves;
                                 console.log('loves newUs', newUs, privates, mores, 'mores');
                                 return newUs;
@@ -505,11 +490,13 @@ class UserService {
                         },
                     });
                     const love = more.loverAmount;
+                    const key = primaryKey();
                     let loverData;
+                    if (!Validation.validUUID(key)) reject('Invalid UUID');
                     if (love === 'love' && !lv) {
                         loverData = await prisma.lovers.create({
                             data: {
-                                id: primaryKey(),
+                                id: key,
                                 userId: id_req,
                                 idIsLoved: id,
                             },

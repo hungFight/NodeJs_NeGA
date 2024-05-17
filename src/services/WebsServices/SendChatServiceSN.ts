@@ -38,7 +38,7 @@ class SendChatService {
                     type: string;
                     tail: string;
                 }[] = [];
-                valueInfoFile.forEach((f) => {
+                valueInfoFile?.forEach((f) => {
                     imageOrVideos.push({ _id: f.id, icon: '', tail: f.tail, type: f.type });
                 });
                 const [user, friend, res]: any = await Promise.all([

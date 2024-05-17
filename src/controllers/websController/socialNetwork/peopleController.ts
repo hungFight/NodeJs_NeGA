@@ -25,8 +25,6 @@ class peopleController {
             const redisClient: Redis = res.redisClient;
             const io = res.io;
             const per = req.body.params.per;
-            console.log('Hung');
-
             const data = await peopleServiceSN.setFriend(id, id_friend, per);
             console.log(data, 'data setFriend');
             io.emit(`Request others?id=${id_friend}`, { ...data, youId: id });
@@ -91,19 +89,19 @@ class peopleController {
             const type = req.query.type;
             const redisClient: Redis = res.redisClient;
             const key = id + 'Get_Friends' + type;
-            redisClient.get(key, async (err, rs) => {
-                if (err) throw new ServerError('Redis_Get_Friends', err);
-                const friends = rs ? JSON.parse(rs) : [];
-                if (friends?.length) {
-                    // console.log(friends, 'Redis_Get_' + type);
-                    return res.status(200).json(friends);
-                } else {
-                    const data = await peopleServiceSN.getFriends(id, Number(offset), Number(limit), type);
-                    // console.log(data, 'MySQL_Get_' + type);
-                    redisClient.set(key, JSON.stringify(data));
-                    return res.status(200).json(data);
-                }
-            });
+            // redisClient.get(key, async (err, rs) => {
+            //     if (err) throw new ServerError('Redis_Get_Friends', err);
+            //     const friends = rs ? JSON.parse(rs) : [];
+            //     if (friends?.length) {
+            //         // console.log(friends, 'Redis_Get_' + type);
+            //         return res.status(200).json(friends);
+            //     } else {
+            const data = await peopleServiceSN.getFriends(id, Number(offset), Number(limit), type);
+            // console.log(data, 'MySQL_Get_' + type);
+            // redisClient.set(key, JSON.stringify(data));
+            return res.status(200).json(data);
+            //     }
+            // });
         } catch (error) {
             console.log(error, 'getFriendAll');
         }
@@ -116,7 +114,7 @@ class peopleController {
             const kindOf = req.body.params.kindOf;
             const io = res.io;
             const per = req.body.params.per;
-            const data = await peopleServiceSN.delete(id, id_req, kindOf, per);
+            const data = await peopleServiceSN.delete(id, id_req, req.body.params.params, req.body.params.mores, kindOf, per);
             console.log(data, 'delete', 'id_req', id_req);
             if (data) {
                 io.emit(`Del request others?id=${id_req}`, {
@@ -172,7 +170,7 @@ class peopleController {
             const io = res.io;
             const atInfo = req.body.params.atInfor;
             console.log('vo', atInfo);
-            const data = await peopleServiceSN.setConfirm(id, id_fr, kindOf, per);
+            const data = await peopleServiceSN.setConfirm(id, id_fr, kindOf, req.body.params.params, req.body.params.mores, per);
             // if (data.ok === 1 && atInfo) {
             //     io.emit(`Confirmed atInfo ${data.id}`, JSON.stringify({ ok: 1, id_fr: data.id, id: data.id_fr }));
             // }

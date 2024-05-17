@@ -12,8 +12,7 @@ class userController {
             const id: string = req.cookies.k_user;
             const id_reqs: string[] = req.body.id; // getting personal page
             const first = req.body.first;
-            const valid = new Validation();
-            if (!valid.validUUID(id)) throw new Validation('getById', 'Invalid Id of uuid');
+            if (!Validation.validUUID(id)) throw new NotFound('getById', 'Invalid Id of uuid');
             const userData = await UserServiceSN.getById(id, id_reqs, req.body.params, req.body.mores, first);
             if (userData) return res.status(200).json(userData);
             throw new NotFound('GetById', 'login again', { status: 0 });
@@ -27,9 +26,9 @@ class userController {
             const name: string = req.body.name;
             const searchMore: string = req.body.searchMore;
             const cateMore: string = req.body.cateMore;
-            if (!name) throw new Validation('getByName', 'Name Not Found');
+            if (!name) throw new NotFound('getByName', 'Name Not Found');
             const data = await UserServiceSN.getByName(id, name, cateMore, searchMore, req.body.params);
-            if (data.status === 0) throw new Validation('getByName', 'Getting failed');
+            if (data.status === 0) throw new NotFound('getByName', 'Getting failed');
             return res.status(200).json(data.data);
         } catch (error) {
             next(error);

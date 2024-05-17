@@ -76,9 +76,8 @@ class homeController {
     search = () => {};
     setEmotion = async (req: any, res: any, next: express.NextFunction) => {
         try {
-            const Validator = new Validation();
             const _id = req.body._id;
-            if (!Validator.validMongoID(_id)) return res.status(404).json('Invalid Mongodb Id');
+            if (!Validation.validMongoID(_id)) return res.status(404).json('Invalid Mongodb Id');
             const index = req.body.index;
             const id_user = req.body.id_user;
             const state = req.body.state;
@@ -105,7 +104,6 @@ class homeController {
     };
     sendComment = async (req: any, res: any, next: express.NextFunction) => {
         try {
-            const validate = new Validation();
             const id = req.cookies.k_user;
             const postId = req.body.postId;
             const onAnonymous = req.body.onAc;
@@ -114,8 +112,8 @@ class homeController {
             const commentId = req.body.commentId;
             const repliedId = req.body.repliedId;
 
-            if (!validate.validUUID(id)) return res.status(404).json('Id of user is invalid!');
-            if (!validate.validMongoID(postId)) return res.status(404).json('postId of the post is invalid!');
+            if (!Validation.validUUID(id)) return res.status(404).json('Id of user is invalid!');
+            if (!Validation.validMongoID(postId)) return res.status(404).json('postId of the post is invalid!');
             //  postId: dataPost._id, text: reply_com.text, anonymousC: onAc, emos, commentId: reply_com.id, repliesId: reply_com.id_user
             const data = await PostServiceSN.sendComment(postId, id, text, onAnonymous, emos, commentId, repliedId);
             if (data) io.emit(`comment_post_${postId}`, data);
@@ -126,12 +124,11 @@ class homeController {
     };
     getComments = async (req: express.Request, res: express.Response, next: express.NextFunction) => {
         try {
-            const validate = new Validation();
             const postId = req.body.postId;
             const offset = req.body.offset;
             const userId = req.cookies.k_user;
             const limit = req.body.limit;
-            if (!validate.validMongoID(postId)) return res.status(404).json('Id of the post is invalid!');
+            if (!Validation.validMongoID(postId)) return res.status(404).json('Id of the post is invalid!');
             const data = await PostServiceSN.getComments(postId, userId, offset, limit);
             return res.status(200).json(data);
         } catch (error) {

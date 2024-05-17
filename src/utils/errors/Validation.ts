@@ -51,4 +51,4 @@ class Validation extends Error {
         }
     }
 }
-export default Validation;
+export default new Validation();

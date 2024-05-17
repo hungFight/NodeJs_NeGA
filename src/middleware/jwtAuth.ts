@@ -6,6 +6,7 @@ import ServerError from '../utils/errors/ServerError';
 import { Redis } from 'ioredis';
 import getMAC, { isMAC } from 'getmac';
 import { PropsRefreshToken } from '../services/AuthServices/AuthServices';
+import Validation from '../utils/errors/Validation';
 moment.locale('vi');
 // status = 0 is login again
 // status = 9 is server busy
@@ -21,13 +22,9 @@ class JWTVERIFY {
             const userAgent = req.headers['user-agent'] ?? '';
             const IP_USER = req.socket.remoteAddress ?? req.ip;
             const dateTime = new Date();
-            console.log('User Agent:', userAgent, IP_MAC);
-            if (!IP_MAC || !isMAC(IP_MAC)) return res.status(403).json({ status: 0, message: "You're IP_m is empty!" });
-
-            console.log('JWTVERIFY');
+            if (!IP_MAC || !isMAC(IP_MAC) || !Validation.validUUID(userId)) return res.status(403).json({ status: 0, message: "You're IP_m is empty!" });
             redisClient.get(userId + 'refreshToken', (err, dataRD) => {
                 console.log('JWTVERIFY', userId, dataRD);
-
                 // save token into redis
                 if (err) return res.status(404).json('Error getting refresh token: ' + err);
 
