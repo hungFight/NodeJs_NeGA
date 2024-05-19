@@ -259,14 +259,7 @@ class PeopleService {
         per?: 'personal',
     ): Promise<
         | {
-              ok: {
-                  id: string;
-                  idRequest: string;
-                  idIsRequested: string;
-                  level: number;
-                  createdAt: Date;
-                  updatedAt: Date;
-              };
+              ok: any;
               count_following?: number;
               count_followed?: number;
               count_following_other?: number;
@@ -374,21 +367,78 @@ class PeopleService {
                                     if (otherPrivates.subAccount !== 'everyone') otherAccountUser = false;
                                     if (yourPrivates.subAccount !== 'everyone') youAccountUser = false;
                                     console.log(otherParams, otherParamsMore, youParams, youParamsMore, 'youParamsMore', otherMore, youMore, otherPrivates, yourPrivates);
-
                                     const [dataFL, userData, otherData] = await Promise.all([
                                         xPrismaF.getFollower(id_req, id_user),
                                         prisma.user.findUnique({
                                             where: { id: id_user },
-                                            select: { ...youParams, password: false, phoneNumberEmail: false, accountUser: youAccountUser, more: { select: { ...youParamsMore, privacy: true } } },
+                                            select: {
+                                                id: true,
+                                                fullName: true,
+                                                gender: true,
+                                                avatar: true,
+                                                background: true,
+                                                ...youParams,
+                                                password: false,
+                                                phoneNumberEmail: false,
+                                                accountUser: youAccountUser,
+                                                mores: { select: { ...youParamsMore, privacy: true } },
+                                                followings: {
+                                                    where: {
+                                                        OR: [
+                                                            { idFollowing: id_user, idIsFollowed: id_req },
+                                                            { idFollowing: id_req, idIsFollowed: id_user },
+                                                        ],
+                                                    },
+                                                },
+                                                followed: {
+                                                    where: {
+                                                        OR: [
+                                                            { idFollowing: id_req, idIsFollowed: id_user },
+                                                            { idFollowing: id_user, idIsFollowed: id_req },
+                                                        ],
+                                                    },
+                                                },
+                                                isLoved: {
+                                                    where: {
+                                                        userId: id_user,
+                                                    },
+                                                },
+                                            },
                                         }),
                                         prisma.user.findUnique({
                                             where: { id: id_req },
                                             select: {
+                                                id: true,
+                                                fullName: true,
+                                                gender: true,
+                                                avatar: true,
+                                                background: true,
                                                 ...otherParams,
                                                 password: false,
                                                 phoneNumberEmail: false,
                                                 accountUser: otherAccountUser,
-                                                more: { select: { ...otherParamsMore, privacy: true } },
+                                                mores: { select: { ...otherParamsMore, privacy: true } },
+                                                followings: {
+                                                    where: {
+                                                        OR: [
+                                                            { idFollowing: id_user, idIsFollowed: id_req },
+                                                            { idFollowing: id_req, idIsFollowed: id_user },
+                                                        ],
+                                                    },
+                                                },
+                                                followed: {
+                                                    where: {
+                                                        OR: [
+                                                            { idFollowing: id_req, idIsFollowed: id_user },
+                                                            { idFollowing: id_user, idIsFollowed: id_req },
+                                                        ],
+                                                    },
+                                                },
+                                                isLoved: {
+                                                    where: {
+                                                        userId: id_req,
+                                                    },
+                                                },
                                             },
                                         }),
                                     ]);
@@ -407,17 +457,28 @@ class PeopleService {
                                         xPrismaF.countFriends(id_user),
                                         xPrismaF.countFriends(id_req),
                                     ]);
-                                    if (userData) {
-                                        //   userData.
+                                    const youData: any = userData;
+                                    const otherDataSt: any = otherData;
+
+                                    if (youData) {
+                                        youData.mores[0].followingAmount = count_following;
+                                        youData.mores[0].followedAmount = count_followed;
+                                        youData.mores[0].friendAmount = count_friends;
                                     }
-                                    // const fffff: any = friendData;
-                                    // fffff.userRequest.mores[0].followingAmount = count_following_other;
-                                    // fffff.userRequest.mores[0].followedAmount = count_followed_other;
-                                    // fffff.userRequest.mores[0].friendAmount = count_friends_other;
-                                    // fffff.userIsRequested.mores[0].followingAmount = count_following;
-                                    // fffff.userIsRequested.mores[0].followedAmount = count_followed;
-                                    // fffff.userIsRequested.mores[0].friendAmount = count_friends;
-                                    // resolve({ ok: fffff, count_following, count_followed, count_following_other, count_followed_other, count_friends, count_friends_other });
+                                    if (otherDataSt) {
+                                        otherDataSt.mores[0].followingAmount = count_following_other;
+                                        otherDataSt.mores[0].followedAmount = count_followed_other;
+                                        otherDataSt.mores[0].friendAmount = count_friends_other;
+                                    }
+                                    resolve({
+                                        ok: { youData: { ...youData, userRequest: [], userIsRequested: [] }, otherDataSt: { ...otherDataSt, userRequest: [], userIsRequested: [] } },
+                                        count_following,
+                                        count_followed,
+                                        count_following_other,
+                                        count_followed_other,
+                                        count_friends,
+                                        count_friends_other,
+                                    });
                                 }
                             } else resolve({ ok: dataF });
                         }

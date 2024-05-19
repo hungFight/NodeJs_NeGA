@@ -117,14 +117,8 @@ class peopleController {
             const data = await peopleServiceSN.delete(id, id_req, req.body.params.params, req.body.params.mores, kindOf, per);
             console.log(data, 'delete', 'id_req', id_req);
             if (data) {
-                io.emit(`Del request others?id=${id_req}`, {
-                    userId: id_req,
-                    youId: id,
-                    ...data,
-                });
                 io.emit(`Del request others?id=${id}`, {
                     userId: id_req,
-                    youId: id,
                     ...data,
                 });
                 // redisClient.get(`${data.ok?.idFriend} message`, (err, rs) => {
