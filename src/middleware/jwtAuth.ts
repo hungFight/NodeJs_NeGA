@@ -34,7 +34,7 @@ class JWTVERIFY {
                     if (newDataFiltered) {
                         const my = newDataFiltered.refreshToken.split('@_@');
                         const [refreshToken, code] = my;
-                        console.log(refreshToken, code, 'newDataD', newDataFiltered);
+                        console.log(refreshToken, code, 'newDataD', newDataFiltered, 'authHeader', authHeader);
                         if (authHeader && userId && refreshToken && code) {
                             const tokenc = authHeader && authHeader.split(' ')[1];
                             if (!tokenc) {
@@ -46,7 +46,7 @@ class JWTVERIFY {
                                         if (err) {
                                             // when every login session is created we'll use code of refreshToken
                                             console.log(err);
-                                            token.deleteToken(res, userId, IP_MAC, IP_USER);
+                                            // token.deleteToken(res, userId, IP_MAC, IP_USER);
                                             return res.status(403).json({ status: 0, message: 'Token is not valid' });
                                         }
                                         console.log(user, 'user');
@@ -55,7 +55,7 @@ class JWTVERIFY {
 
                                             // data: {id:string; iat: number; exp: number}
                                             if (err) {
-                                                token.deleteToken(res, userId, IP_MAC, IP_USER);
+                                                // token.deleteToken(res, userId, IP_MAC, IP_USER);
                                                 return res.status(403).json({ status: 0, message: 'RefreshToken is not valid' });
                                             }
                                             if (data.id === userId) {
@@ -94,14 +94,14 @@ class JWTVERIFY {
                                 }
                             }
                         } else {
-                            token.deleteToken(res, userId, IP_MAC, IP_USER);
+                            // token.deleteToken(res, userId, IP_MAC, IP_USER);
                             return res.status(403).json({ status: 0, message: "You're not authenticated!" });
                         }
                     } else {
                         return res.status(403).json({ status: 0, message: 'Unauthorized! 3' });
                     }
                 } else {
-                    token.deleteToken(res, userId, IP_MAC, IP_USER);
+                    // token.deleteToken(res, userId, IP_MAC, IP_USER);
                     return res.status(401).json({ status: 0, message: 'Expires refreshToken!' });
                 }
             });

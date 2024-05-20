@@ -13,7 +13,7 @@ class userController {
             const id_reqs: string[] = req.body.id; // getting personal page
             const first = req.body.first;
             if (!Validation.validUUID(id)) throw new NotFound('getById', 'Invalid Id of uuid');
-            const userData = await UserServiceSN.getById(id, id_reqs, req.body.params, req.body.mores, first);
+            const userData = await UserServiceSN.getById(id, id_reqs, first);
             if (userData) return res.status(200).json(userData);
             throw new NotFound('GetById', 'login again', { status: 0 });
         } catch (error) {

@@ -400,7 +400,7 @@ class PeopleService {
                                                 },
                                                 isLoved: {
                                                     where: {
-                                                        userId: id_user,
+                                                        userId: id_req,
                                                     },
                                                 },
                                             },
@@ -436,7 +436,7 @@ class PeopleService {
                                                 },
                                                 isLoved: {
                                                     where: {
-                                                        userId: id_req,
+                                                        userId: id_user,
                                                     },
                                                 },
                                             },

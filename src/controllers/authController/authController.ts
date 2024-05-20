@@ -21,7 +21,7 @@ class authController {
                 if (!phoneNumberEmail || !password || phoneNumberEmail.includes(error) || password.includes(error)) {
                     throw new NotFound('Login', 'Please enter your Account!');
                 } else {
-                    const userData: any = await authServices.login(redisClient, phoneNumberEmail, password, IP_USER, IP_MAC, userAgent);
+                    const userData: any = await authServices.login(res, redisClient, phoneNumberEmail, password, IP_USER, IP_MAC, userAgent);
                     if (userData) {
                         return res.status(200).json(userData);
                     }
@@ -48,17 +48,7 @@ class authController {
             if (!phoneNumberEmail || !password || phoneNumberEmail.includes(error) || password.includes(error) || !isMAC(IP_MAC)) {
                 throw new NotFound('Login', 'Please enter your Account!');
             } else {
-                const userData: any = await authServices.login(
-                    redisClient,
-                    phoneNumberEmail,
-                    password,
-                    IP_USER,
-                    IP_MAC,
-                    userAgent,
-                    true,
-                    id_you,
-                    id_other,
-                );
+                const userData: any = await authServices.login(res, redisClient, phoneNumberEmail, password, IP_USER, IP_MAC, userAgent, true, id_you, id_other);
                 return res.status(200).json(userData);
             }
         } catch (error) {

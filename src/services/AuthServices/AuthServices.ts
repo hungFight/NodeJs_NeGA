@@ -2,7 +2,7 @@ import moment from 'moment';
 import { v4 as primaryKey } from 'uuid';
 import bcrypt from 'bcryptjs';
 import 'moment/locale/vi';
-
+import express from 'express';
 import Token from '../TokensService/Token';
 import Security from './Security';
 import UserSecurity from './Security';
@@ -11,6 +11,7 @@ import token from '../TokensService/Token';
 import { prisma } from '../../';
 import { Redis } from 'ioredis';
 import Validation from '../../utils/errors/Validation';
+import UserServiceSN from '../WebsServices/UserServiceSN';
 moment.locale('vi');
 export interface PropsRefreshToken {
     refreshToken: string;
@@ -21,9 +22,59 @@ export interface PropsRefreshToken {
     status: { name: 'login' | 'logout' | 'invalid'; dateTime: Date | string; ip: string }[];
     userAgent: string;
 }
-
+export const params: {
+    [address: string]: boolean;
+    biography: boolean;
+    birthday: boolean;
+    active: boolean;
+    hobby: boolean;
+    skill: boolean;
+    occupation: boolean;
+    schoolName: boolean;
+    firstPage: boolean;
+    secondPage: boolean;
+    thirdPage: boolean;
+} = {
+    address: true,
+    biography: true,
+    birthday: true,
+    active: true,
+    hobby: true,
+    skill: true,
+    occupation: true,
+    schoolName: true,
+    firstPage: true,
+    secondPage: true,
+    thirdPage: true,
+};
+export const mores: {
+    [position: string]: boolean;
+    star: boolean;
+    loverAmount: boolean;
+    friendAmount: boolean;
+    visitorAmount: boolean;
+    followedAmount: boolean;
+    followingAmount: boolean;
+    relationship: boolean;
+    language: boolean;
+    createdAt: boolean;
+    privacy: boolean;
+} = {
+    position: true,
+    star: true,
+    loverAmount: true,
+    friendAmount: true,
+    visitorAmount: true,
+    followedAmount: true,
+    followingAmount: true,
+    relationship: true,
+    language: true,
+    createdAt: true,
+    privacy: true,
+};
 class AuthServices {
     login = async (
+        res: express.Response,
         redisClient: Redis,
         phoneNumberEmail: string,
         password: string,
@@ -54,22 +105,22 @@ class AuthServices {
                                         Object.freeze(u);
                                         if (id && !(id === u.id)) {
                                             // create a new SubAccount
-                                            const sub = await prisma.subAccounts.findFirst({
-                                                //find the account
-                                                where: {
-                                                    userId: id,
-                                                    phoneNumberEmail: phoneNumberEmail,
-                                                    accountId: u.id,
-                                                },
-                                            });
-                                            const subCount = await prisma.subAccounts.count({
-                                                where: {
-                                                    userId: id,
-                                                },
-                                            });
+                                            const [sub, subCount] = await Promise.all([
+                                                prisma.subAccounts.findFirst({
+                                                    where: {
+                                                        userId: id,
+                                                        phoneNumberEmail: phoneNumberEmail,
+                                                        accountId: u.id,
+                                                    },
+                                                }),
+                                                prisma.subAccounts.count({
+                                                    where: {
+                                                        userId: id,
+                                                    },
+                                                }),
+                                            ]);
                                             if (!sub && subCount < 5) {
                                                 const resSub = await prisma.subAccounts.create({
-                                                    // create
                                                     data: {
                                                         id: primaryKey(),
                                                         userId: id,
@@ -119,6 +170,13 @@ class AuthServices {
                                                 }
                                             });
                                         }
+                                        if (accessToken)
+                                            res.cookie('tks', 'Bearer ' + accessToken, {
+                                                path: '/',
+                                                secure: false, // Set to true if you're using HTTPS
+                                                sameSite: 'strict', // Options: 'lax', 'strict', 'none'
+                                                expires: new Date(new Date().getTime() + 30 * 86409000), // 30 days
+                                            });
                                         redisClient.get(u.id + 'refreshToken', (err, data) => {
                                             console.log(data, 'IN AuthService');
                                             if (err) console.log(err, 'IN AuthService');
@@ -176,8 +234,7 @@ class AuthServices {
                                                 );
                                             }
                                         });
-
-                                        resolve({ ...u, accessToken });
+                                        if (u.id) resolve(await UserServiceSN.getById(u.id, [], 'only'));
                                     }
                                 }
                             }

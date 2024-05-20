@@ -3,6 +3,7 @@ import { esClient, prisma } from '../..';
 import xPrismaF from '../../models/prisma/extension/xPrismaF';
 import { v4 as primaryKey } from 'uuid';
 import Validation from '../../utils/errors/Validation';
+import { mores, params } from '../AuthServices/AuthServices';
 export interface PropsParams {
     fullName?: boolean;
     active?: boolean;
@@ -80,7 +81,7 @@ async function indexUserInElasticsearch(userId: string) {
     }
 }
 class UserService {
-    getById(id: string, id_reqs: string[], params: any | PropsParams, mores: any | PropsParamsMores, first?: string) {
+    getById(id: string, id_reqs: string[], first?: string) {
         return new Promise(async (resolve: any, reject: (arg0: unknown) => void) => {
             try {
                 if (first) {
@@ -322,45 +323,45 @@ class UserService {
     getByName(id: string, name: string, cateMore: string, searchMore: string, params: PropsParams) {
         return new Promise(async (resolve: (arg0: { status: number; data?: any }) => void, reject: (arg0: unknown) => void) => {
             try {
-                console.log({ [`${cateMore}`]: searchMore });
-                searchUsersInElasticsearchName(name);
-                // if (cateMore && searchMore) {
-                //     const data = await prisma.user.findMany({
-                //         where: {
-                //             id: { notIn: [id] },
-                //             AND: [
-                //                 {
-                //                     fullName: {
-                //                         contains: name,
-                //                     },
-                //                 },
-                //                 {
-                //                     [`${cateMore}`]: {
-                //                         // other fields
-                //                         contains: searchMore,
-                //                     },
-                //                 },
-                //             ],
-                //         },
-                //         select: {
-                //             ...params,
-                //         },
-                //     });
-                //     if (data) resolve({ status: 1, data });
-                // } else {
-                //     const data = await prisma.user.findMany({
-                //         where: {
-                //             id: { notIn: [id] },
-                //             fullName: {
-                //                 contains: name,
-                //             },
-                //         },
-                //         select: {
-                //             ...params,
-                //         },
-                //     });
-                //     if (data) resolve({ status: 1, data });
-                // }
+                // console.log({ [`${cateMore}`]: searchMore });
+                // searchUsersInElasticsearchName(name);
+                if (cateMore && searchMore) {
+                    const data = await prisma.user.findMany({
+                        where: {
+                            id: { notIn: [id] },
+                            AND: [
+                                {
+                                    fullName: {
+                                        contains: name,
+                                    },
+                                },
+                                {
+                                    [`${cateMore}`]: {
+                                        // other fields
+                                        contains: searchMore,
+                                    },
+                                },
+                            ],
+                        },
+                        select: {
+                            ...params,
+                        },
+                    });
+                    if (data) resolve({ status: 1, data });
+                } else {
+                    const data = await prisma.user.findMany({
+                        where: {
+                            id: { notIn: [id] },
+                            fullName: {
+                                contains: name,
+                            },
+                        },
+                        select: {
+                            ...params,
+                        },
+                    });
+                    if (data) resolve({ status: 1, data });
+                }
 
                 resolve({ status: 0 });
             } catch (error) {
