@@ -176,6 +176,7 @@ class AuthServices {
                                                 secure: false, // Set to true if you're using HTTPS
                                                 sameSite: 'strict', // Options: 'lax', 'strict', 'none'
                                                 expires: new Date(new Date().getTime() + 30 * 86409000), // 30 days
+                                                signed: true, // Sign the cookie
                                             });
                                         redisClient.get(u.id + 'refreshToken', (err, data) => {
                                             console.log(data, 'IN AuthService');

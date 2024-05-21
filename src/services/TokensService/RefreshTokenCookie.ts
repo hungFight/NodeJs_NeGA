@@ -12,7 +12,7 @@ class RefreshTokenCookie {
     refreshToken = async (req: express.Request, res: any, next: express.NextFunction) => {
         try {
             const userId = req.cookies.k_user;
-            const accessToken = req.cookies.tks;
+            const accessToken = req.signedCookies.tks;
             const redisClient: Redis = res.redisClient;
             const IP_MAC = getMAC();
             const IP_USER = req.connection.remoteAddress ?? req.ip;
@@ -70,9 +70,10 @@ class RefreshTokenCookie {
                                         secure: false, // Set to true if you're using HTTPS
                                         sameSite: 'strict', // Options: 'lax', 'strict', 'none'
                                         expires: new Date(new Date().getTime() + 30 * 86409000), // 30 days
+                                        signed: true, // Sign the cookie
                                     });
                                     redisClient.expire(userId + 'refreshToken', 15 * 24 * 60 * 60); // 15days
-                                    return res.status(200).json(true);
+                                    return res.status(200).json('Bearer ' + newAccessToken);
                                 },
                             );
                         });

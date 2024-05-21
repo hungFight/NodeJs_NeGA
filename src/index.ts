@@ -83,12 +83,9 @@ io.on('connection', (client: any) => {
                 id: res.id_other,
             });
         });
-        client.on(
-            `user_${id}_in_roomChat_personal_receive_and_saw`,
-            async (data: { userIdReceived: string; conversationId: string; idChat: string }) => {
-                client.broadcast.emit(`user_${data.conversationId}_in_roomChat_personal_receive_and_saw_other`, data);
-            },
-        );
+        client.on(`user_${id}_in_roomChat_personal_receive_and_saw`, async (data: { userIdReceived: string; conversationId: string; idChat: string }) => {
+            client.broadcast.emit(`user_${data.conversationId}_in_roomChat_personal_receive_and_saw_other`, data);
+        });
     });
     client.on('disconnect', () => {
         const currentDate = moment(new Date()).format('YYYY-MM-DD HH:mm:ss');
@@ -139,9 +136,9 @@ app.use((req: any, res: any, next) => {
     res.redisClient = redisClient;
     next();
 });
-app.get('/', (req, res) => {
-    return res.json('Hello');
-});
+// app.get('/', (req, res) => {
+//     return res.json('Hello');
+// });
 app.use(cookieParser(process.env.SECRET));
 app.use(
     cors({
