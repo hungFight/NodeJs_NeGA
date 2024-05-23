@@ -101,14 +101,13 @@ const chats = new Schema(
         },
         pins: [
             {
-                _id: { type: String, required: true, maxLength: 50, index: true },
+                roomId: { type: String, maxLength: 50 },
+                filterId: { type: String, maxLength: 50 },
                 chatId: { type: String, maxLength: 50 },
                 userId: { type: String, maxLength: 50 },
                 createdAt: { type: Date, default: Date.now() },
                 updatedAt: { type: Date, default: '' },
-                latestChatId: { type: String, maxLength: 50 },
             },
-            { _id: false },
         ],
         statusOperation: [
             {

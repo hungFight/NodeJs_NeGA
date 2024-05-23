@@ -756,25 +756,23 @@ class SendChatService {
             }
         });
     }
-    pin(conversationId: string, chatId: string, userId: string, latestChatId: string) {
+    pin(conversationId: string, roomId: string, filterId: string, chatId: string, userId: string) {
         // delete both side
         return new Promise(async (resolve, reject) => {
             try {
                 const date = new Date();
-                const _id = primaryKey();
                 const res = await ConversationRooms.updateOne(
                     { _id: conversationId, 'pins.chatId': { $ne: chatId } }, // $ne check chatId in pins, did it exist? if yes it won't be updated
                     {
-                        $addToSet: { pins: { chatId, userId, createdAt: date, latestChatId, _id } }, // push an element into pins
+                        $addToSet: { pins: { chatId, userId, createdAt: date } }, // push an element into pins
                     },
 
                     {
                         new: true,
                     },
                 );
-                if (res.acknowledged) {
-                    resolve({ chatId, userId, createdAt: date, latestChatId, _id });
-                }
+                if (res.acknowledged) resolve({ chatId, userId, createdAt: date });
+
                 resolve(null);
             } catch (error) {
                 reject(error);

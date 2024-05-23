@@ -211,15 +211,15 @@ class SendChat {
         try {
             const conversationId: string = req.body.conversationId;
             const chatId: string = req.body.chatId;
-            const userId: string = req.body.userId;
+            const userId = req.body.userId;
             const io: Server<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any> = res.io;
-            const latestChatId: string = req.body.latestChatId;
+            const roomId = req.body.roomId;
+            const filterId = req.body.filterId;
 
-            if (!conversationId || !chatId || !userId || !latestChatId) throw new NotFound('Pin chat', 'conversationId, userId, chatId, latestChatId or chatId or userId not provided');
-            const data = await SendChatServiceSN.pin(conversationId, chatId, userId, latestChatId);
-            if (data) {
-                io.emit(`conversation_pins_room_${conversationId}`, data);
-            }
+            if (!Validation.validMongoID([conversationId, roomId, filterId]) || !Validation.validUUID([chatId, userId]))
+                throw new NotFound('Pin chat', 'conversationId, userId, chatId, latestChatId or chatId or userId not provided');
+            const data = await SendChatServiceSN.pin(conversationId, roomId, filterId, chatId, userId);
+            if (data) io.emit(`conversation_pins_room_${conversationId}`, data);
             return res.status(200).json(data);
         } catch (error) {
             next(error);
