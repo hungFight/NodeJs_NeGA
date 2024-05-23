@@ -1,9 +1,10 @@
 import moment from 'moment';
 import { esClient, prisma } from '../..';
-import xPrismaF from '../../models/prisma/extension/xPrismaF';
 import { v4 as primaryKey } from 'uuid';
 import Validation from '../../utils/errors/Validation';
-import { mores, params } from '../AuthServices/AuthServices';
+import CLassUser from '../../Classes/CLassUser';
+import ClassFollower from '../../Classes/ClassFollower';
+import ClassSubAccount from '../../Classes/ClassSubAccount';
 export interface PropsParams {
     fullName?: boolean;
     active?: boolean;
@@ -34,219 +35,17 @@ export interface PropsParamsMores {
     relationship?: boolean;
     language?: boolean;
 }
-async function searchUsersInElasticsearchName(query: string) {
-    try {
-        const data = await esClient.search({
-            index: 'users', // Elasticsearch index name
-            body: {
-                query: {
-                    match: {
-                        fullName: query, // Search by user's full name
-                    },
-                },
-            },
-        });
-        console.log('users are found ', data);
 
-        // const users = body.hits.hits.map((hit) => hit._source);
-        // return users;
-    } catch (error) {
-        console.error('Error searching users in Elasticsearch:', error);
-        return [];
-    }
-}
-async function indexUserInElasticsearch(userId: string) {
-    try {
-        const user = await prisma.user.findUnique({
-            where: { id: userId },
-        });
-
-        if (!user) {
-            throw new Error(`User with id ${userId} not found`);
-        }
-
-        // Index user data in Elasticsearch
-        await esClient.index({
-            index: 'users', // Elasticsearch index name
-            id: user.id,
-            body: {
-                fullName: user.fullName,
-                // Add more fields as needed
-            },
-        });
-
-        console.log(`User ${userId} indexed in Elasticsearch`);
-    } catch (error) {
-        console.error('Error indexing user in Elasticsearch:', error);
-    }
-}
 class UserService {
     getById(id: string, id_reqs: string[], first?: string) {
         return new Promise(async (resolve: any, reject: (arg0: unknown) => void) => {
             try {
                 if (first) {
-                    const data = await prisma.user.findUnique({
-                        where: { id: id },
-                        select: {
-                            id: true,
-                            fullName: true,
-                            gender: true,
-                            avatar: true,
-                            background: true,
-                            ...params,
-                            password: false,
-                            phoneNumberEmail: false,
-                        },
-                    });
+                    const data = await CLassUser.getById(id);
                     if (data) resolve(data);
                 } else {
-                    const data = await prisma.user.findMany({
-                        where: { id: { in: id_reqs } },
-                        select: {
-                            id: true,
-                            mores: {
-                                select: {
-                                    privacy: true,
-                                },
-                            },
-                            userRequest: {
-                                where: {
-                                    OR: [
-                                        { idRequest: id, idIsRequested: { in: id_reqs } },
-                                        { idRequest: { in: id_reqs }, idIsRequested: id },
-                                    ],
-                                },
-                            },
-                            userIsRequested: {
-                                where: {
-                                    OR: [
-                                        { idRequest: { in: id_reqs }, idIsRequested: id },
-                                        { idRequest: id, idIsRequested: { in: id_reqs } },
-                                    ],
-                                },
-                            },
-                        },
-                    });
-
-                    const newData = await Promise.all(
-                        data.map(async (us: { mores: { privacy: any }[]; id: string; userRequest: { level: number }[]; userIsRequested: { level: number }[] }) => {
-                            const privacy: any = us.mores[0].privacy;
-                            const privates: {
-                                [position: string]: string;
-                                address: string;
-                                birthday: string;
-                                relationship: string;
-                                gender: string;
-                                schoolName: string;
-                                occupation: string;
-                                hobby: string;
-                                skill: string;
-                                language: string;
-                                subAccount: string;
-                            } = privacy;
-                            let accountUser: any = {
-                                select: {
-                                    account: {
-                                        select: {
-                                            id: true,
-                                            fullName: true,
-                                            avatar: true,
-                                            gender: true,
-                                            phoneNumberEmail: true,
-                                        },
-                                    },
-                                },
-                            };
-                            if (id !== us.id) {
-                                Object.keys(params).forEach((key: any) => {
-                                    params[key] = privates[key] === 'everyone' || ((us.userRequest[0]?.level === 2 || us.userIsRequested[0]?.level === 2) && privates[key] !== 'only') ? true : false;
-                                });
-                                Object.keys(mores).forEach((key: any) => {
-                                    mores[key] = privates[key] === 'everyone' || ((us.userRequest[0]?.level === 2 || us.userIsRequested[0]?.level === 2) && privates[key] !== 'only') ? true : false;
-                                });
-                                if (privates.subAccount !== 'everyone' || !(us.userRequest[0]?.level === 2 || us.userIsRequested[0]?.level === 2)) {
-                                    accountUser = false;
-                                }
-                            }
-                            const newUs: any = await prisma.user.findUnique({
-                                where: {
-                                    id: us.id,
-                                },
-                                select: {
-                                    id: true,
-                                    fullName: true,
-                                    gender: true,
-                                    avatar: true,
-                                    background: true,
-                                    ...params,
-                                    password: false,
-                                    phoneNumberEmail: false,
-                                    mores: {
-                                        select: {
-                                            ...mores,
-                                            privacy: true,
-                                        },
-                                    },
-                                    userRequest: {
-                                        where: {
-                                            OR: [
-                                                { idRequest: id, idIsRequested: us.id },
-                                                { idRequest: us.id, idIsRequested: id },
-                                            ],
-                                        },
-                                    },
-                                    userIsRequested: {
-                                        where: {
-                                            OR: [
-                                                { idRequest: us.id, idIsRequested: id },
-                                                { idRequest: id, idIsRequested: us.id },
-                                            ],
-                                        },
-                                    },
-                                    followings: {
-                                        where: {
-                                            OR: [
-                                                { idFollowing: id, idIsFollowed: us.id },
-                                                { idFollowing: us.id, idIsFollowed: id },
-                                            ],
-                                        },
-                                    },
-                                    followed: {
-                                        where: {
-                                            OR: [
-                                                { idFollowing: us.id, idIsFollowed: id },
-                                                { idFollowing: id, idIsFollowed: us.id },
-                                            ],
-                                        },
-                                    },
-                                    isLoved: {
-                                        where: {
-                                            userId: id,
-                                        },
-                                    },
-                                    accountUser,
-                                },
-                            });
-                            if (newUs?.mores) {
-                                const [count_friends, count_following, count_followed, count_loves] = await Promise.all([
-                                    xPrismaF.countFriends(us.id),
-                                    xPrismaF.countFollowing(us.id),
-                                    xPrismaF.countFollowed(us.id),
-                                    prisma.lovers.count({
-                                        where: { idIsLoved: us.id },
-                                    }),
-                                ]);
-                                newUs.mores[0].followingAmount = count_following;
-                                newUs.mores[0].followedAmount = count_followed;
-                                newUs.mores[0].friendAmount = count_friends;
-                                newUs.mores[0].loverAmount = count_loves;
-                                console.log('loves newUs', newUs, privates, mores, 'mores');
-                                return newUs;
-                            }
-                        }),
-                    );
+                    const newData = await CLassUser.getOtherById(id_reqs, id);
                     console.log(newData, 'newData', id_reqs);
-
                     resolve(newData);
                 }
                 resolve(false);
@@ -615,9 +414,8 @@ class UserService {
                     updatedAt: Date;
                 } | null = null;
 
-                const follows = await xPrismaF.getFollowerAsync(id, id_fl);
+                const follows = await ClassFollower.getIdFollowing_idIsFollowed(id, id_fl);
                 console.log(follows, 'follows_');
-
                 if (!follows) {
                     ok = await prisma.followers.create({
                         data: {
@@ -631,34 +429,10 @@ class UserService {
                 } else {
                     console.log(follows, id_fl, ' yyyyy__');
 
-                    if (follows.idFollowing === id_fl) {
-                        ok = await prisma.followers.update({
-                            where: {
-                                id: follows.id,
-                            },
-                            data: {
-                                following: 2,
-                                updatedAt: date,
-                            },
-                        });
-                    } else if (follows.idIsFollowed === id_fl) {
-                        ok = await prisma.followers.update({
-                            where: {
-                                id: follows.id,
-                            },
-                            data: {
-                                followed: 2,
-                                updatedAt: date,
-                            },
-                        });
-                    }
+                    if (follows.idFollowing === id_fl) ok = await ClassFollower.updateLevelFollowing(follows.id, 2);
+                    else if (follows.idIsFollowed === id_fl) ok = await ClassFollower.updateLevelFollowed(follows.id, 2);
                 }
-                const [count_followed, count_following, count_followed_other, count_following_other] = await Promise.all([
-                    xPrismaF.countFollowed(id_fl),
-                    xPrismaF.countFollowing(id_fl),
-                    xPrismaF.countFollowed(id),
-                    xPrismaF.countFollowing(id),
-                ]);
+                const [count_followed, count_following, count_followed_other, count_following_other] = await ClassFollower.getCountTwo(id, id_fl);
                 resolve({ ok, count_followed, count_following, count_followed_other, count_following_other });
             } catch (error) {
                 reject(error);
@@ -695,17 +469,13 @@ class UserService {
                     createdAt: Date;
                     updatedAt: Date;
                 } | null = null;
-                const follow = await xPrismaF.getFollowerAsync(id, id_fl);
+                const follow = await ClassFollower.getIdFollowing_idIsFollowed(id, id_fl);
                 console.log(date, 'date', follow);
                 if (follow) {
-                    if ((follow.idFollowing === id_fl && follow.followed === 1) || (follow.idIsFollowed === id_fl && follow.following === 1)) {
-                        ok = await prisma.followers.delete({
-                            where: {
-                                id: follow.id,
-                            },
-                        });
-                    } else if (follow.idFollowing === id_fl) {
-                        ok = await prisma.followers.update({
+                    if ((follow.idFollowing === id_fl && follow.followed === 1) || (follow.idIsFollowed === id_fl && follow.following === 1)) ok = await ClassFollower.deleteIf(follow.id);
+                    else if (follow.idFollowing === id_fl) {
+                        ok = await ClassFollower.updateLevelFollowing(follow.id, 1);
+                        prisma.followers.update({
                             where: {
                                 id: follow.id,
                             },
@@ -713,23 +483,9 @@ class UserService {
                                 following: 1,
                             },
                         });
-                    } else if (follow.idIsFollowed === id_fl) {
-                        ok = await prisma.followers.update({
-                            where: {
-                                id: follow.id,
-                            },
-                            data: {
-                                followed: 1,
-                            },
-                        });
-                    }
+                    } else if (follow.idIsFollowed === id_fl) ok = await ClassFollower.updateLevelFollowed(follow.id, 1);
 
-                    const [count_followed, count_following, count_followed_other, count_following_other] = await Promise.all([
-                        xPrismaF.countFollowed(id_fl),
-                        xPrismaF.countFollowing(id_fl),
-                        xPrismaF.countFollowed(id),
-                        xPrismaF.countFollowing(id),
-                    ]);
+                    const [count_followed, count_following, count_followed_other, count_following_other] = await ClassFollower.getCountTwo(id, id_fl);
                     resolve({ ok, count_followed, count_following, count_followed_other, count_following_other });
                 }
             } catch (error) {
@@ -737,27 +493,11 @@ class UserService {
             }
         });
     }
-    delSubAccount(id: string, ownId: string, phoneOrEmail: string) {
+    delSubAccount(id: string) {
         return new Promise(async (resolve: (arg0: boolean) => void, reject: (arg0: unknown) => void) => {
             try {
-                const sub = await prisma.subAccounts.findFirst({
-                    where: {
-                        userId: ownId,
-                        phoneNumberEmail: phoneOrEmail,
-                        accountId: id,
-                    },
-                });
-                if (sub) {
-                    const del = await prisma.subAccounts.delete({
-                        where: {
-                            id: sub.id,
-                            userId: ownId,
-                            phoneNumberEmail: phoneOrEmail,
-                            accountId: id,
-                        },
-                    });
-                    if (del) resolve(true);
-                }
+                const del = await ClassSubAccount.delete(id);
+                if (del) resolve(true);
                 resolve(false);
             } catch (error) {
                 reject(error);

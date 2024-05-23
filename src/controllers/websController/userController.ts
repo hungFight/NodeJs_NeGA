@@ -93,9 +93,10 @@ class userController {
     delSubAccount = async (req: express.Request, res: express.Response) => {
         try {
             const id = req.body.id;
-            const ownId = req.cookies.k_user;
-            const phoneOrEmail = req.cookies.phoneOrEmail;
-            const data: boolean = await UserServiceSN.delSubAccount(id, ownId, phoneOrEmail);
+            // const ownId = req.cookies.k_user;
+            // const phoneOrEmail = req.cookies.phoneOrEmail;
+            const data: boolean = await UserServiceSN.delSubAccount(id);
+            // const data: boolean = await UserServiceSN.delSubAccount(id, ownId, phoneOrEmail);
             return res.status(200).json(data);
         } catch (error) {
             console.log(error);

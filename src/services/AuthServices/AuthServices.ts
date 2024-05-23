@@ -22,56 +22,6 @@ export interface PropsRefreshToken {
     status: { name: 'login' | 'logout' | 'invalid'; dateTime: Date | string; ip: string }[];
     userAgent: string;
 }
-export const params: {
-    [address: string]: boolean;
-    biography: boolean;
-    birthday: boolean;
-    active: boolean;
-    hobby: boolean;
-    skill: boolean;
-    occupation: boolean;
-    schoolName: boolean;
-    firstPage: boolean;
-    secondPage: boolean;
-    thirdPage: boolean;
-} = {
-    address: true,
-    biography: true,
-    birthday: true,
-    active: true,
-    hobby: true,
-    skill: true,
-    occupation: true,
-    schoolName: true,
-    firstPage: true,
-    secondPage: true,
-    thirdPage: true,
-};
-export const mores: {
-    [position: string]: boolean;
-    star: boolean;
-    loverAmount: boolean;
-    friendAmount: boolean;
-    visitorAmount: boolean;
-    followedAmount: boolean;
-    followingAmount: boolean;
-    relationship: boolean;
-    language: boolean;
-    createdAt: boolean;
-    privacy: boolean;
-} = {
-    position: true,
-    star: true,
-    loverAmount: true,
-    friendAmount: true,
-    visitorAmount: true,
-    followedAmount: true,
-    followingAmount: true,
-    relationship: true,
-    language: true,
-    createdAt: true,
-    privacy: true,
-};
 class AuthServices {
     login = async (
         res: express.Response,
