@@ -1,9 +1,10 @@
 import { ConversationRooms, Rooms } from '../../models/mongodb/chats';
-import DateTime from '../../DateTimeCurrent/DateTimeCurrent';
 import { prisma } from '../..';
 import { v4 as primaryKey } from 'uuid';
 import { Types } from 'mongoose';
 import { PropsInfoFile, PropsItemOperationsCon, PropsOldSeenBy, PropsRoom, PropsRoomChat } from '../../typescript/senChatType';
+import CLassUser from '../../Classes/CLassUser';
+import ClassFriend from '../../Classes/ClassFriend';
 const { ObjectId } = Types;
 
 class SendChatService {
@@ -42,18 +43,8 @@ class SendChatService {
                     imageOrVideos.push({ _id: f.id, icon: '', tail: f.tail, type: f.type });
                 });
                 const [user, friend, res]: any = await Promise.all([
-                    prisma.user.findUnique({
-                        where: { id: id },
-                        select: { id: true, avatar: true, fullName: true, gender: true },
-                    }),
-                    prisma.friends.findFirst({
-                        where: {
-                            OR: [
-                                { idRequest: id, idIsRequested: id_other, level: 2 },
-                                { idRequest: id_other, idIsRequested: id, level: 2 },
-                            ],
-                        },
-                    }),
+                    CLassUser.getLess(id),
+                    ClassFriend.getFriendBoth(id, id_other),
                     conversationId
                         ? ConversationRooms.findOne({
                               _id: conversationId,
@@ -73,7 +64,7 @@ class SendChatService {
                         pin: [],
                         users: [],
                         lastElement: { roomId: '' },
-                        createdAt: DateTime(),
+                        createdAt: new Date(),
                     });
                     if (roomChat) {
                         console.log('777', roomChat);
@@ -98,7 +89,7 @@ class SendChatService {
                                                 t: value,
                                             },
                                             imageOrVideos,
-                                            createdAt: DateTime(),
+                                            createdAt: new Date(),
                                             secondary: typeof id_sOrReply === 'string' ? id_sOrReply : '',
                                         },
                                     ],
@@ -120,7 +111,7 @@ class SendChatService {
                         _id: id_data,
                         seenBy: [],
                         imageOrVideos: imageOrVideos,
-                        createdAt: DateTime(),
+                        createdAt: new Date(),
                         reply: id_sOrReply,
                     };
                     const roomUpdate = await Rooms.findOne({
@@ -214,7 +205,7 @@ class SendChatService {
                                                 t: value,
                                             },
                                             imageOrVideos,
-                                            createdAt: DateTime(),
+                                            createdAt: new Date(),
                                             secondary: typeof id_sOrReply === 'string' ? id_sOrReply : '',
                                         },
                                     ],
@@ -539,7 +530,7 @@ class SendChatService {
                             'deleted.id': id,
                         },
                         {
-                            $set: { 'deleted.$.createdAt': DateTime(), 'deleted.$.show': true },
+                            $set: { 'deleted.$.createdAt': new Date(), 'deleted.$.show': true },
                         },
                     ).select('deleted');
                     resolve(res);
@@ -549,7 +540,7 @@ class SendChatService {
                             _id: id_room,
                         },
                         {
-                            $addToSet: { deleted: { id: id, createdAt: DateTime(), show: true } as any }, // push with unique
+                            $addToSet: { deleted: { id: id, createdAt: new Date(), show: true } as any }, // push with unique
                         },
                         { new: true },
                     ).select('deleted');

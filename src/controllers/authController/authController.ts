@@ -6,22 +6,21 @@ import Forbidden from '../../utils/errors/Forbidden';
 import NotFound from '../../utils/errors/NotFound';
 import { Redis } from 'ioredis';
 import getMAC, { isMAC } from 'getmac';
+import Validation from '../../utils/errors/Validation';
+import { getRedis } from '../../connectDatabase/connect.Redis';
 class authController {
     login = async (req: express.Request, res: any, next: express.NextFunction) => {
         try {
-            const error = ['<script></script>', '<script>', '</script>'];
-            const phoneNumberEmail = req.body.params.nameAccount;
-            const password = req.body.params.password;
-            const redisClient: Redis = res.redisClient;
-            const IP_MAC = getMAC();
-            const userAgent = req.headers['user-agent'] ?? '';
-            const IP_USER = req.socket.remoteAddress ?? req.ip;
-            console.log(getMAC(), 'x-mac-address');
+            const phoneNumberEmail = req.body.params.nameAccount,
+                password = req.body.params.password,
+                IP_MAC = getMAC(),
+                userAgent = req.headers['user-agent'] ?? '',
+                IP_USER = req.socket.remoteAddress ?? req.ip;
             if (isMAC(IP_MAC)) {
-                if (!phoneNumberEmail || !password || phoneNumberEmail.includes(error) || password.includes(error)) {
+                if (!Validation.validEmail(phoneNumberEmail) || !password) {
                     throw new NotFound('Login', 'Please enter your Account!');
                 } else {
-                    const userData: any = await authServices.login(res, redisClient, phoneNumberEmail, password, IP_USER, IP_MAC, userAgent);
+                    const userData: any = await authServices.login(res, phoneNumberEmail, password, IP_USER, IP_MAC, userAgent);
                     if (userData) {
                         return res.status(200).json(userData);
                     }
@@ -35,20 +34,18 @@ class authController {
     };
     subLogin = async (req: express.Request, res: any, next: express.NextFunction) => {
         try {
-            const error = ['<script></script>', '<script>', '</script>'];
-            const phoneNumberEmail = req.body.nameAccount;
-            const password = req.body.password;
-            const id_you = req.cookies.k_user;
-            const redisClient: Redis = res.redisClient;
-            const id_other = req.body.id;
-            const IP_USER = req.socket.remoteAddress ?? req.ip;
-            const IP_MAC = getMAC();
-            const userAgent = req.headers['user-agent'] ?? '';
+            const phoneNumberEmail = req.body.nameAccount,
+                password = req.body.password,
+                id_you = req.cookies.k_user,
+                id_other = req.body.id,
+                IP_USER = req.socket.remoteAddress ?? req.ip,
+                IP_MAC = getMAC(),
+                userAgent = req.headers['user-agent'] ?? '';
 
-            if (!phoneNumberEmail || !password || phoneNumberEmail.includes(error) || password.includes(error) || !isMAC(IP_MAC)) {
+            if (!Validation.validEmail(phoneNumberEmail) || !isMAC(IP_MAC)) {
                 throw new NotFound('Login', 'Please enter your Account!');
             } else {
-                const userData: any = await authServices.login(res, redisClient, phoneNumberEmail, password, IP_USER, IP_MAC, userAgent, true, id_you, id_other);
+                const userData: any = await authServices.login(res, phoneNumberEmail, password, IP_USER, IP_MAC, userAgent, true, id_you, id_other);
                 return res.status(200).json(userData);
             }
         } catch (error) {
@@ -57,25 +54,23 @@ class authController {
     };
     logOut = async (req: express.Request, res: any, next: express.NextFunction) => {
         try {
-            console.log('allright');
-            const id = req.cookies.k_user;
-            const redisClient: Redis = res.redisClient;
-            const key_Reload = id + 'Reload';
-            const IP_MAC = getMAC();
-            const IP_USER = req.socket.remoteAddress ?? req.ip;
+            const id = req.cookies.k_user,
+                key_Reload = id + 'Reload',
+                IP_MAC = getMAC(),
+                IP_USER = req.socket.remoteAddress ?? req.ip;
             if (!isMAC(IP_MAC)) throw new NotFound('Logout', 'Invalid MAC');
-            const data: any = await authServices.logOut(req, res, redisClient, IP_MAC, IP_USER);
+            const data: any = await authServices.logOut(req, res, IP_MAC, IP_USER);
             if (data?.status === 200) {
-                redisClient.lrange(key_Reload, 0, -1, (err, items) => {
+                getRedis().lrange(key_Reload, 0, -1, (err, items) => {
                     if (err) console.log(err);
                     items?.forEach((item) => {
-                        redisClient.del(item, (err: any, count: any) => {
+                        getRedis().del(item, (err: any, count: any) => {
                             if (err) console.log(err);
                             console.log(`Deleted ${count} key(s)`);
                         });
                     });
                 });
-                redisClient.del(key_Reload, (err, count) => {
+                getRedis().del(key_Reload, (err, count) => {
                     if (err) console.log(err);
                     console.log(`Deleted ${count} key(s)`);
                 });

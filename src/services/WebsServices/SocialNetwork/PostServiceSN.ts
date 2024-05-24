@@ -1,5 +1,4 @@
 import { v4 as primaryKey } from 'uuid';
-import DateTime from '../../../DateTimeCurrent/DateTimeCurrent';
 import { Comments, NewPost } from '../../../models/mongodb/SN_DB/home';
 import { prisma } from '../../..';
 import { PropsComments, PropsCommentsIn, PropsDataPosts, feel } from '../../../../socailType';
@@ -110,7 +109,7 @@ class PostServiceSN {
                     },
                     private: privates,
                     whoCanSeePost,
-                    createdAt: DateTime(),
+                    createdAt: new Date(),
                 });
                 await Comments.create({ postId: res._id, count: 0, data: [] });
                 console.log(res, 'res no expire');
@@ -234,15 +233,7 @@ class PostServiceSN {
             }
         });
     };
-    setEmotion = (data: {
-        _id: string;
-        index: number;
-        id_user: string;
-        state: 'add' | 'remove' | 'update';
-        oldIndex?: number;
-        id_comment?: string;
-        groupCommentId?: string;
-    }): Promise<feel | null> => {
+    setEmotion = (data: { _id: string; index: number; id_user: string; state: 'add' | 'remove' | 'update'; oldIndex?: number; id_comment?: string; groupCommentId?: string }): Promise<feel | null> => {
         return new Promise(async (resolve, reject) => {
             const { _id, index, id_user, state, oldIndex, id_comment, groupCommentId } = data;
             try {

@@ -6,12 +6,14 @@ import NotFound from '../../utils/errors/NotFound';
 import ServerError from '../../utils/errors/ServerError';
 import { Redis } from 'ioredis';
 import { io } from '../..';
+import { getRedis } from '../../connectDatabase/connect.Redis';
 class userController {
     getById = async (req: express.Request, res: express.Response, next: express.NextFunction) => {
         try {
-            const id: string = req.cookies.k_user;
-            const id_reqs: string[] = req.body.id; // getting personal page
-            const first = req.body.first;
+            const id: string = req.cookies.k_user,
+                id_reqs: string[] = req.body.id, // getting personal page,
+                first = req.body.first;
+
             if (!Validation.validUUID(id)) throw new NotFound('getById', 'Invalid Id of uuid');
             const userData = await UserServiceSN.getById(id, id_reqs, first);
             if (userData) return res.status(200).json(userData);
@@ -22,12 +24,13 @@ class userController {
     };
     getByName = async (req: express.Request, res: express.Response, next: express.NextFunction) => {
         try {
-            const id = req.cookies.k_user;
-            const name: string = req.body.name;
-            const searchMore: string = req.body.searchMore;
-            const cateMore: string = req.body.cateMore;
+            const id = req.cookies.k_user,
+                name = req.body.name,
+                searchMore = req.body.searchMore,
+                cateMore = req.body.cateMore;
+
             if (!name) throw new NotFound('getByName', 'Name Not Found');
-            const data = await UserServiceSN.getByName(id, name, cateMore, searchMore, req.body.params);
+            const data = await UserServiceSN.getByName(id, name, cateMore, searchMore);
             if (data.status === 0) throw new NotFound('getByName', 'Getting failed');
             return res.status(200).json(data.data);
         } catch (error) {
@@ -36,8 +39,8 @@ class userController {
     };
     setLg = async (req: express.Request, res: express.Response) => {
         try {
-            const id: string = req.body.id;
-            const lg: string = req.body.lg;
+            const id = req.body.id,
+                lg = req.body.lg;
             const data: any = await UserServiceSN.setLg(id, lg);
             return res.status(200).json(data);
         } catch (error) {
@@ -46,8 +49,8 @@ class userController {
     };
     setActive = async (req: express.Request, res: express.Response) => {
         try {
-            const active: boolean = req.body.active;
-            const id = req.cookies.k_user;
+            const active: boolean = req.body.active,
+                id = req.cookies.k_user;
             const data: any = await UserServiceSN.setAs(active, id);
             return res.status(200).json(data);
         } catch (error) {
@@ -57,9 +60,9 @@ class userController {
     getNewMes = async (req: express.Request, res: express.Response) => {
         try {
             const id = req.cookies.k_user;
-            // redisClient.get(`${id} user_message`, (err, rsu) => {
+            // getRedis().get(`${id} user_message`, (err, rsu) => {
             //     if (err) throw new ServerError('Get message failed at GetNewMes',err)
-            //     redisClient.get(`${id} message`, async (err, result) => {
+            //     getRedis().get(`${id} message`, async (err, result) => {
             //         if (err) console.log(err);
             //         if (rsu && JSON.parse(rsu)?.user.length > 0) {
             //             const ys = JSON.parse(rsu);
@@ -67,7 +70,7 @@ class userController {
             //                 return res.status(200).json(ys);
             //         } else {
             //             const data: any = await UserServiceSN.getNewMes(id);
-            //             redisClient.set(`${id} user_message`, JSON.stringify(data));
+            //             getRedis().set(`${id} user_message`, JSON.stringify(data));
             //             data.quantity = JSON.parse(result)?.quantity;
             //             return res.status(200).json(data);
             //         }
@@ -80,10 +83,9 @@ class userController {
     delMessage = async (req: express.Request | any, res: any) => {
         try {
             const id = req.cookies.k_user;
-            const redisClient: Redis = res.redisClient;
-            redisClient.get(`${id} message`, (err, rs) => {
+            getRedis().get(`${id} message`, (err, rs) => {
                 if (err) console.log(err);
-                if (rs && JSON.parse(rs).quantity > 0) redisClient.set(`${id} message`, JSON.stringify({ quantity: 0 }));
+                if (rs && JSON.parse(rs).quantity > 0) getRedis().set(`${id} message`, JSON.stringify({ quantity: 0 }));
             });
             return res.status(200).json({ ok: true });
         } catch (error) {
@@ -137,11 +139,10 @@ class userController {
     };
     changesMany = async (req: express.Request | any, res: express.Response, next: express.NextFunction) => {
         try {
-            const dateTime = moment().format('HH:mm:ss DD-MM-YYYY');
-            const id = req.cookies.k_user;
-            const params = req.body.params.params;
-            const mores = req.body.params.mores;
-            const privacy = req.body.params.privacy;
+            const id = req.cookies.k_user,
+                params = req.body.params.params,
+                mores = req.body.params.mores,
+                privacy = req.body.params.privacy;
             const data: any = await UserServiceSN.changesMany(id, params, mores, privacy);
             return res.status(200).json(data);
         } catch (error) {
@@ -150,10 +151,9 @@ class userController {
     };
     follow = async (req: express.Request, res: any) => {
         try {
-            const id_fl = req.cookies.k_user;
-            const id = req.body.params.id;
+            const id_fl = req.cookies.k_user,
+                id = req.body.params.id;
             const data = await UserServiceSN.follow(id, id_fl);
-            console.log(data, 'nooo');
             if (data) {
                 io.emit(`follow_${id_fl}`, { ...data, userId: id });
                 io.emit(`follow_${id}`, { ...data, userId: id });
@@ -165,8 +165,8 @@ class userController {
     };
     Unfollow = async (req: express.Request, res: any) => {
         try {
-            const id_fl = req.cookies.k_user;
-            const id = req.body.params.id;
+            const id_fl = req.cookies.k_user,
+                id = req.body.params.id;
             const data = await UserServiceSN.Unfollow(id, id_fl);
             if (data) {
                 io.emit(`Unfollow_${id_fl}`, { ...data, userId: id });
@@ -180,9 +180,9 @@ class userController {
     };
     getMore = async (req: express.Request, res: any) => {
         try {
-            const id = req.cookies.k_user;
-            const limit = req.query.limit;
-            const offset = req.query.offset;
+            const id = req.cookies.k_user,
+                limit = req.query.limit,
+                offset = req.query.offset;
             const data = await UserServiceSN.getMore(id, Number(offset), Number(limit));
             console.log(data, 'more');
             return res.status(200).json(data);
@@ -192,9 +192,9 @@ class userController {
     };
     setHistory = async (req: express.Request, res: any, next: express.NextFunction) => {
         try {
-            const id = req.cookies.k_user;
-            const history = req.body.params.data;
-            const redisClient: Redis = res.redisClient;
+            const id = req.cookies.k_user,
+                history = req.body.params.data,
+                redisClient: Redis = res.redisClient;
             console.log(history, 'more');
             redisClient.get(id + 'history_search', (err, results) => {
                 if (err) throw new ServerError('setHistory at Redis in CTL user', err);
@@ -218,8 +218,8 @@ class userController {
     };
     getHistorySearch = (req: express.Request, res: any, next: express.NextFunction) => {
         try {
-            const id = req.cookies.k_user;
-            const redisClient: Redis = res.redisClient;
+            const id = req.cookies.k_user,
+                redisClient: Redis = res.redisClient;
             redisClient.get(id + 'history_search', (err, results) => {
                 const newData = [];
                 if (err) throw new ServerError('getHistorySearch at Redis in CTL user', err);
@@ -236,8 +236,8 @@ class userController {
     };
     getActiveStatus = (req: express.Request, res: any, next: express.NextFunction) => {
         try {
-            const id_other = req.query.id_other;
-            const redisClient: Redis = res.redisClient;
+            const id_other = req.query.id_other,
+                redisClient: Redis = res.redisClient;
             if (!id_other) throw new NotFound('getActiveStatus', 'Id_other is empty');
             redisClient.get(`online_duration: ${id_other}`, (err, results) => {
                 if (err) throw new ServerError('getActiveStatus at Redis in CTL user', err);

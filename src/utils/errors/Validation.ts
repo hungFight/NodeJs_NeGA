@@ -10,23 +10,23 @@ class Validation extends Error {
         }
         this.errorAny = errorAny;
     }
-    validEmail(email: string): boolean {
+    public validEmail(email: string): boolean {
         if (/^\w+([\\.-]?\w+)*@\w+([\\.-]?\w+)*(\.\w{2,5})+$/.test(email)) return true;
         return false;
     }
-    validLength(value: string, start: number, end: number): boolean {
+    public validLength(value: string, start: number, end: number): boolean {
         if (value.length >= start && value.length <= end) return true;
         return false;
     }
-    validString(value: string): boolean {
+    public validString(value: string): boolean {
         if (typeof value === 'string') return true;
         return false;
     }
-    validNumber(value: number): boolean {
+    public validNumber(value: number): boolean {
         if (typeof value === 'number') return true;
         return false;
     }
-    validUUID(value: string | string[]): boolean {
+    public validUUID(value: string | string[]): boolean {
         const uuidPattern: RegExp = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
         if (typeof value === 'string') {
             return uuidPattern.test(value);
@@ -38,7 +38,7 @@ class Validation extends Error {
             return check;
         }
     }
-    validMongoID(value: string | string[]): boolean {
+    public validMongoID(value: string | string[]): boolean {
         const mongooseIdPattern: RegExp = /^[0-9a-fA-F]{24}$/;
         if (typeof value === 'string') {
             return mongooseIdPattern.test(value);

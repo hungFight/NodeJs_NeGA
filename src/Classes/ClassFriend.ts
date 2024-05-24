@@ -7,6 +7,15 @@ class ClassFriend {
                 id,
             },
         });
+    public getFriendBoth = (id: string, id_other: string) =>
+        prisma.friends.findFirst({
+            where: {
+                OR: [
+                    { idRequest: id, idIsRequested: id_other, level: 2 },
+                    { idRequest: id_other, idIsRequested: id, level: 2 },
+                ],
+            },
+        });
     public getFriendMany = (id: string) =>
         prisma.friends.findMany({
             where: {

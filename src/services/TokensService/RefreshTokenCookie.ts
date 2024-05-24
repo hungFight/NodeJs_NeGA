@@ -8,20 +8,20 @@ import getMAC, { isMAC } from 'getmac';
 import { Redis } from 'ioredis';
 import Security from '../AuthServices/Security';
 import { PropsRefreshToken } from '../AuthServices/AuthServices';
+import { getRedis } from '../../connectDatabase/connect.Redis';
 class RefreshTokenCookie {
     refreshToken = async (req: express.Request, res: any, next: express.NextFunction) => {
         try {
-            const userId = req.cookies.k_user;
-            const accessToken = req.signedCookies.tks;
-            const redisClient: Redis = res.redisClient;
-            const IP_MAC = getMAC();
-            const IP_USER = req.connection.remoteAddress ?? req.ip;
+            const userId = req.cookies.k_user,
+                accessToken = req.signedCookies.tks,
+                IP_MAC = getMAC(),
+                IP_USER = req.connection.remoteAddress ?? req.ip;
             if (!IP_MAC || !isMAC(IP_MAC)) return res.status(403).json({ status: 0, message: "You're IP_m is empty!" });
             const warning = JSON.stringify({
                 id: 0,
                 message: 'There was an person trying to login to your Account!',
             });
-            redisClient.get(userId + 'refreshToken', (err, data) => {
+            getRedis().get(userId + 'refreshToken', (err, data) => {
                 if (err) {
                     return res.status(500).json('Error getting refresh token: ' + err);
                 }
@@ -50,7 +50,7 @@ class RefreshTokenCookie {
                             if (!secret || !jwtid || !secret) return res.status(500).json({ status: 0, message: 'PrimaryKey of uuid is empty!' });
                             const newAccessToken = Token.accessTokenF({ id: user.id }, secret, jwtid);
                             const newRefreshToken = Token.refreshTokenF({ id: user.id }, secret, jwtid);
-                            redisClient.set(
+                            getRedis().set(
                                 userId + 'refreshToken',
                                 JSON.stringify(
                                     newData.map((re) => {
@@ -72,7 +72,7 @@ class RefreshTokenCookie {
                                         expires: new Date(new Date().getTime() + 30 * 86409000), // 30 days
                                         signed: true, // Sign the cookie
                                     });
-                                    redisClient.expire(userId + 'refreshToken', 15 * 24 * 60 * 60); // 15days
+                                    getRedis().expire(userId + 'refreshToken', 15 * 24 * 60 * 60); // 15days
                                     return res.status(200).json('Bearer ' + newAccessToken);
                                 },
                             );

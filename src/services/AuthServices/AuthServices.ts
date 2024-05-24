@@ -12,6 +12,7 @@ import { prisma } from '../../';
 import { Redis } from 'ioredis';
 import Validation from '../../utils/errors/Validation';
 import UserServiceSN from '../WebsServices/UserServiceSN';
+import { getRedis } from '../../connectDatabase/connect.Redis';
 moment.locale('vi');
 export interface PropsRefreshToken {
     refreshToken: string;
@@ -25,7 +26,6 @@ export interface PropsRefreshToken {
 class AuthServices {
     login = async (
         res: express.Response,
-        redisClient: Redis,
         phoneNumberEmail: string,
         password: string,
         IP_USER: string,
@@ -105,7 +105,7 @@ class AuthServices {
                                         delete u.password;
                                         Object.freeze(u);
                                         if (id_other) {
-                                            redisClient.del(id + 'refreshToken', (err, count) => {
+                                            getRedis().del(id + 'refreshToken', (err, count) => {
                                                 if (err) {
                                                     console.log('Error getting refresh token in Redis', err);
                                                     resolve({
@@ -128,7 +128,7 @@ class AuthServices {
                                                 expires: new Date(new Date().getTime() + 30 * 86409000), // 30 days
                                                 signed: true, // Sign the cookie
                                             });
-                                        redisClient.get(u.id + 'refreshToken', (err, data) => {
+                                        getRedis().get(u.id + 'refreshToken', (err, data) => {
                                             console.log(data, 'IN AuthService');
                                             if (err) console.log(err, 'IN AuthService');
                                             if (data && JSON.parse(data)?.length) {
@@ -155,15 +155,15 @@ class AuthServices {
                                                 }
                                                 console.log(newDa, 'newDa', newDa[0].status);
 
-                                                redisClient.set(u.id + 'refreshToken', JSON.stringify(newDa), (err: any, res: any) => {
+                                                getRedis().set(u.id + 'refreshToken', JSON.stringify(newDa), (err: any, res: any) => {
                                                     if (err) {
                                                         console.log('Error setting refreshToken', err);
                                                         reject(err);
                                                     }
-                                                    redisClient.expire(u.id + 'refreshToken', 60 * 60);
+                                                    getRedis().expire(u.id + 'refreshToken', 60 * 60);
                                                 });
                                             } else {
-                                                redisClient.set(
+                                                getRedis().set(
                                                     u.id + 'refreshToken',
                                                     JSON.stringify([
                                                         {
@@ -180,7 +180,7 @@ class AuthServices {
                                                             console.log('Error setting refreshToken', err);
                                                             resolve(null);
                                                         }
-                                                        redisClient.expire(u.id + 'refreshToken', 60 * 60);
+                                                        getRedis().expire(u.id + 'refreshToken', 60 * 60);
                                                     },
                                                 );
                                             }
@@ -198,12 +198,12 @@ class AuthServices {
             }
         });
     };
-    logOut = (req: any, res: any, redisClient: Redis, IP_MAC: string, IP_USER: string) => {
+    logOut = (req: any, res: any, IP_MAC: string, IP_USER: string) => {
         return new Promise(async (resolve, reject) => {
             try {
                 const userId = req.cookies.k_user;
                 console.log(req.cookies, '123456');
-                redisClient.get(userId + 'refreshToken', (err, preData) => {
+                getRedis().get(userId + 'refreshToken', (err, preData) => {
                     if (err) {
                         console.log('Error getting refresh token in Redis', err);
                         resolve({ status: 404, message: 'Error getting refresh token in Redis' });
@@ -218,11 +218,11 @@ class AuthServices {
                             }
                             return p;
                         });
-                        redisClient.set(userId + 'refreshToken', JSON.stringify(parsed), (e) => {
+                        getRedis().set(userId + 'refreshToken', JSON.stringify(parsed), (e) => {
                             if (e) resolve({ status: 401, message: 'Error in Redis!' });
                         });
-                        redisClient.set(`online_duration: ${userId}`, currentDate, () => {
-                            redisClient.expire(`online_duration: ${userId}`, 24 * 60 * 60);
+                        getRedis().set(`online_duration: ${userId}`, currentDate, () => {
+                            getRedis().expire(`online_duration: ${userId}`, 24 * 60 * 60);
                         });
                         resolve({ status: 200, message: 'Logged out !' });
                     } else {

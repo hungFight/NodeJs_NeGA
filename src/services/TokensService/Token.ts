@@ -1,7 +1,7 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
-import { redisClient } from '../..';
 import { PropsRefreshToken } from '../AuthServices/AuthServices';
+import { getRedis } from '../../connectDatabase/connect.Redis';
 class Token {
     accessTokenF = (data: { id: string }, secret: string, jwtId: string) => {
         try {
@@ -32,7 +32,7 @@ class Token {
         console.log('delete coookies');
         res.clearCookie('tks');
         res.clearCookie('k_user');
-        redisClient.get(userId + 'refreshToken', (err, data) => {
+        getRedis().get(userId + 'refreshToken', (err, data) => {
             console.log(data, 'IN AuthService');
             if (err) console.log(err, 'IN AuthService');
             if (data && JSON.parse(data)?.length) {
@@ -45,7 +45,7 @@ class Token {
                         }
                         return p;
                     });
-                    redisClient.set(userId + 'refreshToken', JSON.stringify(newDa));
+                    getRedis().set(userId + 'refreshToken', JSON.stringify(newDa));
                 }
             }
         });

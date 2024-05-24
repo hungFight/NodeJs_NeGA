@@ -22,6 +22,7 @@ import routeSN from './routes/websRoutes';
 import moment from 'moment';
 
 import { Server } from 'socket.io';
+import { getRedis, initRedis } from './connectDatabase/connect.Redis';
 const connection = new Set();
 const subConnection = new Set();
 export const prisma = new PrismaClient();
@@ -55,11 +56,7 @@ const server = new ApolloServer({
     csrfPrevention: true,
     plugins: [ApolloServerPluginDrainHttpServer({ httpServer })],
 });
-export const redisClient = new Redis({
-    host: process.env.REDIS_HOST,
-    port: Number(process.env.REDIS_PORT),
-    password: process.env.REDIS_PASSWORD,
-});
+initRedis();
 export const esClient = new Client({
     node: 'http://localhost:9200', // Elasticsearch server URL,
 });
@@ -72,7 +69,7 @@ io.on('connection', (client: any) => {
         if (res?.userId) connection.add(res.userId);
         subConnection.add(res.any);
         client.userId = res;
-        if (client.userId) redisClient.del(`online_duration: ${client.userId}`); // when user not active but still send chat, it will be deleted
+        if (client.userId) getRedis().del(`online_duration: ${client.userId}`); // when user not active but still send chat, it will be deleted
         client.emit('user connectedd', JSON.stringify(Array.from(connection)));
         client.broadcast.emit('user connectedd', JSON.stringify(Array.from(connection)));
     });
@@ -93,20 +90,20 @@ io.on('connection', (client: any) => {
         connection.delete(client.userId);
         const key_Reload = client.userId + 'Reload';
         if (client.userId)
-            redisClient.set(`online_duration: ${client.userId}`, currentDate, () => {
-                redisClient.expire(`online_duration: ${client.userId}`, 24 * 60 * 60);
+            getRedis().set(`online_duration: ${client.userId}`, currentDate, () => {
+                getRedis().expire(`online_duration: ${client.userId}`, 24 * 60 * 60);
             });
-        redisClient.lrange(key_Reload, 0, -1, (err, items) => {
+        getRedis().lrange(key_Reload, 0, -1, (err, items) => {
             // used to when you out of this web it's deleted what unnecessary in redis
             if (err) console.log(err);
             items?.forEach((item) => {
-                redisClient.del(item, (err, count) => {
+                getRedis().del(item, (err, count) => {
                     if (err) console.log(err);
                     console.log(`Deleted ${count} key(s)`);
                 });
             });
         });
-        redisClient.del(key_Reload, (err, count) => {
+        getRedis().del(key_Reload, (err, count) => {
             if (err) console.log(err);
             console.log(`Deleted ${count} key(s) in Redis`);
         });
@@ -133,7 +130,6 @@ app.use(
 );
 app.use((req: any, res: any, next) => {
     res.io = io;
-    res.redisClient = redisClient;
     next();
 });
 // app.get('/', (req, res) => {
