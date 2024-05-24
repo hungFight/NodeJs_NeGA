@@ -1,12 +1,11 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
-import token from '../services/TokensService/Token';
 import moment from 'moment';
 import ServerError from '../utils/errors/ServerError';
-import { Redis } from 'ioredis';
 import getMAC, { isMAC } from 'getmac';
 import { PropsRefreshToken } from '../services/AuthServices/AuthServices';
 import Validation from '../utils/errors/Validation';
+import { getRedis } from '../connectDatabase/connect.Redis';
 moment.locale('vi');
 // status = 0 is login again
 // status = 9 is server busy
@@ -17,13 +16,12 @@ class JWTVERIFY {
         try {
             const userId = req.cookies.k_user;
             const authHeader = req.signedCookies.tks;
-            const redisClient: Redis = res.redisClient;
             const IP_MAC = getMAC();
             const userAgent = req.headers['user-agent'] ?? '';
             const IP_USER = req.socket.remoteAddress ?? req.ip;
             const dateTime = new Date();
             if (!IP_MAC || !isMAC(IP_MAC) || !Validation.validUUID(userId)) return res.status(403).json({ status: 0, message: "You're IP_m is empty!" });
-            redisClient.get(userId + 'refreshToken', (err, dataRD) => {
+            getRedis().get(userId + 'refreshToken', (err, dataRD) => {
                 console.log('JWTVERIFY', userId, dataRD);
                 // save token into redis
                 if (err) return res.status(404).json('Error getting refresh token: ' + err);
@@ -60,10 +58,10 @@ class JWTVERIFY {
                                             }
                                             if (data.id === userId) {
                                                 if (!newDataFiltered.accept) {
-                                                    redisClient.get(userId + 'warning_login_by_an_another_site', (err, preData) => {
+                                                    getRedis().get(userId + 'warning_login_by_an_another_site', (err, preData) => {
                                                         if (err) throw new ServerError('JWTAuth', err);
                                                         if (!preData)
-                                                            redisClient.set(
+                                                            getRedis().set(
                                                                 userId + 'warning_login_by_an_another_site',
                                                                 JSON.stringify({
                                                                     id: 0,
