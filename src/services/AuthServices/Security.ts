@@ -1,12 +1,16 @@
 import bcrypt from 'bcryptjs';
 import { prisma } from '../..';
+import ClassFollower from '../../Classes/ClassFollower';
+import ClassFriend from '../../Classes/ClassFriend';
+import ClassLover from '../../Classes/ClassLover';
+import CLassUser from '../../Classes/CLassUser';
 const hash = bcrypt.genSaltSync(10);
 
 class Security {
-    checkUserEmail(email: string, subAccount?: boolean, id_other?: string, id?: string) {
+    checkUserEmail(account: string, subAccount?: boolean, id_other?: string, id?: string) {
         return new Promise<
             | {
-                  status: number;
+                  status: 200 | 404;
                   user?: {
                       id: string;
                       fullName: string;
@@ -19,8 +23,9 @@ class Security {
         >(async (resolve, reject) => {
             try {
                 if (id_other) {
+                    // login in personal page to add subAccount
                     const user = await prisma.user.findFirst({
-                        where: { id: id_other, phoneNumberEmail: email },
+                        where: { id: id_other, phoneNumberEmail: account },
                         include: {
                             mores: true,
                             userRequest: {
@@ -76,66 +81,25 @@ class Security {
                         },
                     });
                     if (user) {
-                        const newData = await new Promise<typeof user>(async (resolveF, reject) => {
-                            try {
-                                const count_following = await prisma.followers.count({
-                                    where: {
-                                        OR: [
-                                            { idFollowing: user.id, following: 2 },
-                                            { idIsFollowed: user.id, followed: 2 },
-                                        ],
-                                    },
-                                });
+                        const [count_following, count_followed, count_friends, count_loves] = await Promise.all([
+                            ClassFollower.getCountFollowing(user.id),
+                            ClassFollower.getCountFollowed(user.id),
+                            ClassFriend.getCountFriend(user.id),
+                            ClassLover.getCount(user.id),
+                        ]);
+                        user.mores[0].loverAmount = count_loves;
+                        user.mores[0].friendAmount = count_friends;
+                        user.mores[0].followingAmount = count_following;
+                        user.mores[0].followedAmount = count_followed;
 
-                                const count_followed = await prisma.followers.count({
-                                    where: {
-                                        OR: [
-                                            { idFollowing: user.id, followed: 2 },
-                                            { idIsFollowed: user.id, following: 2 },
-                                        ],
-                                    },
-                                });
-                                const count_friends = await prisma.friends.count({
-                                    where: {
-                                        OR: [
-                                            { idRequest: user.id, level: 2 },
-                                            { idIsRequested: user.id, level: 2 },
-                                        ],
-                                    },
-                                });
-                                const count_loves = await prisma.lovers.count({ where: { idIsLoved: user.id } });
-                                user.mores[0].loverAmount = count_loves;
-                                user.mores[0].friendAmount = count_friends;
-                                user.mores[0].followingAmount = count_following;
-                                user.mores[0].followedAmount = count_followed;
-                                resolveF(user);
-                            } catch (error) {
-                                reject(error);
-                            }
-                        });
-                        console.log(newData, 'user');
-                        if (newData) {
-                            resolve({ status: 200, user: [newData] });
-                        } else {
-                            resolve({ status: 1111 });
-                        }
+                        console.log(user, 'user');
+                        if (user) resolve({ status: 200, user: [user] });
+                        else resolve({ status: 404 });
                     }
                 } else {
-                    const user = await prisma.user.findMany({
-                        where: { phoneNumberEmail: email },
-                        select: {
-                            id: true,
-                            phoneNumberEmail: true,
-                            password: true,
-                            avatar: subAccount ? true : false,
-                            fullName: true,
-                        },
-                    });
-                    if (user?.length) {
-                        resolve({ status: 200, user });
-                    } else {
-                        resolve({ status: 1111 });
-                    }
+                    const user = await CLassUser.getManyByAccount(account);
+                    if (user?.length) resolve({ status: 200, user });
+                    else resolve({ status: 404 });
                 }
             } catch (err) {
                 reject(err);

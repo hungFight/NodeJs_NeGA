@@ -41,9 +41,10 @@ class UserService {
         return new Promise(async (resolve: any, reject: (arg0: unknown) => void) => {
             try {
                 if (first) {
-                    const data = await CLassUser.getById(id);
+                    const data = await CLassUser.getById(id, params);
                     if (data) resolve(data);
                 } else {
+                    //personal page
                     const newData = await CLassUser.getOtherById(id_reqs, id);
                     console.log(newData, 'newData', id_reqs);
                     resolve(newData);

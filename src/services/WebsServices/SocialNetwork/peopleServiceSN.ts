@@ -50,7 +50,7 @@ class PeopleService {
                         const id_fr = newF.idIsRequested;
                         // for notification
                         if (newF && id_user && id_fr) {
-                            let [userF, follow] = await Promise.all([CLassUser.getLess(id_user), ClassFollower.getIdFollowing_idIsFollowed(id_fr, id_user)]);
+                            let [userF, follow] = await Promise.all([CLassUser.getById(id_user), ClassFollower.getIdFollowing_idIsFollowed(id_fr, id_user)]);
                             const user: any = { ...userF };
                             user.status = 1;
                             user.id_f_user = { createdAt: newF.createdAt };
@@ -105,7 +105,7 @@ class PeopleService {
                             if (follow.idIsFollowed === id && follow.followed === 1) follow = await ClassFollower.updateLevelFollowed(follow.id, 2);
                             else if (follow.idFollowing === id && follow.followed === 1) follow = await ClassFollower.updateLevelFollowing(follow.id, 2);
                         }
-                        const userF = await CLassUser.getLess(id);
+                        const userF = await CLassUser.getById(id);
                         const user: any = { ...userF };
                         user.status = 1;
                         user.id_f_user = { createdAt: dataF.createdAt };
@@ -129,16 +129,16 @@ class PeopleService {
             try {
                 if (type === 'yousent') {
                     const friend_ids = await ClassFriend.getManyIdRequest(id, 1).then((fr) => fr.map((f) => f.idRequest));
-                    const dataYousent = await CLassUser.getLessManyIn(friend_ids, offset, limit);
+                    const dataYousent = await CLassUser.getManyInById(friend_ids, offset, limit);
                     resolve(dataYousent);
                 } else if (type === 'others') {
                     const ohters_id = await ClassFriend.getManyIdISRequest(id, 1).then((fr) => fr.map((f) => f.idIsRequested));
-                    const dataOthers = await CLassUser.getLessManyIn(ohters_id, offset, limit);
+                    const dataOthers = await CLassUser.getManyInById(ohters_id, offset, limit);
                     resolve(dataOthers);
                 } else {
                     //is friend
                     const friends_id = await ClassFriend.getFriendMany(id).then((fr: any[]) => fr.map((f) => (f.idIsRequested !== id ? f.idIsRequested : f.idRequest !== id ? f.idRequest : '')));
-                    const dataFriends = await CLassUser.getLessManyIn(friends_id, offset, limit);
+                    const dataFriends = await CLassUser.getManyInById(friends_id, offset, limit);
                     resolve(dataFriends);
                 }
             } catch (error) {

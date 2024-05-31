@@ -11,20 +11,10 @@ class Validation extends Error {
         this.errorAny = errorAny;
     }
     public validEmail(email: string): boolean {
-        if (/^\w+([\\.-]?\w+)*@\w+([\\.-]?\w+)*(\.\w{2,5})+$/.test(email)) return true;
-        return false;
+        return /^\w+([\\.-]?\w+)*@\w+([\\.-]?\w+)*(\.\w{2,5})+$/.test(email);
     }
     public validLength(value: string, start: number, end: number): boolean {
-        if (value.length >= start && value.length <= end) return true;
-        return false;
-    }
-    public validString(value: string): boolean {
-        if (typeof value === 'string') return true;
-        return false;
-    }
-    public validNumber(value: number): boolean {
-        if (typeof value === 'number') return true;
-        return false;
+        return value.length >= start && value.length <= end;
     }
     public validUUID(value: string | string[]): boolean {
         const uuidPattern: RegExp = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;

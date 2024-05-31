@@ -1,7 +1,9 @@
 import { prisma } from '..';
+import { PropsSelectUser, PropsUser, PropsUserPer } from '../typescript/userType';
 import ClassFollower from './ClassFollower';
 import ClassFriend from './ClassFriend';
 import ClassLover from './ClassLover';
+
 export const params: {
     [address: string]: boolean;
     biography: boolean;
@@ -52,126 +54,9 @@ export const mores: {
     createdAt: true,
     privacy: true,
 };
-export interface PropsUser {
-    readonly id: string;
-    avatar: any;
-    fullName: string;
-    gender: number;
-    occupation: string | null;
-    background: any;
-    biography: string | null;
-    firstPage: string;
-    secondPage: string;
-    thirdPage: string;
-    active: boolean;
-}
-export interface PropsMores {
-    id: string;
-    followedAmount: number;
-    followingAmount: number;
-    friendAmount: number;
-    loverAmount: number;
-    position: string;
-    star: number;
-    language: string[];
-    relationship: string;
-    visitorAmount: number;
-    privacy: {
-        [position: string]: 'everyone' | 'friends' | 'only';
-        address: 'everyone' | 'friends' | 'only';
-        birthday: 'everyone' | 'friends' | 'only';
-        relationship: 'everyone' | 'friends' | 'only';
-        gender: 'everyone' | 'friends' | 'only';
-        schoolName: 'everyone' | 'friends' | 'only';
-        occupation: 'everyone' | 'friends' | 'only';
-        hobby: 'everyone' | 'friends' | 'only';
-        skill: 'everyone' | 'friends' | 'only';
-        language: 'everyone' | 'friends' | 'only';
-        subAccount: 'everyone' | 'friends' | 'only';
-    };
-    updatedAt: string;
-    createdAt: string;
-}
-export interface PropsUserPer {
-    readonly id: string;
-    avatar: any;
-    fullName: string;
-    address: string;
-    gender: number;
-    birthday: string;
-    background: any;
-    biography: string;
-    active: boolean;
-    occupation: string;
-    schoolName: string;
-    skill: string[];
-    hobby: string[];
-    firstPage: string;
-    secondPage: string;
-    thirdPage: string;
-    mores: PropsMores[];
-    userRequest:
-        | {
-              id: string;
-              idRequest: string;
-              idIsRequested: string;
-              level: number;
-              createdAt: string | Date;
-              updatedAt: string | Date;
-          }[];
-    userIsRequested:
-        | {
-              id: string;
-              idRequest: string;
-              idIsRequested: string;
-              level: number;
-              createdAt: string | Date;
-              updatedAt: string | Date;
-          }[];
-    isLoved:
-        | {
-              id: string;
-              userId: string;
-              idIsLoved: string;
-              createdAt: string | Date;
-          }[];
-    loved:
-        | {
-              id: string;
-              userId: string;
-              idIsLoved: string;
-              createdAt: string | Date;
-          }[];
-    followings:
-        | {
-              id: string;
-              idFollowing: string;
-              idIsFollowed: string;
-              following: number;
-              followed: number;
-              createdAt: string | Date;
-          }[];
-    followed:
-        | {
-              id: string;
-              idFollowing: string;
-              idIsFollowed: string;
-              following: number;
-              followed: number;
-              createdAt: string | Date;
-          }[];
-    accountUser: {
-        account: {
-            id: string;
-            fullName: string;
-            avatar: string | null;
-            gender: number;
-            phoneNumberEmail: string;
-        };
-    }[];
-}
+
 class ClassUser {
-    public getById = (id: string): Promise<PropsUser | null> =>
+    public getById = (id: string, select?: PropsSelectUser): Promise<PropsUser | null> =>
         prisma.user.findUnique({
             where: { id: id },
             select: {
@@ -180,17 +65,27 @@ class ClassUser {
                 gender: true,
                 avatar: true,
                 background: true,
-                ...params,
+                ...select,
                 password: false,
                 phoneNumberEmail: false,
             },
         });
-    public getLess = (id: string) =>
-        prisma.user.findUnique({
-            where: { id: id },
-            select: { id: true, avatar: true, fullName: true, gender: true },
+    public getManyByAccount = (account: string, select?: PropsSelectUser): Promise<PropsUser[] | null> =>
+        prisma.user.findMany({
+            where: { phoneNumberEmail: account },
+            select: {
+                id: true,
+                fullName: true,
+                gender: true,
+                avatar: true,
+                background: true,
+                ...select,
+                password: false,
+                phoneNumberEmail: false,
+            },
         });
-    public getLessManyIn = (id: string[], skip?: number, take?: number) =>
+
+    public getManyInById = (id: string[], skip?: number, take?: number) =>
         prisma.user.findMany({
             where: { id: { in: id } },
             skip,

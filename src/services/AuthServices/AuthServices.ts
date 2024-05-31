@@ -17,7 +17,6 @@ moment.locale('vi');
 export interface PropsRefreshToken {
     refreshToken: string;
     accept: boolean;
-
     mac: string;
     userId: string;
     status: { name: 'login' | 'logout' | 'invalid'; dateTime: Date | string; ip: string }[];
@@ -31,14 +30,14 @@ class AuthServices {
         IP_USER: string,
         IP_MAC: string,
         userAgent: string,
-        subAccount?: boolean,
+        addSubAccount?: boolean,
         id?: string,
         id_other?: string, // an another user login by subAccount
     ) => {
         return new Promise(async (resolve, reject) => {
             try {
                 const userData: any = {};
-                const isExist = await UserSecurity.checkUserEmail(phoneNumberEmail, subAccount, id_other, id);
+                const isExist = await UserSecurity.checkUserEmail(phoneNumberEmail, addSubAccount, id_other, id);
                 const { status, user } = isExist;
                 const secret = await Security.hash(primaryKey());
                 const jwtid = await Security.hash(primaryKey());
@@ -49,7 +48,7 @@ class AuthServices {
                             if (u.password) {
                                 const checkP = bcrypt.compareSync(password, u.password);
                                 if (checkP) {
-                                    if (subAccount && !id_other) {
+                                    if (addSubAccount && !id_other) {
                                         // in process add the subAccount
                                         delete u.password;
                                         Object.freeze(u);
@@ -108,10 +107,7 @@ class AuthServices {
                                             getRedis().del(id + 'refreshToken', (err, count) => {
                                                 if (err) {
                                                     console.log('Error getting refresh token in Redis', err);
-                                                    resolve({
-                                                        status: 404,
-                                                        message: 'Error getting refresh token in Redis',
-                                                    });
+                                                    reject(err);
                                                 }
                                                 if (count) {
                                                     resolve({ status: 200, message: 'Logged out !' });
@@ -130,7 +126,7 @@ class AuthServices {
                                             });
                                         getRedis().get(u.id + 'refreshToken', (err, data) => {
                                             console.log(data, 'IN AuthService');
-                                            if (err) console.log(err, 'IN AuthService');
+                                            if (err) reject(err);
                                             if (data && JSON.parse(data)?.length) {
                                                 const newDa: PropsRefreshToken[] = JSON.parse(data);
                                                 const foundDa = newDa.find((p) => p.mac === IP_MAC);
@@ -160,7 +156,7 @@ class AuthServices {
                                                         console.log('Error setting refreshToken', err);
                                                         reject(err);
                                                     }
-                                                    getRedis().expire(u.id + 'refreshToken', 60 * 60);
+                                                    getRedis().expire(u.id + 'refreshToken', 60 * 60); // 1h
                                                 });
                                             } else {
                                                 getRedis().set(
@@ -178,7 +174,7 @@ class AuthServices {
                                                     (err: any, res: any) => {
                                                         if (err) {
                                                             console.log('Error setting refreshToken', err);
-                                                            resolve(null);
+                                                            reject(err);
                                                         }
                                                         getRedis().expire(u.id + 'refreshToken', 60 * 60);
                                                     },
@@ -250,7 +246,7 @@ class AuthServices {
                     const checkP = bcrypt.compareSync(data.password, User.password);
                     return checkP;
                 });
-                if (checkPhoneNumberEmail.length >= 15) {
+                if (checkPhoneNumberEmail.length >= 2) {
                     resolve({ result: 'Create failed', check: 2, acc: checkPhoneNumberEmail.length }); // limit
                     return;
                 } else if (checkPassword.includes(true) === true) {
@@ -280,8 +276,6 @@ class AuthServices {
                                     id: res.id,
                                 },
                             });
-                            console.log(IsItExisting, 'IsItExisting');
-
                             if (!IsItExisting) {
                                 const mores = await prisma.mores.create({
                                     data: {
