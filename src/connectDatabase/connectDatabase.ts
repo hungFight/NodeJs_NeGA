@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 import ServerError from '../utils/errors/ServerError';
-
+import { MongoClient, ServerApiVersion } from 'mongodb';
 class Database {
     ConnectMongoDB = async () => {
         const MONGODB_TIMEOUT = Number(process.env.MONGODB_CONNECT_TIMEOUT);
@@ -13,27 +13,25 @@ class Database {
         };
         mongoose.set('strictQuery', false);
         const URL = `${process.env.DATABASE_URL_MONGODB}`;
-        const con = await mongoose.createConnection(URL, { serverSelectionTimeoutMS: MONGODB_TIMEOUT }).asPromise();
-
-        con.on('connecting', function () {
-            console.log('connecting to Mongocon...');
+        const client = new MongoClient(URL, {
+            serverApi: {
+                version: ServerApiVersion.v1,
+                strict: true,
+                deprecationErrors: true,
+            },
         });
-        con.on('error', function (error) {
-            console.error('Error in MongoDb connection: ' + error);
-            handleConnectTimeout();
-        });
-        con.on('connected', function () {
-            console.log('MongoDB connected!');
-            clearTimeout(timeout);
-        });
-        con.on('reconnected', function () {
-            console.log('MongoDB reconnected!');
-            clearTimeout(timeout);
-        });
-        con.on('disconnected', function () {
-            console.log('MongoDB disconnected!');
-            handleConnectTimeout();
-        });
+        async function run() {
+            try {
+                // Connect the client to the server	(optional starting in v4.7)
+                await client.connect();
+                // Send a ping to confirm a successful connection
+                console.log('Pinged your deployment. You successfully connected to MongoDB!');
+            } finally {
+                // Ensures that the client will close when you finish/error
+                await client.close();
+            }
+        }
+        run().catch(console.dir);
     };
     connect = () => {
         this.ConnectMongoDB();

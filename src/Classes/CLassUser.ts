@@ -70,6 +70,20 @@ class ClassUser {
                 phoneNumberEmail: false,
             },
         });
+    public getByAccount = (account: string, select?: PropsSelectUser): Promise<PropsUser | null> =>
+        prisma.user.findFirst({
+            where: { phoneNumberEmail: account },
+            select: {
+                id: true,
+                fullName: true,
+                gender: true,
+                avatar: true,
+                background: true,
+                ...select,
+                password: false,
+                phoneNumberEmail: false,
+            },
+        });
     public getManyByAccount = (account: string, select?: PropsSelectUser): Promise<PropsUser[] | null> =>
         prisma.user.findMany({
             where: { phoneNumberEmail: account },
@@ -84,7 +98,6 @@ class ClassUser {
                 phoneNumberEmail: false,
             },
         });
-
     public getManyInById = (id: string[], skip?: number, take?: number) =>
         prisma.user.findMany({
             where: { id: { in: id } },

@@ -43,7 +43,7 @@ class SendChatService {
                     imageOrVideos.push({ _id: f.id, icon: '', tail: f.tail, type: f.type });
                 });
                 const [user, friend, res]: any = await Promise.all([
-                    CLassUser.getLess(id),
+                    CLassUser.getById(id),
                     ClassFriend.getFriendBoth(id, id_other),
                     conversationId
                         ? ConversationRooms.findOne({
