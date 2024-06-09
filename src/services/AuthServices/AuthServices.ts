@@ -13,6 +13,8 @@ import { Redis } from 'ioredis';
 import Validation from '../../utils/errors/Validation';
 import UserServiceSN from '../WebsServices/UserServiceSN';
 import { getRedis } from '../../connectDatabase/connect.Redis';
+import { PropsUser } from '../../typescript/userType';
+import CLassUser from '../../Classes/CLassUser';
 moment.locale('vi');
 export interface PropsRefreshToken {
     refreshToken: string;
@@ -33,16 +35,27 @@ class AuthServices {
         addSubAccount?: boolean,
         id?: string,
         id_other?: string, // an another user login by subAccount
-    ) => {
+    ): Promise<
+        | PropsUser
+        | {
+              account: {
+                  id: string;
+                  fullName: string;
+                  phoneNumberEmail: string;
+                  avatar: string | null;
+                  gender: number;
+              };
+          }
+        | null
+    > => {
         return new Promise(async (resolve, reject) => {
             try {
                 const userData: any = {};
-                const isExist = await UserSecurity.checkUserEmail(phoneNumberEmail, addSubAccount, id_other, id);
-                const { status, user } = isExist;
+                const user = await UserSecurity.checkUserEmail(phoneNumberEmail, addSubAccount, id_other, id);
                 const secret = await Security.hash(primaryKey());
                 const jwtid = await Security.hash(primaryKey());
                 if (!secret || !jwtid) resolve(null);
-                if (status === 200 && user && user.length) {
+                if (user && user?.length) {
                     await Promise.all(
                         user.map(async (u: any) => {
                             if (u.password) {
@@ -89,7 +102,7 @@ class AuthServices {
                                                     },
                                                 });
                                                 console.log('SubLogin', resSub);
-                                                resolve(resSub);
+                                                resolve(resSub); //for sub account in personal page
                                             } else {
                                                 resolve(null);
                                             }
@@ -103,19 +116,19 @@ class AuthServices {
                                         delete u.phoneNumberEmail;
                                         delete u.password;
                                         Object.freeze(u);
-                                        if (id_other) {
-                                            getRedis().del(id + 'refreshToken', (err, count) => {
-                                                if (err) {
-                                                    console.log('Error getting refresh token in Redis', err);
-                                                    reject(err);
-                                                }
-                                                if (count) {
-                                                    resolve({ status: 200, message: 'Logged out !' });
-                                                } else {
-                                                    resolve({ status: 401, message: 'unauthorized !' });
-                                                }
-                                            });
-                                        }
+                                        // if (id_other) {
+                                        //     getRedis().del(id + 'refreshToken', (err, count) => {
+                                        //         if (err) {
+                                        //             console.log('Error getting refresh token in Redis', err);
+                                        //             reject(err);
+                                        //         }
+                                        //         if (count) {
+                                        //             resolve({ status: 200, message: 'Logged out !' });
+                                        //         } else {
+                                        //             resolve({ status: 401, message: 'unauthorized !' });
+                                        //         }
+                                        //     });
+                                        // }
                                         if (accessToken)
                                             res.cookie('tks', 'Bearer ' + accessToken, {
                                                 path: '/',
@@ -181,7 +194,7 @@ class AuthServices {
                                                 );
                                             }
                                         });
-                                        if (u.id) resolve(await UserServiceSN.getById(u.id, [], 'only'));
+                                        if (u.id) resolve(await CLassUser.getById(u.id));
                                     }
                                 }
                             }

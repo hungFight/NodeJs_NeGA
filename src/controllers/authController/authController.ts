@@ -24,7 +24,7 @@ class authController {
                     if (userData) {
                         return res.status(200).json(userData);
                     }
-                    throw new NotFound('Login', userData);
+                    throw new NotFound('Login', 'Account is not found');
                 }
             }
             throw new NotFound('Login', 'Please enter your Account! !');

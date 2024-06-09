@@ -4,23 +4,12 @@ import ClassFollower from '../../Classes/ClassFollower';
 import ClassFriend from '../../Classes/ClassFriend';
 import ClassLover from '../../Classes/ClassLover';
 import CLassUser from '../../Classes/CLassUser';
+import { PropsUser } from '../../typescript/userType';
 const hash = bcrypt.genSaltSync(10);
 
 class Security {
     checkUserEmail(account: string, subAccount?: boolean, id_other?: string, id?: string) {
-        return new Promise<
-            | {
-                  status: 200 | 404;
-                  user?: {
-                      id: string;
-                      fullName: string;
-                      phoneNumberEmail: string;
-                      password: string;
-                      avatar: Buffer | null;
-                  }[];
-              }
-            | any
-        >(async (resolve, reject) => {
+        return new Promise<PropsUser[] | null>(async (resolve, reject) => {
             try {
                 if (id_other) {
                     // login in personal page to add subAccount
@@ -93,13 +82,13 @@ class Security {
                         user.mores[0].followedAmount = count_followed;
 
                         console.log(user, 'user');
-                        if (user) resolve({ status: 200, user: [user] });
-                        else resolve({ status: 404 });
+                        if (user) resolve([user]);
+                        else resolve(null);
                     }
                 } else {
                     const user = await CLassUser.getManyByAccount(account);
-                    if (user?.length) resolve({ status: 200, user });
-                    else resolve({ status: 404 });
+                    if (user?.length) resolve(user);
+                    else resolve(null);
                 }
             } catch (err) {
                 reject(err);
