@@ -43,5 +43,11 @@ const initRedis = () => {
     handleEventConnection(instanceRedis);
 };
 const getRedis = () => client;
-const closeRedis = () => client;
+const closeRedis = async () => {
+    if (client) {
+        await client.quit();
+        console.log('Redis connection closed successfully');
+    }
+};
+
 export { initRedis, getRedis, closeRedis };

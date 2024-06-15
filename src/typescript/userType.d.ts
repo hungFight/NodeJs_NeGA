@@ -16,6 +16,7 @@ export interface PropsSelectUser {
     followings?: boolean;
     loved?: boolean;
     isLoved?: boolean;
+    password?: boolean;
 }
 export interface PropsUser {
     readonly id: string;

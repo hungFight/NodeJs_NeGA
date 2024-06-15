@@ -94,7 +94,7 @@ class ClassUser {
                 avatar: true,
                 background: true,
                 ...select,
-                password: false,
+                password: select?.password ?? false,
                 phoneNumberEmail: false,
             },
         });

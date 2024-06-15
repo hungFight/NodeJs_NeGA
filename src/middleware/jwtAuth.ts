@@ -8,8 +8,9 @@ import Validation from '../utils/errors/Validation';
 import { getRedis } from '../connectDatabase/connect.Redis';
 moment.locale('vi');
 // status = 0 is login again
+// status = 4 is login again
 // status = 9 is server busy
-// status = 10 is waiting for allowedexport
+// status = 10 is waiting for allowed
 
 class JWTVERIFY {
     verifyToken = async (req: express.Request, res: any, next: express.NextFunction) => {
@@ -87,8 +88,7 @@ class JWTVERIFY {
                                         });
                                     });
                                 } catch (error) {
-                                    console.log(error);
-                                    return res.status(403);
+                                    next(error);
                                 }
                             }
                         } else {
