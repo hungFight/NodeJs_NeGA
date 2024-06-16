@@ -69,7 +69,7 @@ class RefreshTokenCookie {
                                         path: '/',
                                         secure: false, // Set to true if you're using HTTPS
                                         sameSite: 'strict', // Options: 'lax', 'strict', 'none'
-                                        expires: new Date(new Date().getTime() + 30 * 86409000), // 30 days
+                                        expires: new Date(new Date().getTime() + 15 * 86409000), // 30 days
                                         signed: true, // Sign the cookie
                                     });
                                     getRedis().expire(userId + 'refreshToken', 15 * 24 * 60 * 60); // 15days
