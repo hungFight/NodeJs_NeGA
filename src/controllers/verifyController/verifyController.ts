@@ -6,7 +6,8 @@ class VerifyController {
         try {
             const phoneMail = req.body.params.phoneMail;
             const otp = req.body.params.otp;
-            const data: any = await VerifyService.verifyOTP(phoneMail, otp);
+            const whatKind = req.body.params.whatKind;
+            const data: any = await VerifyService.verifyOTP(phoneMail, otp, whatKind);
             if (data) {
                 return res.status(200).json(data);
             }
